@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Or your chosen DB
+}
+
+// ---------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------
+
+enum ProjectStatus {
+  PENDING
+  UNDER_REVIEW
+  MATCHED
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  ATTENDED
+  MISSED
+}
+
+// ---------------------------------------------------------
+// 1. THE ACTORS (Separated)
+// ---------------------------------------------------------
+
+model Student {
+  id           String @id @default(uuid())
+  studentId    String @unique // e.g., NSBM Student ID
+  email        String @unique
+  passwordHash String
+  fullName     String
+  degree       String // e.g., "Computer Science"
+
+  // Relationships
+  groupMemberships GroupMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Supervisor {
+  id           String @id @default(uuid())
+  staffId      String @unique
+  email        String @unique
+  passwordHash String
+  fullName     String
+
+  // Relationships
+  moduleSupervisions ModuleSupervisor[]
+  supervisedProjects Project[]
+  meetings           Meeting[]
+  expertiseTags      SupervisorTag[] // The Tech Stack Match
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ModuleLeader {
+  id           String @id @default(uuid())
+  staffId      String @unique
+  email        String @unique
+  passwordHash String
+  fullName     String
+
+  // Relationships
+  ledModules Module[] // A leader can oversee multiple modules
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// 2. ACADEMIC STRUCTURE
+// ---------------------------------------------------------
+
+model Module {
+  id           String @id @default(uuid())
+  moduleCode   String // e.g., "PUSL2020"
+  moduleName   String // e.g., "Software Development Tools"
+  academicYear String // e.g., "2026/2027"
+  batch        String // e.g., "Batch 24"
+
+  // Relationships
+  moduleLeaderId String
+  moduleLeader   ModuleLeader @relation(fields: [moduleLeaderId], references: [id])
+
+  supervisors ModuleSupervisor[]
+  projects    Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Join table for Many-to-Many (A module has many supervisors, a supervisor has many modules)
+model ModuleSupervisor {
+  moduleId     String
+  supervisorId String
+
+  module     Module     @relation(fields: [moduleId], references: [id])
+  supervisor Supervisor @relation(fields: [supervisorId], references: [id])
+
+  @@id([moduleId, supervisorId]) // Composite Key
+}
+
+// ---------------------------------------------------------
+// 3. GROUPS & PROJECTS (The Blind Match Core)
+// ---------------------------------------------------------
+
+model ProjectGroup {
+  id        String  @id @default(uuid())
+  groupName String? // Optional group name
+
+  // Relationships
+  members  GroupMember[]
+  project  Project? // 1-to-1 relationship with the actual proposal
+  meetings Meeting[] // Meetings are tracked at the group level
+
+  createdAt DateTime @default(now())
+}
+
+// Join table to handle groups of up to 6 members
+model GroupMember {
+  groupId   String
+  studentId String
+  isLeader  Boolean @default(false) // Designates the group leader
+
+  group   ProjectGroup @relation(fields: [groupId], references: [id])
+  student Student      @relation(fields: [studentId], references: [id])
+
+  @@id([groupId, studentId])
+}
+
+model Project {
+  id       String        @id @default(uuid())
+  title    String
+  abstract String        @db.Text
+  status   ProjectStatus @default(PENDING)
+
+  // System Links
+  moduleId String
+  module   Module @relation(fields: [moduleId], references: [id])
+
+  groupId String       @unique
+  group   ProjectGroup @relation(fields: [groupId], references: [id])
+
+  // Assigned after the Match
+  supervisorId String?
+  supervisor   Supervisor? @relation(fields: [supervisorId], references: [id])
+
+  // Categorization
+  tags ProjectTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// 4. ALGORITHM & TRACKING
+// ---------------------------------------------------------
+
+model Tag {
+  id   String @id @default(uuid())
+  name String @unique // e.g., "Flutter", "Prisma", "AI"
+
+  projectTags    ProjectTag[]
+  supervisorTags SupervisorTag[]
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+  project   Project @relation(fields: [projectId], references: [id])
+  tag       Tag     @relation(fields: [tagId], references: [id])
+
+  @@id([projectId, tagId])
+}
+
+model SupervisorTag {
+  supervisorId String
+  tagId        String
+  supervisor   Supervisor @relation(fields: [supervisorId], references: [id])
+  tag          Tag        @relation(fields: [tagId], references: [id])
+
+  @@id([supervisorId, tagId])
+}
+
+model Meeting {
+  id              String        @id @default(uuid())
+  scheduledDate   DateTime
+  windowExpiry    DateTime // The Anti-Ghosting cutoff
+  status          MeetingStatus @default(SCHEDULED)
+  supervisorNotes String?       @db.Text
+
+  groupId String
+  group   ProjectGroup @relation(fields: [groupId], references: [id])
+
+  supervisorId String
+  supervisor   Supervisor @relation(fields: [supervisorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

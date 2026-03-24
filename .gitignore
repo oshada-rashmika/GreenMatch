@@ -33,10 +33,18 @@ supabase/.temp/
 .pub-cache/
 .pub/
 build/
+**/build/
 ios/Pods/
 ios/.symlinks/
 android/.gradle/
 android/app/build/
+# Android (extra generated/local files)
+android/local.properties
+.gradle/
+**/.cxx/
+android/.cxx/
+*.iml
+.kotlinc/
 *.keystore
 
 # IDE / OS

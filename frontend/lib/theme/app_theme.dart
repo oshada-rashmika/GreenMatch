@@ -16,7 +16,8 @@ class AppTheme {
       brightness: Brightness.dark,
       primaryColor: forestEmerald,
       scaffoldBackgroundColor: premiumBlack,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      // Global font switched to Montserrat as requested
+      textTheme: GoogleFonts.montserratTextTheme(ThemeData.dark().textTheme),
       colorScheme: const ColorScheme.dark(
         primary: forestEmerald,
         secondary: forestEmerald,
@@ -39,13 +40,12 @@ class AppTheme {
     );
   }
 
-  // Maintaining light theme for compatibility, but focusing on dark for this overhaul
   static ThemeData get lightTheme {
     return ThemeData(
       brightness: Brightness.light,
       primaryColor: forestEmerald,
       scaffoldBackgroundColor: pureWhite,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
+      textTheme: GoogleFonts.montserratTextTheme(ThemeData.light().textTheme),
       colorScheme: ColorScheme.fromSeed(
         seedColor: forestEmerald,
         brightness: Brightness.light,

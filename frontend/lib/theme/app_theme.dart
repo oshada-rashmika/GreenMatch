@@ -7,7 +7,7 @@ class AppTheme {
   static const Color forestEmerald = Color(0xFF2D5A27);
   static const Color glassWhite = Color(0x1AFFFFFF); // 10% white
   static const Color glassBorder = Color(0x33FFFFFF); // 20% white
-  
+
   static const Color primaryBlue = Color(0xFF1565C0);
   static const Color pureWhite = Color(0xFFFFFFFF);
 
@@ -22,7 +22,6 @@ class AppTheme {
         primary: forestEmerald,
         secondary: forestEmerald,
         surface: Color(0xFF161616),
-        background: premiumBlack,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,

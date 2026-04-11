@@ -34,7 +34,7 @@ class MatchesScreen extends StatelessWidget {
               child: Icon(
                 Icons.folder_shared_outlined,
                 size: 64,
-                color: AppTheme.forestEmerald.withOpacity(0.5),
+                color: AppTheme.forestEmerald.withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(height: 24),
@@ -51,7 +51,7 @@ class MatchesScreen extends StatelessWidget {
               "Placeholder: Confirmed project matches will appear here.",
               style: GoogleFonts.montserrat(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
               ),
             ),
           ],

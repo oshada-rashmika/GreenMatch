@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 import '../services/mock_project_service.dart';
 import '../widgets/glass_container.dart';
+import 'matches_screen.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -152,6 +153,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         blur: 15,
         borderColor: Colors.transparent,
         child: AppBar(
+          centerTitle: true, // Phase 3: Symmetry - Ensure title remains centered
           title: Text(
             "Blind Review",
             style: GoogleFonts.montserrat(
@@ -161,6 +163,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             ),
           ),
           actions: [
+            // Phase 2: NavBar Expansion - Conditional "Matches" button
+            if (matchedProjectIds.isNotEmpty)
+              _buildMatchesButton(),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
             _buildAppBarIcon(Icons.person),
@@ -169,6 +174,44 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         ),
       ),
     );
+  }
+
+  Widget _buildMatchesButton() {
+    return Center(
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MatchesScreen()),
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Badge(
+          label: Text(matchedProjectIds.length.toString()),
+          backgroundColor: AppTheme.forestEmerald,
+          child: GlassContainer(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            borderRadius: 12,
+            opacity: 0.1,
+            borderColor: AppTheme.forestEmerald.withOpacity(0.3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.handshake_outlined, size: 18, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  "MATCHES",
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn().scale();
   }
 
   Widget _buildAppBarIcon(IconData icon) {
@@ -236,66 +279,69 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildEmptyState() {
-    return Container(
-      key: const ValueKey('empty'),
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.manage_search_rounded,
-            size: 100,
-            color: Colors.white.withOpacity(0.05),
-          ).animate().fadeIn(duration: 1.seconds).scale(begin: const Offset(0.8, 0.8)),
-          const SizedBox(height: 24),
-          Text(
-            "The Archive is Empty",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: Colors.white.withOpacity(0.8),
-            ),
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
-          const SizedBox(height: 12),
-          Text(
-            "NO PROJECTS MATCH YOUR CURRENT SELECTION",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              fontSize: 12,
-              letterSpacing: 3,
-              fontWeight: FontWeight.w300,
-              color: Colors.white.withOpacity(0.4),
-            ),
-          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
-          const SizedBox(height: 48),
-          InkWell(
-            onTap: () => setState(() => _selectedFilter = "All"),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.forestEmerald.withOpacity(0.3)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.forestEmerald.withOpacity(0.1),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
+    return SizedBox.expand( // Phase 1: Fix Half-Screen Bug - Fill full viewport height/width
+      child: Container(
+        key: const ValueKey('empty'),
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
+          children: [
+            Icon(
+              Icons.manage_search_rounded,
+              size: 100,
+              color: Colors.white.withOpacity(0.05),
+            ).animate().fadeIn(duration: 1.seconds).scale(begin: const Offset(0.8, 0.8)),
+            const SizedBox(height: 24),
+            Text(
+              "The Archive is Empty",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: Colors.white.withOpacity(0.8),
               ),
-              child: Text(
-                "Reset Filters",
-                style: GoogleFonts.montserrat(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: AppTheme.forestEmerald,
+            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
+            const SizedBox(height: 12),
+            Text(
+              "NO PROJECTS MATCH YOUR CURRENT SELECTION",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w300,
+                color: Colors.white.withOpacity(0.4),
+              ),
+            ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
+            const SizedBox(height: 48),
+            InkWell(
+              onTap: () => setState(() => _selectedFilter = "All"),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.forestEmerald.withOpacity(0.3)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  "Reset Filters",
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppTheme.forestEmerald,
+                  ),
                 ),
               ),
-            ),
-          ).animate().fadeIn(delay: 600.ms).scale(),
-        ],
+            ).animate().fadeIn(delay: 600.ms).scale(),
+          ],
+        ),
       ),
     );
   }

@@ -10,11 +10,12 @@ class SupervisorDashboard extends StatefulWidget {
 }
 
 class _SupervisorDashboardState extends State<SupervisorDashboard> {
-  final MockProjectService _projectService = MockProjectService();
-  List<Map<String, dynamic>> _projects = [];
-  bool _isLoading = true;
+  late final MockProjectService projectService;
+  List<Map<String, dynamic>> projects = [];
+  bool isLoading = true;
+  final Set<String> matchedProjectIds = {};
+  
   String _selectedFilter = "All";
-  final Set<String> _matchedProjectIds = {};
 
   final List<String> _filters = [
     "All",
@@ -27,22 +28,24 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   @override
   void initState() {
     super.initState();
+    // 2. Initialization: Instantiate MockProjectService and fetch data
+    projectService = MockProjectService();
     _fetchProjects();
   }
 
   Future<void> _fetchProjects() async {
     setState(() {
-      _isLoading = true;
+      isLoading = true;
     });
     try {
-      final projects = await _projectService.fetchAnonymousProjects();
+      final fetchedProjects = await projectService.fetchAnonymousProjects();
       setState(() {
-        _projects = projects;
-        _isLoading = false;
+        projects = fetchedProjects;
+        isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _isLoading = false;
+        isLoading = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(
@@ -54,16 +57,17 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
 
   List<Map<String, dynamic>> get _filteredProjects {
     if (_selectedFilter == "All") {
-      return _projects;
+      return projects;
     }
-    return _projects
+    return projects
         .where((p) => p['researchArea'] == _selectedFilter)
         .toList();
   }
 
   void _onMatchConfirmed(String projectId) {
+    // 4. Match Logic: Add ID to matchedProjectIds and call setState()
     setState(() {
-      _matchedProjectIds.add(projectId);
+      matchedProjectIds.add(projectId);
     });
   }
 
@@ -81,8 +85,12 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         children: [
           _buildFilterBar(),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+            child: isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryGreen,
+                    ),
+                  )
                 : _buildProjectList(),
           ),
         ],
@@ -141,7 +149,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       itemBuilder: (context, index) {
         final project = filtered[index];
         final id = project['id'] as String;
-        final isMatched = _matchedProjectIds.contains(id);
+        final isMatched = matchedProjectIds.contains(id);
 
         return _buildProjectCard(project, isMatched);
       },
@@ -279,6 +287,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             ],
           ),
           const SizedBox(height: 4),
+          // 5. Reveal UI Transition: Student contact details
           Text(
             "Student Email: lead.student@university.edu",
             style: TextStyle(color: textColor, fontSize: 13),

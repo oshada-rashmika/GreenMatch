@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/mock_project_service.dart';
+import '../widgets/glass_container.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -28,7 +31,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   @override
   void initState() {
     super.initState();
-    // 2. Initialization: Instantiate MockProjectService and fetch data
     projectService = MockProjectService();
     _fetchProjects();
   }
@@ -65,7 +67,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   void _onMatchConfirmed(String projectId) {
-    // 4. Match Logic: Add ID to matchedProjectIds and call setState()
     setState(() {
       matchedProjectIds.add(projectId);
     });
@@ -73,27 +74,87 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Blind Review Dashboard",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          Expanded(
-            child: isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryGreen,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: _buildAppBar(),
+        body: Stack(
+          children: [
+            // Background mesh/glow
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.forestEmerald.withOpacity(0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withOpacity(0.1),
+                      blurRadius: 100,
+                      spreadRadius: 50,
                     ),
-                  )
-                : _buildProjectList(),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  _buildFilterBar(),
+                  Expanded(
+                    child: isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.forestEmerald,
+                            ),
+                          )
+                        : _buildBentoGrid(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(70),
+      child: GlassContainer(
+        borderRadius: 0,
+        opacity: 0.02,
+        blur: 15,
+        borderColor: Colors.transparent,
+        child: AppBar(
+          title: Text(
+            "Blind Review",
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              fontSize: 22,
+            ),
           ),
-        ],
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none_rounded, size: 28),
+              onPressed: () {},
+            ),
+            const SizedBox(width: 8),
+            const CircleAvatar(
+              radius: 18,
+              backgroundColor: AppTheme.forestEmerald,
+              child: Icon(Icons.person, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 16),
+          ],
+        ),
       ),
     );
   }
@@ -101,32 +162,29 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   Widget _buildFilterBar() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: _filters.map((filter) {
           final isSelected = _selectedFilter == filter;
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(filter),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedFilter = filter;
-                });
-              },
-              selectedColor: AppTheme.primaryGreen.withAlpha(25),
-              checkmarkColor: AppTheme.primaryGreen,
-              labelStyle: TextStyle(
-                color: isSelected ? AppTheme.primaryGreen : null,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected
-                      ? AppTheme.primaryGreen
-                      : Colors.grey.shade300,
+            padding: const EdgeInsets.only(right: 10),
+            child: InkWell(
+              onTap: () => setState(() => _selectedFilter = filter),
+              borderRadius: BorderRadius.circular(12),
+              child: GlassContainer(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                borderRadius: 12,
+                opacity: isSelected ? 0.2 : 0.03,
+                borderColor: isSelected 
+                    ? AppTheme.forestEmerald.withOpacity(0.5) 
+                    : Colors.white.withOpacity(0.05),
+                child: Text(
+                  filter,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white60,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -136,97 +194,121 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     );
   }
 
-  Widget _buildProjectList() {
+  Widget _buildBentoGrid() {
     final filtered = _filteredProjects;
 
     if (filtered.isEmpty) {
-      return const Center(child: Text("No projects found for this category."));
+      return Center(
+        child: Text(
+          "No projects found.",
+          style: TextStyle(color: Colors.white.withOpacity(0.3)),
+        ),
+      );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        final project = filtered[index];
-        final id = project['id'] as String;
-        final isMatched = matchedProjectIds.contains(id);
-
-        return _buildProjectCard(project, isMatched);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
+        
+        return MasonryGridView.count(
+          padding: const EdgeInsets.all(16),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            return _buildBentoCard(filtered[index], index);
+          },
+        );
       },
     );
   }
 
-  Widget _buildProjectCard(Map<String, dynamic> project, bool isMatched) {
-    final theme = Theme.of(context);
+  Widget _buildBentoCard(Map<String, dynamic> project, int index) {
+    final id = project['id'] as String;
+    final isMatched = matchedProjectIds.contains(id);
     final techStack = project['techStack'] as List<dynamic>;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return TweenAnimationBuilder(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      builder: (context, double value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 20 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: GlassContainer(
+        padding: const EdgeInsets.all(20),
+        borderRadius: 24,
+        opacity: 0.04,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    project['title'],
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryBlue,
-                    ),
-                  ),
-                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withAlpha(30),
+                    color: AppTheme.forestEmerald.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    project['researchArea'],
+                    project['researchArea'].toString().toUpperCase(),
                     style: const TextStyle(
-                      color: AppTheme.primaryGreen,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      color: AppTheme.forestEmerald,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
+                Icon(Icons.more_horiz, color: Colors.white.withOpacity(0.3)),
               ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              project['title'],
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.2,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               project['abstract'],
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade600,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 13,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: techStack.map((tech) {
-                return Chip(
-                  label: Text(tech, style: const TextStyle(fontSize: 11)),
-                  backgroundColor: theme.brightness == Brightness.dark
-                      ? Colors.grey.shade800
-                      : Colors.grey.shade100,
-                  padding: EdgeInsets.zero,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                );
-              }).toList(),
-            ),
             const SizedBox(height: 20),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: techStack.map((tech) => _buildTechBadge(tech)).toList(),
+            ),
+            const SizedBox(height: 24),
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 500),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                );
+              },
               child: isMatched
-                  ? _buildRevealedState()
-                  : _buildBlindState(project['id']),
+                  ? _buildRevealedMatch()
+                  : _buildMatchAction(project['id']),
             ),
           ],
         ),
@@ -234,63 +316,103 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     );
   }
 
-  Widget _buildBlindState(String projectId) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => _onMatchConfirmed(projectId),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryGreen,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-        child: const Text(
-          "Confirm Match",
-          style: TextStyle(fontWeight: FontWeight.bold),
+  Widget _buildTechBadge(String tech) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Text(
+        tech,
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.4),
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 
-  Widget _buildRevealedState() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+  Widget _buildMatchAction(String projectId) {
+    return InkWell(
+      key: const ValueKey('button'),
+      onTap: () => _onMatchConfirmed(projectId),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.forestEmerald.withOpacity(0.3),
+              blurRadius: 15,
+              spreadRadius: -5,
+              offset: const Offset(0, 5),
+            ),
+          ],
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.forestEmerald,
+              AppTheme.forestEmerald.withRed((AppTheme.forestEmerald.red + 20).clamp(0, 255)),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: Text(
+            "Confirm Match",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-    final backgroundColor = isDark
-        ? Colors.green.withAlpha(40)
-        : Colors.green.shade50;
-    final borderColor = isDark
-        ? Colors.green.withAlpha(100)
-        : Colors.green.shade200;
-    final textColor = isDark ? Colors.green.shade300 : Colors.green.shade700;
-
+  Widget _buildRevealedMatch() {
     return Container(
+      key: const ValueKey('revealed'),
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
+        color: AppTheme.forestEmerald.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.forestEmerald.withOpacity(0.3)),
       ),
       child: Column(
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.check_circle, color: textColor),
-              const SizedBox(width: 8),
+              Icon(Icons.verified_rounded, color: AppTheme.forestEmerald, size: 20),
+              SizedBox(width: 8),
               Text(
-                "Matched!",
-                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                "MATCH SECURED",
+                style: TextStyle(
+                  color: AppTheme.forestEmerald,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: 1.5,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          // 5. Reveal UI Transition: Student contact details
+          const SizedBox(height: 12),
           Text(
-            "Student Email: lead.student@university.edu",
-            style: TextStyle(color: textColor, fontSize: 13),
+            "student.contact@university.dev",
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),

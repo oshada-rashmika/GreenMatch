@@ -6,6 +6,7 @@
 		"@nestjs/passport": "^11.0.5",
 		"@nestjs/platform-express": "^11.1.17",
 		"@nestjs/schedule": "^6.1.1",
+		"@prisma/adapter-pg": "^7.7.0",
 		"@prisma/client": "^7.5.0",
 		"bcrypt": "^6.0.0",
 		"class-transformer": "^0.5.1",
@@ -29,8 +30,7 @@
 		"supertest": "^7.2.2",
 		"ts-node": "^10.9.2",
 		"typescript": "^6.0.2"
-	}
-	,
+	},
 	"scripts": {
 		"start:dev": "nest start --watch"
 	}

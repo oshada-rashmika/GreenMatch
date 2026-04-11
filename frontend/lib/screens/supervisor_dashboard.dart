@@ -19,7 +19,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   List<Map<String, dynamic>> projects = [];
   bool isLoading = true;
   final Set<String> matchedProjectIds = {};
-  
+
   String _selectedFilter = "All";
 
   final List<String> _filters = [
@@ -63,9 +63,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     if (_selectedFilter == "All") {
       return projects;
     }
-    return projects
-        .where((p) => p['researchArea'] == _selectedFilter)
-        .toList();
+    return projects.where((p) => p['researchArea'] == _selectedFilter).toList();
   }
 
   void _onMatchConfirmed(String projectId) {
@@ -92,10 +90,10 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 height: 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppTheme.forestEmerald.withOpacity(0.15),
+                  color: AppTheme.forestEmerald.withValues(alpha: 0.15),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.forestEmerald.withOpacity(0.1),
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
                       blurRadius: 100,
                       spreadRadius: 50,
                     ),
@@ -113,18 +111,19 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                       duration: const Duration(milliseconds: 600),
                       switchInCurve: Curves.easeOutQuart,
                       switchOutCurve: Curves.easeInQuart,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.05),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.05),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
                       child: isLoading
                           ? const Center(
                               key: ValueKey('loading'),
@@ -153,7 +152,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         blur: 15,
         borderColor: Colors.transparent,
         child: AppBar(
-          centerTitle: true, // Phase 3: Symmetry - Ensure title remains centered
+          centerTitle:
+              true, // Phase 3: Symmetry - Ensure title remains centered
           title: Text(
             "Blind Review",
             style: GoogleFonts.montserrat(
@@ -164,8 +164,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           ),
           actions: [
             // Phase 2: NavBar Expansion - Conditional "Matches" button
-            if (matchedProjectIds.isNotEmpty)
-              _buildMatchesButton(),
+            if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
             _buildAppBarIcon(Icons.person),
@@ -191,11 +190,15 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             borderRadius: 12,
             opacity: 0.1,
-            borderColor: AppTheme.forestEmerald.withOpacity(0.3),
+            borderColor: AppTheme.forestEmerald.withValues(alpha: 0.3),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.handshake_outlined, size: 18, color: Colors.white),
+                const Icon(
+                  Icons.handshake_outlined,
+                  size: 18,
+                  color: Colors.white,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   "MATCHES",
@@ -221,16 +224,16 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.forestEmerald.withOpacity(0.1),
+              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
               blurRadius: 10,
               spreadRadius: 1,
             ),
           ],
         ),
-        child: Icon(icon, size: 22, color: Colors.white.withOpacity(0.9)),
+        child: Icon(icon, size: 22, color: Colors.white.withValues(alpha: 0.9)),
       ),
     );
   }
@@ -248,12 +251,15 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               onTap: () => setState(() => _selectedFilter = filter),
               borderRadius: BorderRadius.circular(12),
               child: GlassContainer(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 borderRadius: 12,
                 opacity: isSelected ? 0.2 : 0.03,
-                borderColor: isSelected 
-                    ? AppTheme.forestEmerald.withOpacity(0.5) 
-                    : Colors.white.withOpacity(0.05),
+                borderColor: isSelected
+                    ? AppTheme.forestEmerald.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.05),
                 child: Text(
                   filter,
                   style: GoogleFonts.montserrat(
@@ -279,7 +285,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildEmptyState() {
-    return SizedBox.expand( // Phase 1: Fix Half-Screen Bug - Fill full viewport height/width
+    return SizedBox.expand(
+      // Phase 1: Fix Half-Screen Bug - Fill full viewport height/width
       child: Container(
         key: const ValueKey('empty'),
         padding: const EdgeInsets.all(40),
@@ -288,10 +295,13 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
           children: [
             Icon(
-              Icons.manage_search_rounded,
-              size: 100,
-              color: Colors.white.withOpacity(0.05),
-            ).animate().fadeIn(duration: 1.seconds).scale(begin: const Offset(0.8, 0.8)),
+                  Icons.manage_search_rounded,
+                  size: 100,
+                  color: Colors.white.withValues(alpha: 0.05),
+                )
+                .animate()
+                .fadeIn(duration: 1.seconds)
+                .scale(begin: const Offset(0.8, 0.8)),
             const SizedBox(height: 24),
             Text(
               "The Archive is Empty",
@@ -299,7 +309,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               style: GoogleFonts.montserrat(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
               ),
             ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
             const SizedBox(height: 12),
@@ -310,7 +320,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 fontSize: 12,
                 letterSpacing: 3,
                 fontWeight: FontWeight.w300,
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
               ),
             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
             const SizedBox(height: 48),
@@ -318,13 +328,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               onTap: () => setState(() => _selectedFilter = "All"),
               borderRadius: BorderRadius.circular(16),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.forestEmerald.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.forestEmerald.withOpacity(0.1),
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
@@ -348,10 +363,14 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
 
   Widget _buildBentoGrid(List<Map<String, dynamic>> filtered) {
     return LayoutBuilder(
-      key: ValueKey(_selectedFilter), // Force rebuild on filter change for new stagger
+      key: ValueKey(
+        _selectedFilter,
+      ), // Force rebuild on filter change for new stagger
       builder: (context, constraints) {
-        int crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
-        
+        int crossAxisCount = constraints.maxWidth > 900
+            ? 3
+            : (constraints.maxWidth > 600 ? 2 : 1);
+
         return MasonryGridView.count(
           padding: const EdgeInsets.all(16),
           crossAxisCount: crossAxisCount,
@@ -407,83 +426,105 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
         scale: _isHovered ? 1.02 : 1.0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutQuart,
-        child: GlassContainer(
-          padding: const EdgeInsets.all(20),
-          borderRadius: 24,
-          opacity: _isHovered ? 0.08 : 0.04,
-          borderColor: _isHovered ? AppTheme.forestEmerald.withOpacity(0.3) : Colors.white.withOpacity(0.05),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.forestEmerald.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      widget.project['researchArea'].toString().toUpperCase(),
-                      style: GoogleFonts.montserrat(
-                        color: AppTheme.forestEmerald,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
+        child:
+            GlassContainer(
+                  padding: const EdgeInsets.all(20),
+                  borderRadius: 24,
+                  opacity: _isHovered ? 0.08 : 0.04,
+                  borderColor: _isHovered
+                      ? AppTheme.forestEmerald.withValues(alpha: 0.3)
+                      : Colors.white.withValues(alpha: 0.05),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.forestEmerald.withValues(
+                                alpha: 0.2,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              widget.project['researchArea']
+                                  .toString()
+                                  .toUpperCase(),
+                              style: GoogleFonts.montserrat(
+                                color: AppTheme.forestEmerald,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.more_horiz,
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Text(
+                        widget.project['title'],
+                        style: GoogleFonts.montserrat(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        widget.project['abstract'],
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 13,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: techStack
+                            .map((tech) => _buildTechBadge(tech))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: ScaleTransition(
+                                  scale: animation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                        child: widget.isMatched
+                            ? _buildRevealedMatch()
+                            : _buildMatchAction(widget.project['id']),
+                      ),
+                    ],
                   ),
-                  Icon(Icons.more_horiz, color: Colors.white.withOpacity(0.3)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.project['title'],
-                style: GoogleFonts.montserrat(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.project['abstract'],
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.montserrat(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: techStack.map((tech) => _buildTechBadge(tech)).toList(),
-              ),
-              const SizedBox(height: 24),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 500),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(scale: animation, child: child),
-                  );
-                },
-                child: widget.isMatched
-                    ? _buildRevealedMatch()
-                    : _buildMatchAction(widget.project['id']),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(
-          duration: 600.ms,
-          delay: (widget.index * 100).ms,
-          curve: Curves.easeOutQuart,
-        ).slideY(begin: 0.1),
+                )
+                .animate()
+                .fadeIn(
+                  duration: 600.ms,
+                  delay: (widget.index * 100).ms,
+                  curve: Curves.easeOutQuart,
+                )
+                .slideY(begin: 0.1),
       ),
     );
   }
@@ -492,14 +533,14 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Text(
         tech,
         style: GoogleFonts.montserrat(
-          color: Colors.white.withOpacity(0.4),
+          color: Colors.white.withValues(alpha: 0.4),
           fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
@@ -518,7 +559,7 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: AppTheme.forestEmerald.withOpacity(0.3),
+              color: AppTheme.forestEmerald.withValues(alpha: 0.3),
               blurRadius: 15,
               spreadRadius: -5,
               offset: const Offset(0, 5),
@@ -527,7 +568,12 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
           gradient: LinearGradient(
             colors: [
               AppTheme.forestEmerald,
-              AppTheme.forestEmerald.withRed((AppTheme.forestEmerald.red + 20).clamp(0, 255)),
+              AppTheme.forestEmerald.withRed(
+                (((AppTheme.forestEmerald.r * 255.0).round() + 20).clamp(
+                  0,
+                  255,
+                )).toInt(),
+              ),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -555,16 +601,22 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.forestEmerald.withOpacity(0.1),
+        color: AppTheme.forestEmerald.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.forestEmerald.withOpacity(0.3)),
+        border: Border.all(
+          color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.verified_rounded, color: AppTheme.forestEmerald, size: 20),
+              const Icon(
+                Icons.verified_rounded,
+                color: AppTheme.forestEmerald,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 "MATCH SECURED",
@@ -581,7 +633,7 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
           Text(
             "student.contact@university.dev",
             style: GoogleFonts.montserrat(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),

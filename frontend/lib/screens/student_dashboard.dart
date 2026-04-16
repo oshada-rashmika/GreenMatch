@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import 'profile_screen.dart';
 
 enum ProposalStatus { pending, underReview, matched }
+
+class _Activity {
+  final String date;
+  final String description;
+  final IconData icon;
+  final Color color;
+  _Activity(this.date, this.description, this.icon, this.color);
+}
 
 class _ProposalData {
   String title;
@@ -10,6 +19,10 @@ class _ProposalData {
   ProposalStatus status;
   String? supervisorName;
   String? supervisorContact;
+  DateTime submittedDate;
+  DateTime expectedDecisionDate;
+  List<String> impactBadges;
+  List<_Activity> activityLog;
 
   _ProposalData({
     required this.title,
@@ -19,6 +32,10 @@ class _ProposalData {
     this.status = ProposalStatus.pending,
     this.supervisorName,
     this.supervisorContact,
+    required this.submittedDate,
+    required this.expectedDecisionDate,
+    required this.impactBadges,
+    required this.activityLog,
   });
 }
 
@@ -114,6 +131,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               status: isEditing ? _proposal!.status : ProposalStatus.pending,
                               supervisorName: _proposal?.supervisorName,
                               supervisorContact: _proposal?.supervisorContact,
+                              submittedDate: isEditing ? _proposal!.submittedDate : DateTime.now(),
+                              expectedDecisionDate: isEditing ? _proposal!.expectedDecisionDate : DateTime.now().add(const Duration(days: 14)),
+                              impactBadges: ['UN SDG 13: Climate Action', 'Tech for Good'],
+                              activityLog: isEditing ? _proposal!.activityLog : [
+                                _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, const Color(0xFFFACC15)),
+                              ],
                             );
                           });
                           Navigator.pop(context);
@@ -174,33 +197,71 @@ class _StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
-  String _getStatusDescription() {
-    switch (_proposal?.status) {
-      case ProposalStatus.matched: return "A supervisor has been assigned! View details below.";
-      case ProposalStatus.underReview: return "Your proposal is being evaluated by the committee.";
-      case ProposalStatus.pending:
-      default: return "Your proposal has been submitted and is awaiting review.";
-    }
-  }
-
-  IconData _getStatusIcon() {
-    switch (_proposal?.status) {
-      case ProposalStatus.matched: return Icons.check_circle;
-      case ProposalStatus.underReview: return Icons.published_with_changes;
-      case ProposalStatus.pending:
-      default: return Icons.access_time_filled;
-    }
+  Widget _buildDrawer() {
+    return Drawer(
+      backgroundColor: bgColor,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            decoration: BoxDecoration(
+              color: cardColor,
+              border: const Border(bottom: BorderSide(color: Color(0xFF2B364E), width: 1)),
+            ),
+            accountName: const Text('Elena Fisher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+            accountEmail: Text('ST-2026-9482', style: TextStyle(color: mutedTextColor)),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: accentColor,
+              child: const Icon(Icons.person, color: Colors.black, size: 36),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.dashboard, color: Color(0xFFFACC15)),
+            title: const Text('Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: Icon(Icons.description_outlined, color: mutedTextColor),
+            title: Text('My Proposals', style: TextStyle(color: mutedTextColor)),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: Icon(Icons.menu_book, color: mutedTextColor),
+            title: Text('Formatting Guidelines', style: TextStyle(color: mutedTextColor)),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening University Guidelines...')));
+            },
+          ),
+          const Divider(color: Color(0xFF2B364E), thickness: 1, indent: 16, endIndent: 16, height: 32),
+          ListTile(
+            leading: Icon(Icons.settings_outlined, color: mutedTextColor),
+            title: Text('Settings', style: TextStyle(color: mutedTextColor)),
+            onTap: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
+      drawer: _buildDrawer(),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: Builder(
+          builder: (context) {
+            return IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            );
+          }
+        ),
         title: const Text(
-          'Student Dashboard',
+          'Student Portal',
           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
         ),
         actions: [
@@ -227,6 +288,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         if (val == ProposalStatus.matched) {
                           _proposal!.supervisorName = "Dr. Alan Turing";
                           _proposal!.supervisorContact = "alan.turing@example.edu";
+                          _proposal!.activityLog.insert(0, _Activity('Today', 'Supervisor Dr. Alan Turing conditionally accepted the proposal.', Icons.check_circle, const Color(0xFF10B981)));
+                        } else if (val == ProposalStatus.underReview) {
+                          _proposal!.supervisorName = null;
+                          _proposal!.supervisorContact = null;
+                          _proposal!.activityLog.insert(0, _Activity('Yesterday', 'Proposal is now under review by the coordination committee.', Icons.remove_red_eye, const Color(0xFF3B82F6)));
                         } else {
                           _proposal!.supervisorName = null;
                           _proposal!.supervisorContact = null;
@@ -238,9 +304,27 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ),
             ),
           const SizedBox(width: 8),
-          _buildCircleButton(Icons.notifications_none, cardColor),
+          PopupMenuButton<String>(
+            color: cardColor,
+            offset: const Offset(0, 48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: _buildCircleButtonWidget(Icons.notifications_none, cardColor),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                child: Text('Guidelines for Fall 2026 published', style: TextStyle(color: Colors.white, fontSize: 13)),
+              ),
+              const PopupMenuItem(
+                child: Text('Reminder: Deadline in 14 days', style: TextStyle(color: Colors.white, fontSize: 13)),
+              ),
+            ],
+          ),
           const SizedBox(width: 8),
-          _buildCircleButton(Icons.person_outline, cardColor),
+          _buildCircleButtonWidget(Icons.person_outline, cardColor, onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          }),
           const SizedBox(width: 16),
         ],
       ),
@@ -255,7 +339,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Student ID: ST-2026-9482',
+              'Dashboard Overview',
               style: TextStyle(color: mutedTextColor, fontSize: 14),
             ),
             const SizedBox(height: 32),
@@ -263,13 +347,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
             if (_proposal == null)
               _buildEmptyState()
             else ...[
-              _buildStatusCard(),
+              _buildTimelineStatusCard(),
               const SizedBox(height: 24),
               if (_proposal!.status == ProposalStatus.matched) ...[
                 _buildRevealCard(),
                 const SizedBox(height: 24),
               ],
               _buildProposalCard(),
+              const SizedBox(height: 24),
+              _buildActivityLog(),
             ],
           ],
         ),
@@ -309,67 +395,106 @@ class _StudentDashboardState extends State<StudentDashboard> {
               elevation: 0,
             ),
           ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+             onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening University Guidelines...')));
+             },
+             icon: const Icon(Icons.menu_book, size: 16),
+             label: const Text('View Formatting Guidelines'),
+             style: TextButton.styleFrom(foregroundColor: mutedTextColor),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildStatusCard() {
-    final statusColor = _getStatusColor();
+  Widget _buildTimelineStatusCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(_getStatusIcon(), color: statusColor, size: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('STATUS TIMELINE', style: TextStyle(color: mutedTextColor, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+              Text(_getStatusText(), style: TextStyle(color: _getStatusColor(), fontSize: 13, fontWeight: FontWeight.bold)),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'STATUS',
-                  style: TextStyle(
-                    color: mutedTextColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _getStatusText(),
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _getStatusDescription(),
-                  style: TextStyle(
-                    color: mutedTextColor,
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              _buildTimelineNode('Submitted', true, true),
+              _buildTimelineLine(true),
+              _buildTimelineNode('Under Review', _proposal!.status == ProposalStatus.underReview || _proposal!.status == ProposalStatus.matched, _proposal!.status == ProposalStatus.underReview),
+              _buildTimelineLine(_proposal!.status == ProposalStatus.matched),
+              _buildTimelineNode('Matched', _proposal!.status == ProposalStatus.matched, _proposal!.status == ProposalStatus.matched),
+            ],
           ),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Date Submitted', style: TextStyle(color: mutedTextColor, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  Text('Oct 15, 2026', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Expected Decision', style: TextStyle(color: mutedTextColor, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  Text('Oct 29, 2026', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                ],
+              )
+            ],
+          )
         ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineNode(String label, bool isCompleted, bool isActive) {
+    Color nodeColor = isCompleted ? const Color(0xFF10B981) : const Color(0xFF334155);
+    Color textColor = isCompleted || isActive ? Colors.white : mutedTextColor;
+    
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: isActive && !isCompleted ? nodeColor.withOpacity(0.2) : nodeColor,
+              shape: BoxShape.circle,
+              border: isActive && !isCompleted ? Border.all(color: nodeColor, width: 2) : null,
+            ),
+            child: isActive && !isCompleted 
+                 ? Center(child: Container(width: 12, height: 12, decoration: BoxDecoration(color: nodeColor, shape: BoxShape.circle))) 
+                 : (isCompleted ? const Icon(Icons.check, size: 16, color: Colors.white) : null),
+          ),
+          const SizedBox(height: 12),
+          Text(label, style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineLine(bool isActive) {
+    return Expanded(
+      child: Container(
+        height: 2,
+        color: isActive ? const Color(0xFF10B981) : const Color(0xFF334155),
+        margin: const EdgeInsets.only(bottom: 24),
       ),
     );
   }
@@ -431,6 +556,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildProposalCard() {
+    final int wordCount = _proposal!.abstractText.split(RegExp(r'\s+')).length + _proposal!.title.split(RegExp(r'\s+')).length + 50; // Mock count
+    final int percentage = _proposal!.status == ProposalStatus.pending ? 80 : 100;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -440,83 +568,88 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F3D24), 
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _proposal!.researchArea.toUpperCase(),
-                  style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.1),
-                ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F3D24), 
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _proposal!.researchArea.toUpperCase(),
+                      style: const TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.1),
+                    ),
+                  ),
+                  if (_proposal!.status != ProposalStatus.matched) ...[
+                    GestureDetector(
+                      onTap: () => _showSubmissionForm(isEditing: true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E3A8A).withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.edit, size: 14, color: Color(0xFF60A5FA)),
+                            SizedBox(width: 4),
+                            Text('Edit', style: TextStyle(color: Color(0xFF60A5FA), fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                     Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF374151).withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.lock_outline, size: 14, color: Color(0xFF9CA3AF)),
+                            SizedBox(width: 4),
+                            Text('Locked', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                     ),
+                  ]
+                ],
               ),
-              if (_proposal!.status != ProposalStatus.matched) ...[
-                GestureDetector(
-                  onTap: () => _showSubmissionForm(isEditing: true),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E3A8A).withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.edit, size: 14, color: Color(0xFF60A5FA)),
-                        SizedBox(width: 4),
-                        Text('Edit', style: TextStyle(color: Color(0xFF60A5FA), fontSize: 12, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
+              if (_proposal!.status == ProposalStatus.pending)
+                Container(
+                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                   decoration: BoxDecoration(color: const Color(0xFF334155), borderRadius: BorderRadius.circular(12)),
+                   child: Text('$percentage% Completeness', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
-                GestureDetector(
-                  onTap: () => _withdrawProposal(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.4)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.delete_outline, size: 14, color: Color(0xFFEF4444)),
-                        SizedBox(width: 4),
-                        Text('Withdraw', style: TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                ),
-              ] else ...[
-                 Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF374151).withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.lock_outline, size: 14, color: Color(0xFF9CA3AF)),
-                        SizedBox(width: 4),
-                        Text('Locked', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                 ),
-              ]
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          if (_proposal!.impactBadges.isNotEmpty) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _proposal!.impactBadges.map((e) => _buildImpactBadge(e)).toList(),
+            ),
+            const SizedBox(height: 24),
+          ],
           Text(
             _proposal!.title,
             style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1.3),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$wordCount words',
+            style: TextStyle(color: mutedTextColor, fontSize: 12, fontStyle: FontStyle.italic),
           ),
           const SizedBox(height: 16),
           Text(
@@ -534,12 +667,76 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildCircleButton(IconData icon, Color bgColor) {
+  Widget _buildImpactBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF8B5CF6).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.public, size: 14, color: Color(0xFFA78BFA)),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(color: Color(0xFFA78BFA), fontSize: 11, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityLog() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(24)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('ACTIVITY LOG', style: TextStyle(color: mutedTextColor, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+              Icon(Icons.history, color: mutedTextColor, size: 16),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ..._proposal!.activityLog.map((activity) => Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: activity.color.withOpacity(0.15), shape: BoxShape.circle),
+                  child: Icon(activity.icon, size: 16, color: activity.color),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(activity.description, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4)),
+                      const SizedBox(height: 6),
+                      Text(activity.date, style: TextStyle(color: mutedTextColor, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircleButtonWidget(IconData icon, Color bgColor, {VoidCallback? onPressed}) {
     return Container(
       decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
       child: IconButton(
         icon: Icon(icon, color: Colors.white, size: 20),
-        onPressed: () {},
+        onPressed: onPressed,
         constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
         padding: EdgeInsets.zero,
       ),

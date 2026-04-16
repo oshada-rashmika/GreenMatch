@@ -471,8 +471,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () {},
-                                icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                                label: const Text('Message', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                icon: const Icon(Icons.note_add_outlined, size: 16),
+                                label: const Text('Send Note', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
                                   foregroundColor: const Color(0xFF34D399),

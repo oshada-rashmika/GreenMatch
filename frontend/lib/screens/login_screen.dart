@@ -258,51 +258,67 @@ class _LoginScreenState extends State<LoginScreen>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final bool isDesktop = constraints.maxWidth > 800;
-                  final content = Center(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isDesktop ? 0 : 24.0,
-                        vertical: 32.0,
+                  const double verticalPadding = 32.0;
+                  final double horizontalPadding = isDesktop ? 0 : 24.0;
+                  final double minScrollableHeight =
+                      (constraints.maxHeight - (verticalPadding * 2))
+                          .clamp(0.0, double.infinity)
+                          .toDouble();
+
+                  final authCard = Container(
+                    width: isDesktop ? 480 : double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(32),
+                      boxShadow: isDesktop
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 50,
+                                spreadRadius: 10,
+                                offset: const Offset(0, 20),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: _GlassCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 40,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildLogo(),
+                            const SizedBox(height: 40),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 400),
+                              switchInCurve: Curves.easeOutQuart,
+                              switchOutCurve: Curves.easeInQuart,
+                              child: !_isStaffView
+                                  ? _buildStudentView()
+                                  : _buildStaffView(),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Container(
-                        width: isDesktop ? 480 : double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(32),
-                          boxShadow: isDesktop
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 50,
-                                    spreadRadius: 10,
-                                    offset: const Offset(0, 20),
-                                  ),
-                                ]
-                              : null,
+                    ),
+                  );
+
+                  final content = ScrollConfiguration(
+                    behavior: const MaterialScrollBehavior().copyWith(
+                      scrollbars: false,
+                    ),
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: verticalPadding,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: minScrollableHeight,
                         ),
-                        child: _GlassCard(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 40,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _buildLogo(),
-                                const SizedBox(height: 40),
-                                AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 400),
-                                  switchInCurve: Curves.easeOutQuart,
-                                  switchOutCurve: Curves.easeInQuart,
-                                  child: !_isStaffView
-                                      ? _buildStudentView()
-                                      : _buildStaffView(),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        child: Center(child: authCard),
                       ),
                     ),
                   );

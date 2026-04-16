@@ -297,13 +297,12 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
 
   Widget _buildEmptyState() {
     return SizedBox.expand(
-      // Phase 1: Fix Half-Screen Bug - Fill full viewport height/width
       child: Container(
         key: const ValueKey('empty'),
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
                   Icons.manage_search_rounded,
@@ -376,7 +375,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     return LayoutBuilder(
       key: ValueKey(
         _selectedFilter,
-      ), // Force rebuild on filter change for new stagger
+      ),
       builder: (context, constraints) {
         int crossAxisCount = constraints.maxWidth > 900
             ? 3

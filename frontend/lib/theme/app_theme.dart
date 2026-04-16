@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'login_design.dart';
 
 class AppTheme {
   // Premium Palette
@@ -34,6 +35,65 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: glassBorder, width: 0.5),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData get monochromeTheme {
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: LoginColors.background,
+      colorScheme: const ColorScheme.light(
+        primary: LoginColors.accent,
+        onPrimary: LoginColors.surface,
+        secondary: LoginColors.textSecondary,
+        surface: LoginColors.surface,
+      ),
+      textTheme: GoogleFonts.montserratTextTheme(ThemeData.light().textTheme)
+          .apply(
+            bodyColor: LoginColors.textPrimary,
+            displayColor: LoginColors.textPrimary,
+          ),
+      primaryColor: LoginColors.accent,
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: LoginColors.inputFill,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: LoginColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: LoginColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: LoginColors.borderActive,
+            width: 1.6,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: LoginColors.link,
+          textStyle: LoginTypography.link,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: LoginColors.accent,
+          foregroundColor: LoginColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 18),
         ),
       ),
     );

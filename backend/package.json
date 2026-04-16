@@ -1,4 +1,6 @@
 {
+	"name": "greenmatch-backend",
+	"version": "1.0.0",
 	"dependencies": {
 		"@nestjs/common": "^11.1.17",
 		"@nestjs/core": "^11.1.17",
@@ -33,6 +35,10 @@
 		"typescript": "^6.0.2"
 	},
 	"scripts": {
-		"start:dev": "nest start --watch"
+		"start:dev": "nest start --watch",
+		"seed": "ts-node prisma/seed.ts"
+	},
+	"prisma": {
+		"seed": "ts-node prisma/seed.ts"
 	}
 }

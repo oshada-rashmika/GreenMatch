@@ -176,9 +176,9 @@ class ModuleLeaderService {
         final decoded = jsonDecode(response.body);
         final records = decoded is Map<String, dynamic>
             ? (decoded['data'] as List<dynamic>? ??
-                decoded['items'] as List<dynamic>? ??
-                decoded['projects'] as List<dynamic>? ??
-                const [])
+                  decoded['items'] as List<dynamic>? ??
+                  decoded['projects'] as List<dynamic>? ??
+                  const [])
             : decoded as List<dynamic>;
 
         return records
@@ -301,17 +301,19 @@ class ModuleLeaderProject {
       id: (json['id'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
       status: (json['status'] ?? 'PENDING').toString(),
-      moduleCode: (module is Map<String, dynamic>
-              ? module['moduleCode']
-              : json['moduleCode'] ??
-                  json['module_code'] ??
-                  json['module'] ??
-                  '')
-          .toString(),
-      moduleName: (module is Map<String, dynamic>
-              ? module['moduleName']
-              : json['moduleName'] ?? json['module_name'] ?? '')
-          .toString(),
+      moduleCode:
+          (module is Map<String, dynamic>
+                  ? module['moduleCode']
+                  : json['moduleCode'] ??
+                        json['module_code'] ??
+                        json['module'] ??
+                        '')
+              .toString(),
+      moduleName:
+          (module is Map<String, dynamic>
+                  ? module['moduleName']
+                  : json['moduleName'] ?? json['module_name'] ?? '')
+              .toString(),
       supervisorName: supervisor is Map<String, dynamic>
           ? supervisor['fullName']?.toString()
           : json['supervisorName']?.toString(),

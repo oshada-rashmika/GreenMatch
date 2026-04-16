@@ -804,7 +804,9 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     });
   }
 
-  List<ModuleLeaderProject> _filteredProjects(List<ModuleLeaderProject> projects) {
+  List<ModuleLeaderProject> _filteredProjects(
+    List<ModuleLeaderProject> projects,
+  ) {
     return switch (_projectFilter) {
       _ProjectAllocationFilter.all => projects,
       _ProjectAllocationFilter.pending =>
@@ -1006,7 +1008,10 @@ class _ProjectsDataSource extends DataTableSource {
       index: index,
       cells: [
         DataCell(
-          Text(project.title, style: LoginTypography.label.copyWith(fontSize: 13)),
+          Text(
+            project.title,
+            style: LoginTypography.label.copyWith(fontSize: 13),
+          ),
         ),
         DataCell(
           Text(
@@ -1091,9 +1096,7 @@ class _ProjectFilterToggle extends StatelessWidget {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: enabled
-          ? (_) => onChanged(filter)
-          : null,
+      onSelected: enabled ? (_) => onChanged(filter) : null,
       selectedColor: LoginColors.panel,
       backgroundColor: LoginColors.surface,
       labelStyle: LoginTypography.label.copyWith(

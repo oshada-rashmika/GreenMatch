@@ -49,7 +49,6 @@ class AppTheme {
         onPrimary: LoginColors.surface,
         secondary: LoginColors.textSecondary,
         surface: LoginColors.surface,
-        background: LoginColors.background,
       ),
       textTheme: GoogleFonts.montserratTextTheme(ThemeData.light().textTheme).apply(
         bodyColor: LoginColors.textPrimary,

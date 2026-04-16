@@ -146,13 +146,14 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_studentLoginFormKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final success = await authProvider.studentLogin(
       _studentEmailController.text.trim(),
       _studentPasswordController.text,
     );
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Login successful!')),
       );
       // TODO: Navigate to student dashboard
@@ -163,6 +164,7 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_studentSignupFormKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final success = await authProvider.registerStudent(
       email: _signupEmailController.text.trim(),
       password: _signupPasswordController.text,
@@ -172,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Registration successful! Please log in.'),
         ),
@@ -191,6 +193,7 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_staffLoginFormKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final success = _staffRole == 'supervisor'
         ? await authProvider.supervisorLogin(
             _staffEmailController.text.trim(),
@@ -202,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen>
           );
 
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
             content: Text(
                 '${_staffRole == 'supervisor' ? 'Supervisor' : 'Module Leader'} login successful!')),
@@ -448,10 +451,10 @@ class _LoginScreenState extends State<LoginScreen>
                 Container(
                   padding: const EdgeInsets.all(LoginSpacing.medium),
                   decoration: BoxDecoration(
-                    color: LoginColors.error.withOpacity(0.1),
+                    color: LoginColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: LoginColors.error.withOpacity(0.3),
+                      color: LoginColors.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -650,10 +653,10 @@ class _LoginScreenState extends State<LoginScreen>
                 Container(
                   padding: const EdgeInsets.all(LoginSpacing.medium),
                   decoration: BoxDecoration(
-                    color: LoginColors.error.withOpacity(0.1),
+                    color: LoginColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: LoginColors.error.withOpacity(0.3),
+                      color: LoginColors.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -895,10 +898,10 @@ class _LoginScreenState extends State<LoginScreen>
                 Container(
                   padding: const EdgeInsets.all(LoginSpacing.medium),
                   decoration: BoxDecoration(
-                    color: LoginColors.error.withOpacity(0.1),
+                    color: LoginColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: LoginColors.error.withOpacity(0.3),
+                      color: LoginColors.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(

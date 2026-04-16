@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../theme/login_design.dart';
 import '../services/auth_provider.dart';
 import '../widgets/academic_text_field.dart';
-import 'simple_dashboard.dart';
+import 'supervisor_dashboard.dart';
+import 'student_dashboard.dart';
+import 'module_leader_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -158,9 +160,7 @@ class _LoginScreenState extends State<LoginScreen>
         const SnackBar(content: Text('Login successful!')),
       );
       navigator.pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const SimpleDashboard(title: 'Student Dashboard'),
-        ),
+        MaterialPageRoute(builder: (context) => const StudentDashboard()),
       );
     }
   }
@@ -219,11 +219,11 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       );
 
-      final dashboardTitle =
-          _staffRole == 'supervisor' ? 'Supervisor Dashboard' : 'Module Leader Dashboard';
       navigator.pushReplacement(
         MaterialPageRoute(
-          builder: (context) => SimpleDashboard(title: dashboardTitle),
+          builder: (context) => _staffRole == 'supervisor'
+              ? const SupervisorDashboard()
+              : const ModuleLeaderDashboard(),
         ),
       );
     }

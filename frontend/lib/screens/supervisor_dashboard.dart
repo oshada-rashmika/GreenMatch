@@ -18,6 +18,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   late final ProjectService projectService;
   List<AnonymousProject> projects = [];
   bool isLoading = true;
+  String? errorMessage;
   final Set<String> matchedProjectIds = {};
 
   String _selectedFilter = "All";
@@ -34,10 +35,11 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   Future<void> _fetchProjects() async {
     setState(() {
       isLoading = true;
+      errorMessage = null;
     });
     try {
       final fetchedProjects = await projectService.fetchAnonymousProjects();
-      
+
       final uniqueTags = fetchedProjects
           .expand((p) => p.tags)
           .toSet()
@@ -49,15 +51,19 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         _filters = ["All", ...uniqueTags];
         isLoading = false;
       });
-    } catch (e) {
+    } on ProjectServiceException catch (e) {
       setState(() {
         isLoading = false;
+        errorMessage = e.message;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error fetching projects: $e')));
-      }
+      _showErrorSnackBar(e.message);
+    } catch (e) {
+      const msg = 'An unexpected error occurred. Please try again.';
+      setState(() {
+        isLoading = false;
+        errorMessage = msg;
+      });
+      _showErrorSnackBar(msg);
     }
   }
 
@@ -77,12 +83,44 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         });
       }
     } on ProjectServiceException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Match failed: ${e.message}')),
-        );
-      }
+      _showErrorSnackBar('Failed to match project: ${e.message}');
+    } catch (_) {
+      _showErrorSnackBar('Failed to match project. Please try again.');
     }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFFB00020),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white70,
+          onPressed: () =>
+              ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -144,7 +182,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                                 color: AppTheme.forestEmerald,
                               ),
                             )
-                          : _buildProjectContent(),
+                          : errorMessage != null
+                              ? _buildErrorState(errorMessage!)
+                              : _buildProjectContent(),
                     ),
                   ),
                 ],
@@ -295,6 +335,97 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       return _buildEmptyState();
     }
     return _buildBentoGrid(filtered);
+  }
+
+  Widget _buildErrorState(String message) {
+    return SizedBox.expand(
+      child: Container(
+        key: const ValueKey('error'),
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFB00020).withValues(alpha: 0.1),
+                border: Border.all(
+                  color: const Color(0xFFB00020).withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Icon(
+                Icons.cloud_off_rounded,
+                size: 48,
+                color: Color(0xFFB00020),
+              ),
+            )
+                .animate()
+                .fadeIn(duration: 600.ms)
+                .scale(begin: const Offset(0.8, 0.8)),
+            const SizedBox(height: 24),
+            Text(
+              "Connection Error",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+            ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.2),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: Colors.white.withValues(alpha: 0.45),
+                height: 1.5,
+              ),
+            ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.2),
+            const SizedBox(height: 40),
+            InkWell(
+              onTap: _fetchProjects,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFB00020).withValues(alpha: 0.4),
+                  ),
+                  color: const Color(0xFFB00020).withValues(alpha: 0.08),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.refresh_rounded,
+                      color: Color(0xFFB00020),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Retry",
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: const Color(0xFFB00020),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ).animate().fadeIn(delay: 400.ms).scale(),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildEmptyState() {

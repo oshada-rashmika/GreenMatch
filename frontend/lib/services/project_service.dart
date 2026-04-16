@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -23,37 +24,34 @@ class AnonymousProject {
   });
 
   factory AnonymousProject.fromJson(Map<String, dynamic> json) {
-    final rawTags = json['tags'] as List<dynamic>? ?? [];
-    final tagNames = rawTags
-        .map((entry) {
-          final tagObj = entry['tag'] as Map<String, dynamic>?;
-          return tagObj?['name'] as String?;
-        })
-        .whereType<String>()
-        .toList();
+    try {
+      final rawTags = json['tags'] as List<dynamic>? ?? [];
+      final tagNames = rawTags
+          .map((entry) {
+            final tagObj = entry['tag'] as Map<String, dynamic>?;
+            return tagObj?['name'] as String?;
+          })
+          .whereType<String>()
+          .toList();
 
-    return AnonymousProject(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      abstract: json['abstract'] as String,
-      status: json['status'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      tags: tagNames,
-    );
+      return AnonymousProject(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        abstract: json['abstract'] as String,
+        status: json['status'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        tags: tagNames,
+      );
+    } catch (e) {
+      throw ProjectServiceException(
+        'Failed to parse project data from server. '
+        'The response format may have changed.',
+      );
+    }
   }
 
-  Map<String, dynamic> toDisplayMap() {
-    return {
-      'id': id,
-      'title': title,
-      'abstract': abstract,
-      'status': status,
-      'createdAt': createdAt,
-      'techStack': tags,
-      'researchArea': tags.isNotEmpty ? tags.first : 'General',
-    };
-  }
 }
+
 
 class ProjectService {
   final AuthService _authService;
@@ -82,10 +80,16 @@ class ProjectService {
 
   String _mapNetworkError(Object error) {
     if (error is SocketException) {
-      return 'Cannot reach backend at $_baseUrl. '
-          'Ensure NestJS is running on port 3000.';
+      return 'Cannot connect to the server. '
+          'Please check your network and ensure the backend is running.';
     }
-    return 'Network error: ${error.toString()}';
+    if (error is TimeoutException) {
+      return 'The server took too long to respond. Please try again.';
+    }
+    if (error is HandshakeException) {
+      return 'Secure connection failed. Please check your server configuration.';
+    }
+    return 'An unexpected network error occurred: ${error.runtimeType}';
   }
 
   Future<List<AnonymousProject>> fetchAnonymousProjects() async {

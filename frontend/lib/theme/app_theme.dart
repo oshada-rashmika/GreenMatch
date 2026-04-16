@@ -50,15 +50,19 @@ class AppTheme {
         secondary: LoginColors.textSecondary,
         surface: LoginColors.surface,
       ),
-      textTheme: GoogleFonts.montserratTextTheme(ThemeData.light().textTheme).apply(
-        bodyColor: LoginColors.textPrimary,
-        displayColor: LoginColors.textPrimary,
-      ),
+      textTheme: GoogleFonts.montserratTextTheme(ThemeData.light().textTheme)
+          .apply(
+            bodyColor: LoginColors.textPrimary,
+            displayColor: LoginColors.textPrimary,
+          ),
       primaryColor: LoginColors.accent,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: LoginColors.inputFill,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 18,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: LoginColors.border),
@@ -69,7 +73,10 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: LoginColors.borderActive, width: 1.6),
+          borderSide: const BorderSide(
+            color: LoginColors.borderActive,
+            width: 1.6,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -82,7 +89,9 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: LoginColors.accent,
           foregroundColor: LoginColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 18),
         ),

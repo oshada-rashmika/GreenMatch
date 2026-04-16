@@ -78,21 +78,27 @@ class AcademicTextField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: LoginColors.borderActive, width: 1.6),
+              borderSide: const BorderSide(
+                color: LoginColors.borderActive,
+                width: 1.6,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: LoginColors.error, width: 1.6),
+              borderSide: const BorderSide(
+                color: LoginColors.error,
+                width: 1.6,
+              ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: LoginColors.error, width: 1.6),
+              borderSide: const BorderSide(
+                color: LoginColors.error,
+                width: 1.6,
+              ),
             ),
             suffixIcon: suffixIcon != null
-                ? GestureDetector(
-                    onTap: onSuffixIconTap,
-                    child: suffixIcon,
-                  )
+                ? GestureDetector(onTap: onSuffixIconTap, child: suffixIcon)
                 : null,
             errorText: errorText,
             errorStyle: GoogleFonts.montserrat(
@@ -106,4 +112,3 @@ class AcademicTextField extends StatelessWidget {
     );
   }
 }
-

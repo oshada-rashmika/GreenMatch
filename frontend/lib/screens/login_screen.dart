@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme/login_design.dart';
 import '../services/auth_provider.dart';
 import '../widgets/academic_text_field.dart';
+import 'supervisor_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,8 +40,7 @@ class _LoginScreenState extends State<LoginScreen>
       TextEditingController();
   final TextEditingController _signupStudentIdController =
       TextEditingController();
-  final TextEditingController _signupDegreeController =
-      TextEditingController();
+  final TextEditingController _signupDegreeController = TextEditingController();
 
   // Staff Login Controllers
   final TextEditingController _staffEmailController = TextEditingController();
@@ -207,10 +207,25 @@ class _LoginScreenState extends State<LoginScreen>
     if (success && mounted) {
       messenger.showSnackBar(
         SnackBar(
-            content: Text(
-                '${_staffRole == 'supervisor' ? 'Supervisor' : 'Module Leader'} login successful!')),
+          content: Text(
+            '${_staffRole == 'supervisor' ? 'Supervisor' : 'Module Leader'} login successful!',
+          ),
+        ),
       );
-      // TODO: Navigate to staff dashboard
+      
+      // Navigate based on staff role
+      if (_staffRole == 'supervisor') {
+        // Navigate to Supervisor Dashboard
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const SupervisorDashboard(),
+            ),
+          );
+        }
+      } else {
+        // TODO: Navigate to Module Leader dashboard
+      }
     }
   }
 
@@ -239,7 +254,10 @@ class _LoginScreenState extends State<LoginScreen>
                     const SizedBox(height: LoginSpacing.xlarge),
 
                     // Student or Staff View
-                    if (!_isStaffView) _buildStudentView() else _buildStaffView(),
+                    if (!_isStaffView)
+                      _buildStudentView()
+                    else
+                      _buildStaffView(),
 
                     const SizedBox(height: LoginSpacing.large),
                   ],
@@ -296,10 +314,7 @@ class _LoginScreenState extends State<LoginScreen>
           decoration: BoxDecoration(
             color: _isStaffView ? LoginColors.accent : LoginColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: LoginColors.border,
-              width: 0.5,
-            ),
+            border: Border.all(color: LoginColors.border, width: 0.5),
           ),
           child: Center(
             child: Icon(
@@ -338,10 +353,7 @@ class _LoginScreenState extends State<LoginScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Email Address',
-                    style: LoginTypography.label,
-                  ),
+                  Text('Email Address', style: LoginTypography.label),
                   const SizedBox(height: LoginSpacing.small),
                   AcademicTextField(
                     controller: _studentEmailController,
@@ -352,8 +364,9 @@ class _LoginScreenState extends State<LoginScreen>
                       if (value == null || value.isEmpty) {
                         return 'Email is required';
                       }
-                      if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$')
-                          .hasMatch(value)) {
+                      if (!RegExp(
+                        r'^[\w-\.]+@[\w-\.]+\.\w+$',
+                      ).hasMatch(value)) {
                         return 'Enter a valid email address';
                       }
                       return null;
@@ -368,10 +381,7 @@ class _LoginScreenState extends State<LoginScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Password',
-                    style: LoginTypography.label,
-                  ),
+                  Text('Password', style: LoginTypography.label),
                   const SizedBox(height: LoginSpacing.small),
                   AcademicTextField(
                     controller: _studentPasswordController,
@@ -422,10 +432,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                         const SizedBox(width: LoginSpacing.small),
-                        Text(
-                          'Remember me',
-                          style: LoginTypography.body,
-                        ),
+                        Text('Remember me', style: LoginTypography.body),
                       ],
                     ),
                   ),
@@ -507,10 +514,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                         )
-                      : Text(
-                          'Sign In',
-                          style: LoginTypography.button,
-                        ),
+                      : Text('Sign In', style: LoginTypography.button),
                 ),
               ),
             ],
@@ -609,8 +613,9 @@ class _LoginScreenState extends State<LoginScreen>
                       if (value == null || value.isEmpty) {
                         return 'Email is required';
                       }
-                      if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$')
-                          .hasMatch(value)) {
+                      if (!RegExp(
+                        r'^[\w-\.]+@[\w-\.]+\.\w+$',
+                      ).hasMatch(value)) {
                         return 'Enter a valid email address';
                       }
                       return null;
@@ -709,10 +714,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                         )
-                      : Text(
-                          'Create Account',
-                          style: LoginTypography.button,
-                        ),
+                      : Text('Create Account', style: LoginTypography.button),
                 ),
               ),
             ],
@@ -770,10 +772,7 @@ class _LoginScreenState extends State<LoginScreen>
       decoration: BoxDecoration(
         color: LoginColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: LoginColors.border,
-          width: 0.5,
-        ),
+        border: Border.all(color: LoginColors.border, width: 0.5),
       ),
       child: Row(
         children: [
@@ -857,8 +856,9 @@ class _LoginScreenState extends State<LoginScreen>
                       if (value == null || value.isEmpty) {
                         return 'Email is required';
                       }
-                      if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$')
-                          .hasMatch(value)) {
+                      if (!RegExp(
+                        r'^[\w-\.]+@[\w-\.]+\.\w+$',
+                      ).hasMatch(value)) {
                         return 'Enter a valid email address';
                       }
                       return null;
@@ -954,10 +954,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                         )
-                      : Text(
-                          'Sign In',
-                          style: LoginTypography.button,
-                        ),
+                      : Text('Sign In', style: LoginTypography.button),
                 ),
               ),
 
@@ -969,9 +966,7 @@ class _LoginScreenState extends State<LoginScreen>
                 decoration: BoxDecoration(
                   color: LoginColors.panel,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: LoginColors.border,
-                  ),
+                  border: Border.all(color: LoginColors.border),
                 ),
                 child: Text(
                   'Staff accounts are created by administrators only.',

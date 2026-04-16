@@ -22,10 +22,7 @@ class AuthService {
       final response = await http.post(
         Uri.parse('$_baseUrl/auth/student/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       if (response.statusCode == 200) {
@@ -44,10 +41,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-      };
+      return {'success': false, 'message': 'Network error: ${e.toString()}'};
     }
   }
 
@@ -61,10 +55,7 @@ class AuthService {
       final response = await http.post(
         Uri.parse('$_baseUrl/auth/supervisor/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       if (response.statusCode == 200) {
@@ -83,10 +74,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-      };
+      return {'success': false, 'message': 'Network error: ${e.toString()}'};
     }
   }
 
@@ -100,10 +88,7 @@ class AuthService {
       final response = await http.post(
         Uri.parse('$_baseUrl/auth/module-leader/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       if (response.statusCode == 200) {
@@ -122,10 +107,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-      };
+      return {'success': false, 'message': 'Network error: ${e.toString()}'};
     }
   }
 
@@ -166,10 +148,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-      };
+      return {'success': false, 'message': 'Network error: ${e.toString()}'};
     }
   }
 

@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 import 'personal_info_screen.dart';
 import 'academic_records_screen.dart';
+import 'account_settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -88,7 +89,11 @@ class ProfileScreen extends StatelessWidget {
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AcademicRecordsScreen())),
                         ),
                         _buildDivider(),
-                        _buildListTile(Icons.settings_outlined, "Account Settings"),
+                        _buildListTile(
+                          Icons.settings_outlined, 
+                          "Account Settings",
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountSettingsScreen())),
+                        ),
                         _buildDivider(),
                         _buildListTile(Icons.help_outline, "Help & Support"),
                       ],

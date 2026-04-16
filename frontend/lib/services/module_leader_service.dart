@@ -162,6 +162,36 @@ class ModuleLeaderService {
       throw Exception(_mapNetworkError(error));
     }
   }
+
+  Future<List<ModuleLeaderProject>> fetchAllProjects({
+    required String jwtToken,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/projects/module-leader/all'),
+        headers: _headers(jwtToken),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final records = decoded is Map<String, dynamic>
+            ? (decoded['data'] as List<dynamic>? ??
+                decoded['items'] as List<dynamic>? ??
+                decoded['projects'] as List<dynamic>? ??
+                const [])
+            : decoded as List<dynamic>;
+
+        return records
+            .whereType<Map<String, dynamic>>()
+            .map(ModuleLeaderProject.fromJson)
+            .toList();
+      }
+
+      throw Exception('Failed to fetch projects (${response.statusCode})');
+    } catch (error) {
+      throw Exception(_mapNetworkError(error));
+    }
+  }
 }
 
 class ModuleLeaderOverviewStatistics {
@@ -249,6 +279,58 @@ class ModuleLeaderTag {
 
   final String id;
   final String name;
+}
+
+class ModuleLeaderProject {
+  const ModuleLeaderProject({
+    required this.id,
+    required this.title,
+    required this.status,
+    required this.moduleCode,
+    required this.moduleName,
+    required this.supervisorName,
+    required this.groupName,
+  });
+
+  factory ModuleLeaderProject.fromJson(Map<String, dynamic> json) {
+    final supervisor = json['supervisor'];
+    final module = json['module'];
+    final group = json['group'];
+
+    return ModuleLeaderProject(
+      id: (json['id'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      status: (json['status'] ?? 'PENDING').toString(),
+      moduleCode: (module is Map<String, dynamic>
+              ? module['moduleCode']
+              : json['moduleCode'] ??
+                  json['module_code'] ??
+                  json['module'] ??
+                  '')
+          .toString(),
+      moduleName: (module is Map<String, dynamic>
+              ? module['moduleName']
+              : json['moduleName'] ?? json['module_name'] ?? '')
+          .toString(),
+      supervisorName: supervisor is Map<String, dynamic>
+          ? supervisor['fullName']?.toString()
+          : json['supervisorName']?.toString(),
+      groupName: group is Map<String, dynamic>
+          ? group['groupName']?.toString()
+          : json['groupName']?.toString(),
+    );
+  }
+
+  final String id;
+  final String title;
+  final String status;
+  final String moduleCode;
+  final String moduleName;
+  final String? supervisorName;
+  final String? groupName;
+
+  bool get isMatched => status.toUpperCase() == 'MATCHED';
+  bool get isPending => status.toUpperCase() == 'PENDING';
 }
 
 int _parseInt(Object? value, {required int fallback}) {

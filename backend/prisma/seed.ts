@@ -63,6 +63,27 @@ async function main() {
     console.log(`   Email: admin@test.com`);
     console.log(`   Password: TestPass123!`);
 
+    // Create dummy module leader
+    const moduleLeader = await prisma.moduleLeader.upsert({
+      where: { email: 'leader@test.com' },
+      update: {},
+      create: {
+        email: 'leader@test.com',
+        staffId: 'LEAD-001',
+        fullName: 'Test Module Leader',
+        passwordHash: hashedPassword,
+      },
+    });
+
+    console.log('\n✅ Dummy Module Leader created/updated:');
+    console.log(`   Email: ${moduleLeader.email}`);
+    console.log(`   Staff ID: ${moduleLeader.staffId}`);
+    console.log(`   Full Name: ${moduleLeader.fullName}`);
+    console.log(`   ID: ${moduleLeader.id}`);
+    console.log('\n📧 Module leader login credentials for testing:');
+    console.log(`   Email: leader@test.com`);
+    console.log(`   Password: TestPass123!`);
+
     // Create dummy student
     const student = await prisma.student.upsert({
       where: { email: 'student@test.com' },

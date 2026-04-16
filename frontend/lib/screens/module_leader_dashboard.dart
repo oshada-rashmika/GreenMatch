@@ -7,6 +7,8 @@ import '../services/module_leader_service.dart';
 
 enum _ModuleLeaderSection { overview, researchAreas, projectAllocations }
 
+enum _ProjectAllocationFilter { all, pending, matched }
+
 class ModuleLeaderDashboard extends StatefulWidget {
   const ModuleLeaderDashboard({super.key});
 
@@ -20,7 +22,9 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   late final ModuleLeaderService _moduleLeaderService;
   late Future<_OverviewViewModel> _overviewFuture;
   late Future<List<ModuleLeaderTag>> _tagsFuture;
+  late Future<List<ModuleLeaderProject>> _projectsFuture;
   bool _isCreatingTag = false;
+  _ProjectAllocationFilter _projectFilter = _ProjectAllocationFilter.all;
 
   static const double _sidebarWidth = 288;
   static const double _wideLayoutBreakpoint = 1040;
@@ -32,6 +36,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     _moduleLeaderService = ModuleLeaderService();
     _overviewFuture = _loadOverviewData();
     _tagsFuture = _loadTagsData();
+    _projectsFuture = _loadProjectsData();
   }
 
   @override
@@ -713,87 +718,145 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 
   Widget _buildProjectAllocationsContent() {
-    final allocations = <Map<String, String>>[
-      {
-        'project': 'AI-Based Student Support',
-        'owner': 'Dr. Perera',
-        'status': 'Assigned',
-      },
-      {
-        'project': 'Secure Campus Access',
-        'owner': 'Dr. Silva',
-        'status': 'Awaiting review',
-      },
-      {
-        'project': 'Green Campus Analytics',
-        'owner': 'Dr. Fernando',
-        'status': 'Needs allocation',
-      },
-    ];
+    return FutureBuilder<List<ModuleLeaderProject>>(
+      future: _projectsFuture,
+      builder: (context, snapshot) {
+        final projects = snapshot.data;
 
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            projects == null) {
+          return _buildProjectsSkeleton();
+        }
+
+        if (snapshot.hasError) {
+          return _SectionPanel(
+            title: 'Project Allocations',
+            child: _ErrorState(
+              message: 'Unable to load project allocations.',
+              onRetry: _refreshProjects,
+            ),
+          );
+        }
+
+        final filteredProjects = _filteredProjects(projects);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: _ProjectFilterToggle(
+                    selectedFilter: _projectFilter,
+                    onChanged: (filter) {
+                      setState(() {
+                        _projectFilter = filter;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: LoginColors.panel,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: LoginColors.border),
+                  ),
+                  child: Text(
+                    '${filteredProjects.length} records',
+                    style: LoginTypography.label.copyWith(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _SectionPanel(
+              title: 'Allocation Queue',
+              child: _ProjectsPaginatedTable(projects: filteredProjects),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<List<ModuleLeaderProject>> _loadProjectsData() async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      return _fallbackProjects();
+    }
+
+    try {
+      return await _moduleLeaderService.fetchAllProjects(jwtToken: token);
+    } catch (_) {
+      return _fallbackProjects();
+    }
+  }
+
+  Future<void> _refreshProjects() async {
+    setState(() {
+      _projectsFuture = _loadProjectsData();
+    });
+  }
+
+  List<ModuleLeaderProject> _filteredProjects(List<ModuleLeaderProject> projects) {
+    return switch (_projectFilter) {
+      _ProjectAllocationFilter.all => projects,
+      _ProjectAllocationFilter.pending =>
+        projects.where((project) => project.isPending).toList(),
+      _ProjectAllocationFilter.matched =>
+        projects.where((project) => project.isMatched).toList(),
+    };
+  }
+
+  List<ModuleLeaderProject> _fallbackProjects() {
+    return const [
+      ModuleLeaderProject(
+        id: 'proj_001',
+        title: 'AI-Based Student Support',
+        status: 'PENDING',
+        moduleCode: 'PUSL2020',
+        moduleName: 'Software Development Tools',
+        supervisorName: null,
+        groupName: 'Group Atlas',
+      ),
+      ModuleLeaderProject(
+        id: 'proj_002',
+        title: 'Green Campus Analytics',
+        status: 'MATCHED',
+        moduleCode: 'PUSL3022',
+        moduleName: 'Enterprise Applications',
+        supervisorName: 'Dr. Fernando',
+        groupName: 'Group Verde',
+      ),
+    ];
+  }
+
+  Widget _buildProjectsSkeleton() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _ProjectFilterToggle(
+          selectedFilter: _projectFilter,
+          onChanged: (_) {},
+          enabled: false,
+        ),
+        const SizedBox(height: 20),
         _SectionPanel(
           title: 'Allocation Queue',
           child: Column(
-            children: allocations
-                .map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: LoginColors.panel,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: LoginColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['project'] ?? '',
-                                  style: LoginTypography.label.copyWith(
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Owner: ${item['owner']}',
-                                  style: LoginTypography.body.copyWith(
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: LoginColors.surface,
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: LoginColors.border),
-                            ),
-                            child: Text(
-                              item['status'] ?? '',
-                              style: LoginTypography.label.copyWith(
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
+            children: List.generate(
+              4,
+              (index) => Padding(
+                padding: EdgeInsets.only(bottom: index == 3 ? 0 : 12),
+                child: const _ProjectTableSkeletonRow(),
+              ),
+            ),
           ),
         ),
       ],
@@ -881,6 +944,259 @@ class _TagsPaginatedTable extends StatelessWidget {
       columnSpacing: 32,
       showCheckboxColumn: false,
       horizontalMargin: 20,
+    );
+  }
+}
+
+class _ProjectsPaginatedTable extends StatelessWidget {
+  const _ProjectsPaginatedTable({required this.projects});
+
+  final List<ModuleLeaderProject> projects;
+
+  @override
+  Widget build(BuildContext context) {
+    if (projects.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: LoginColors.panel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: LoginColors.border),
+        ),
+        child: Text(
+          'No projects match the selected filter.',
+          style: LoginTypography.body.copyWith(fontSize: 13),
+        ),
+      );
+    }
+
+    return PaginatedDataTable(
+      header: Text(
+        'All Projects',
+        style: LoginTypography.label.copyWith(fontSize: 14),
+      ),
+      rowsPerPage: projects.length < 10 ? projects.length.clamp(1, 10) : 10,
+      availableRowsPerPage: const [5, 10, 20],
+      columns: const [
+        DataColumn(label: Text('Project Title')),
+        DataColumn(label: Text('Module')),
+        DataColumn(label: Text('Status')),
+        DataColumn(label: Text('Supervisor')),
+      ],
+      source: _ProjectsDataSource(projects),
+      columnSpacing: 28,
+      showCheckboxColumn: false,
+      horizontalMargin: 20,
+    );
+  }
+}
+
+class _ProjectsDataSource extends DataTableSource {
+  _ProjectsDataSource(this.projects);
+
+  final List<ModuleLeaderProject> projects;
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= projects.length) return null;
+    final project = projects[index];
+
+    return DataRow.byIndex(
+      index: index,
+      cells: [
+        DataCell(
+          Text(project.title, style: LoginTypography.label.copyWith(fontSize: 13)),
+        ),
+        DataCell(
+          Text(
+            project.moduleCode.isNotEmpty ? project.moduleCode : '—',
+            style: LoginTypography.body.copyWith(fontSize: 12),
+          ),
+        ),
+        DataCell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: project.isMatched
+                  ? LoginColors.accent.withValues(alpha: 0.08)
+                  : LoginColors.panel,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: project.isMatched
+                    ? LoginColors.accent
+                    : LoginColors.border,
+              ),
+            ),
+            child: Text(
+              project.status,
+              style: LoginTypography.label.copyWith(
+                fontSize: 11,
+                color: project.isMatched
+                    ? LoginColors.accent
+                    : LoginColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+        DataCell(
+          Text(
+            project.isMatched
+                ? (project.supervisorName ?? 'Unassigned')
+                : 'Unassigned',
+            style: LoginTypography.body.copyWith(fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => projects.length;
+
+  @override
+  int get selectedRowCount => 0;
+}
+
+class _ProjectFilterToggle extends StatelessWidget {
+  const _ProjectFilterToggle({
+    required this.selectedFilter,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final _ProjectAllocationFilter selectedFilter;
+  final ValueChanged<_ProjectAllocationFilter> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        _buildFilterChip('All', _ProjectAllocationFilter.all),
+        _buildFilterChip('Pending (Blind)', _ProjectAllocationFilter.pending),
+        _buildFilterChip('Matched', _ProjectAllocationFilter.matched),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, _ProjectAllocationFilter filter) {
+    final isSelected = selectedFilter == filter;
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: enabled
+          ? (_) => onChanged(filter)
+          : null,
+      selectedColor: LoginColors.panel,
+      backgroundColor: LoginColors.surface,
+      labelStyle: LoginTypography.label.copyWith(
+        fontSize: 12,
+        color: isSelected ? LoginColors.accent : LoginColors.textSecondary,
+      ),
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: isSelected ? LoginColors.borderActive : LoginColors.border,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectTableSkeletonRow extends StatelessWidget {
+  const _ProjectTableSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: LoginColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: LoginColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 24,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: LoginColors.panel,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: LoginColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(message, style: LoginTypography.body.copyWith(fontSize: 13)),
+          const SizedBox(height: 14),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
     );
   }
 }

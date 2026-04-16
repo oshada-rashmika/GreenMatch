@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'profile_screen.dart';
+import 'my_proposals_screen.dart';
 
 enum ProposalStatus { pending, underReview, matched }
 
@@ -223,7 +224,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ListTile(
             leading: Icon(Icons.description_outlined, color: mutedTextColor),
             title: Text('My Proposals', style: TextStyle(color: mutedTextColor)),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context); // close drawer first
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MyProposalsScreen()),
+              );
+            },
           ),
           ListTile(
             leading: Icon(Icons.menu_book, color: mutedTextColor),

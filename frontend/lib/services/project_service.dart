@@ -88,7 +88,7 @@ class ProjectService {
     return 'Network error: ${error.toString()}';
   }
 
-  Future<List<Map<String, dynamic>>> fetchAnonymousProjects() async {
+  Future<List<AnonymousProject>> fetchAnonymousProjects() async {
     try {
       final headers = await _authService.getAuthHeaders();
       final response = await http.get(
@@ -100,8 +100,7 @@ class ProjectService {
         final List<dynamic> raw = jsonDecode(response.body) as List<dynamic>;
         return raw
             .map((item) =>
-                AnonymousProject.fromJson(item as Map<String, dynamic>)
-                    .toDisplayMap())
+                AnonymousProject.fromJson(item as Map<String, dynamic>))
             .toList();
       }
 

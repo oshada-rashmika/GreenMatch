@@ -16,19 +16,13 @@ class SupervisorDashboard extends StatefulWidget {
 
 class _SupervisorDashboardState extends State<SupervisorDashboard> {
   late final ProjectService projectService;
-  List<Map<String, dynamic>> projects = [];
+  List<AnonymousProject> projects = [];
   bool isLoading = true;
   final Set<String> matchedProjectIds = {};
 
   String _selectedFilter = "All";
 
-  final List<String> _filters = [
-    "All",
-    "Artificial Intelligence",
-    "Web & Mobile",
-    "Data Science",
-    "Cybersecurity",
-  ];
+  List<String> _filters = ["All"];
 
   @override
   void initState() {
@@ -43,8 +37,16 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     });
     try {
       final fetchedProjects = await projectService.fetchAnonymousProjects();
+      
+      final uniqueTags = fetchedProjects
+          .expand((p) => p.tags)
+          .toSet()
+          .toList()
+        ..sort();
+
       setState(() {
         projects = fetchedProjects;
+        _filters = ["All", ...uniqueTags];
         isLoading = false;
       });
     } catch (e) {
@@ -59,11 +61,11 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     }
   }
 
-  List<Map<String, dynamic>> get _filteredProjects {
+  List<AnonymousProject> get _filteredProjects {
     if (_selectedFilter == "All") {
       return projects;
     }
-    return projects.where((p) => p['researchArea'] == _selectedFilter).toList();
+    return projects.where((p) => p.tags.contains(_selectedFilter)).toList();
   }
 
   Future<void> _onMatchConfirmed(String projectId) async {
@@ -371,7 +373,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     );
   }
 
-  Widget _buildBentoGrid(List<Map<String, dynamic>> filtered) {
+  Widget _buildBentoGrid(List<AnonymousProject> filtered) {
     return LayoutBuilder(
       key: ValueKey(
         _selectedFilter,
@@ -395,18 +397,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     );
   }
 
-  Widget _buildBentoCard(Map<String, dynamic> project, int index) {
+  Widget _buildBentoCard(AnonymousProject project, int index) {
     return _ProjectCardHolder(
       project: project,
       index: index,
-      isMatched: matchedProjectIds.contains(project['id']),
-      onMatch: () => _onMatchConfirmed(project['id'] as String),
+      isMatched: matchedProjectIds.contains(project.id),
+      onMatch: () => _onMatchConfirmed(project.id),
     );
   }
 }
 
 class _ProjectCardHolder extends StatefulWidget {
-  final Map<String, dynamic> project;
+  final AnonymousProject project;
   final int index;
   final bool isMatched;
   final Future<void> Function() onMatch;
@@ -427,8 +429,6 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
 
   @override
   Widget build(BuildContext context) {
-    final techStack = widget.project['techStack'] as List<dynamic>;
-
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -449,28 +449,15 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.forestEmerald.withValues(
-                                alpha: 0.2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              widget.project['researchArea']
-                                  .toString()
-                                  .toUpperCase(),
-                              style: GoogleFonts.montserrat(
-                                color: AppTheme.forestEmerald,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
+                          Expanded(
+                            child: Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: widget.project.tags
+                                  .map((tag) => _buildTagBadge(tag))
+                                  .toList(),
                             ),
                           ),
                           Icon(
@@ -481,7 +468,7 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        widget.project['title'],
+                        widget.project.title,
                         style: GoogleFonts.montserrat(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -491,7 +478,7 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        widget.project['abstract'],
+                        widget.project.abstract,
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.montserrat(
@@ -499,14 +486,6 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                           fontSize: 13,
                           height: 1.5,
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: techStack
-                            .map((tech) => _buildTechBadge(tech))
-                            .toList(),
                       ),
                       const SizedBox(height: 24),
                       AnimatedSwitcher(
@@ -523,7 +502,7 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                             },
                         child: widget.isMatched
                             ? _buildRevealedMatch()
-                            : _buildMatchAction(widget.project['id']),
+                            : _buildMatchAction(widget.project.id),
                       ),
                     ],
                   ),
@@ -539,20 +518,21 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
     );
   }
 
-  Widget _buildTechBadge(String tech) {
+  Widget _buildTagBadge(String tag) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppTheme.forestEmerald.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.1)),
       ),
       child: Text(
-        tech,
+        tag.toUpperCase(),
         style: GoogleFonts.montserrat(
-          color: Colors.white.withValues(alpha: 0.4),
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
+          color: AppTheme.forestEmerald,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
         ),
       ),
     );

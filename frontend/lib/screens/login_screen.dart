@@ -212,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         ),
       );
-      
+
       // Navigate based on staff role
       if (_staffRole == 'supervisor') {
         // Navigate to Supervisor Dashboard

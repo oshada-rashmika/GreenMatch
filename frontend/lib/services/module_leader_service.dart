@@ -192,6 +192,95 @@ class ModuleLeaderService {
       throw Exception(_mapNetworkError(error));
     }
   }
+
+  Future<ModuleLeaderAcademicModulesPayload> fetchAcademicModules({
+    required String jwtToken,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/modules'),
+        headers: _headers(jwtToken),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          return ModuleLeaderAcademicModulesPayload.fromJson(decoded);
+        }
+
+        return ModuleLeaderAcademicModulesPayload(
+          modules: const [],
+          supervisors: const [],
+        );
+      }
+
+      throw Exception(
+        'Failed to fetch academic modules (${response.statusCode})',
+      );
+    } catch (error) {
+      throw Exception(_mapNetworkError(error));
+    }
+  }
+
+  Future<ModuleLeaderAcademicModule> createAcademicModule({
+    required String jwtToken,
+    required String moduleCode,
+    required String moduleName,
+    required String academicYear,
+    required String batch,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/modules'),
+        headers: _headers(jwtToken),
+        body: jsonEncode({
+          'moduleCode': moduleCode,
+          'moduleName': moduleName,
+          'academicYear': academicYear,
+          'batch': batch,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return ModuleLeaderAcademicModule.fromJson(decoded);
+        }
+      }
+
+      throw Exception('Failed to create module (${response.statusCode})');
+    } catch (error) {
+      throw Exception(_mapNetworkError(error));
+    }
+  }
+
+  Future<ModuleLeaderAcademicModule> assignSupervisorsToModule({
+    required String jwtToken,
+    required String moduleId,
+    required List<String> supervisorIds,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/modules/$moduleId/supervisors'),
+        headers: _headers(jwtToken),
+        body: jsonEncode({'supervisorIds': supervisorIds}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return ModuleLeaderAcademicModule.fromJson(decoded);
+        }
+      }
+
+      throw Exception(
+        'Failed to assign supervisors (${response.statusCode})',
+      );
+    } catch (error) {
+      throw Exception(_mapNetworkError(error));
+    }
+  }
 }
 
 class ModuleLeaderOverviewStatistics {
@@ -333,6 +422,108 @@ class ModuleLeaderProject {
 
   bool get isMatched => status.toUpperCase() == 'MATCHED';
   bool get isPending => status.toUpperCase() == 'PENDING';
+}
+
+class ModuleLeaderAcademicModulesPayload {
+  const ModuleLeaderAcademicModulesPayload({
+    required this.modules,
+    required this.supervisors,
+  });
+
+  factory ModuleLeaderAcademicModulesPayload.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final rawModules = json['modules'];
+    final rawSupervisors = json['supervisors'];
+
+    final modules = rawModules is List<dynamic>
+        ? rawModules
+            .whereType<Map<String, dynamic>>()
+            .map(ModuleLeaderAcademicModule.fromJson)
+            .toList()
+        : <ModuleLeaderAcademicModule>[];
+
+    final supervisors = rawSupervisors is List<dynamic>
+        ? rawSupervisors
+            .whereType<Map<String, dynamic>>()
+            .map(ModuleLeaderSupervisor.fromJson)
+            .toList()
+        : <ModuleLeaderSupervisor>[];
+
+    return ModuleLeaderAcademicModulesPayload(
+      modules: modules,
+      supervisors: supervisors,
+    );
+  }
+
+  final List<ModuleLeaderAcademicModule> modules;
+  final List<ModuleLeaderSupervisor> supervisors;
+}
+
+class ModuleLeaderAcademicModule {
+  const ModuleLeaderAcademicModule({
+    required this.id,
+    required this.moduleCode,
+    required this.moduleName,
+    required this.academicYear,
+    required this.batch,
+    required this.assignedSupervisors,
+  });
+
+  factory ModuleLeaderAcademicModule.fromJson(Map<String, dynamic> json) {
+    final rawSupervisors = json['supervisors'];
+    final assignedSupervisors = rawSupervisors is List<dynamic>
+        ? rawSupervisors
+            .whereType<Map<String, dynamic>>()
+            .map((item) {
+              final supervisorMap = item['supervisor'];
+              if (supervisorMap is Map<String, dynamic>) {
+                return ModuleLeaderSupervisor.fromJson(supervisorMap);
+              }
+              return ModuleLeaderSupervisor.fromJson(item);
+            })
+            .toList()
+        : <ModuleLeaderSupervisor>[];
+
+    return ModuleLeaderAcademicModule(
+      id: (json['id'] ?? '').toString(),
+      moduleCode: (json['moduleCode'] ?? '').toString(),
+      moduleName: (json['moduleName'] ?? '').toString(),
+      academicYear: (json['academicYear'] ?? '').toString(),
+      batch: (json['batch'] ?? '').toString(),
+      assignedSupervisors: assignedSupervisors,
+    );
+  }
+
+  final String id;
+  final String moduleCode;
+  final String moduleName;
+  final String academicYear;
+  final String batch;
+  final List<ModuleLeaderSupervisor> assignedSupervisors;
+}
+
+class ModuleLeaderSupervisor {
+  const ModuleLeaderSupervisor({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    this.staffId,
+  });
+
+  factory ModuleLeaderSupervisor.fromJson(Map<String, dynamic> json) {
+    return ModuleLeaderSupervisor(
+      id: (json['id'] ?? '').toString(),
+      fullName: (json['fullName'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      staffId: json['staffId']?.toString(),
+    );
+  }
+
+  final String id;
+  final String fullName;
+  final String email;
+  final String? staffId;
 }
 
 int _parseInt(Object? value, {required int fallback}) {

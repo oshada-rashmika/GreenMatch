@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import '../theme/login_design.dart';
+import '../services/auth_service.dart';
+import '../services/module_leader_service.dart';
 
 enum _ModuleLeaderSection { overview, researchAreas, projectAllocations }
 
@@ -14,9 +16,23 @@ class ModuleLeaderDashboard extends StatefulWidget {
 
 class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   _ModuleLeaderSection _selectedSection = _ModuleLeaderSection.overview;
+  late final AuthService _authService;
+  late final ModuleLeaderService _moduleLeaderService;
+  late Future<_OverviewViewModel> _overviewFuture;
+  late Future<List<ModuleLeaderTag>> _tagsFuture;
+  bool _isCreatingTag = false;
 
   static const double _sidebarWidth = 288;
   static const double _wideLayoutBreakpoint = 1040;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = AuthService();
+    _moduleLeaderService = ModuleLeaderService();
+    _overviewFuture = _loadOverviewData();
+    _tagsFuture = _loadTagsData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -335,39 +351,122 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 
   Widget _buildOverviewContent() {
+    return FutureBuilder<_OverviewViewModel>(
+      future: _overviewFuture,
+      builder: (context, snapshot) {
+        final viewModel = snapshot.data;
+
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            viewModel == null) {
+          return _buildOverviewSkeleton();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 900
+                    ? 3
+                    : constraints.maxWidth >= 620
+                    ? 2
+                    : 1;
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _MetricCard(
+                      title: 'Total Projects',
+                      value: viewModel.statistics.totalProjects.toString(),
+                      detail: 'All active and pending project records',
+                      width: _metricWidth(constraints.maxWidth, columns),
+                    ),
+                    _MetricCard(
+                      title: 'Pending Blind Matches',
+                      value: viewModel.statistics.pendingBlindMatches
+                          .toString(),
+                      detail: 'Projects waiting for blind review assignment',
+                      width: _metricWidth(constraints.maxWidth, columns),
+                    ),
+                    _MetricCard(
+                      title: 'Ghosted/Missed Meetings',
+                      value: viewModel.statistics.ghostedMissedMeetings
+                          .toString(),
+                      detail: 'Meetings that require immediate follow-up',
+                      accentColor: LoginColors.error,
+                      width: _metricWidth(constraints.maxWidth, columns),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            _SectionPanel(
+              title: 'Action Required',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Project groups with a meeting status of MISSED',
+                    style: LoginTypography.body.copyWith(fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionRequiredTable(items: viewModel.actionRequiredGroups),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<_OverviewViewModel> _loadOverviewData() async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      return _OverviewViewModel.fallback();
+    }
+
+    try {
+      final results = await Future.wait([
+        _moduleLeaderService.fetchOverviewStatistics(jwtToken: token),
+        _moduleLeaderService.fetchActionRequiredMissedGroups(jwtToken: token),
+      ]);
+
+      return _OverviewViewModel(
+        statistics: results.first as ModuleLeaderOverviewStatistics,
+        actionRequiredGroups:
+            results.last as List<ModuleLeaderActionRequiredGroup>,
+      );
+    } catch (_) {
+      return _OverviewViewModel.fallback();
+    }
+  }
+
+  Widget _buildOverviewSkeleton() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 900 ? 4 : 2;
+            final columns = constraints.maxWidth >= 900
+                ? 3
+                : constraints.maxWidth >= 620
+                ? 2
+                : 1;
             return Wrap(
               spacing: 16,
               runSpacing: 16,
               children: [
-                _MetricCard(
-                  title: 'Active Projects',
-                  value: '24',
-                  detail: 'Across all research areas',
+                _MetricSkeleton(
                   width: _metricWidth(constraints.maxWidth, columns),
                 ),
-                _MetricCard(
-                  title: 'Pending Reviews',
-                  value: '7',
-                  detail: 'Awaiting your allocation',
+                _MetricSkeleton(
                   width: _metricWidth(constraints.maxWidth, columns),
                 ),
-                _MetricCard(
-                  title: 'Research Tags',
-                  value: '18',
-                  detail: 'Canonical taxonomy items',
+                _MetricSkeleton(
                   width: _metricWidth(constraints.maxWidth, columns),
-                ),
-                _MetricCard(
-                  title: 'Open Alerts',
-                  value: '3',
-                  detail: 'Needs attention today',
-                  width: _metricWidth(constraints.maxWidth, columns),
+                  isCritical: true,
                 ),
               ],
             );
@@ -375,15 +474,15 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
         ),
         const SizedBox(height: 24),
         _SectionPanel(
-          title: 'Operational Notes',
+          title: 'Action Required',
           child: Column(
-            children: const [
-              _InfoRow(label: 'System health', value: 'Stable'),
-              _DividerSpacer(),
-              _InfoRow(label: 'Latest sync', value: '2 minutes ago'),
-              _DividerSpacer(),
-              _InfoRow(label: 'Review queue', value: 'Moderate'),
-            ],
+            children: List.generate(
+              3,
+              (index) => Padding(
+                padding: EdgeInsets.only(bottom: index == 2 ? 0 : 12),
+                child: const _TableSkeletonRow(),
+              ),
+            ),
           ),
         ),
       ],
@@ -391,56 +490,222 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 
   Widget _buildResearchAreasContent() {
-    final tags = <String>[
-      'Artificial Intelligence',
-      'Data Science',
-      'Cybersecurity',
-      'Web & Mobile',
-      'Cloud Computing',
-      'IoT',
-      'Human-Computer Interaction',
-    ];
+    return FutureBuilder<List<ModuleLeaderTag>>(
+      future: _tagsFuture,
+      builder: (context, snapshot) {
+        final tags = snapshot.data;
 
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            tags == null) {
+          return _buildTagsSkeleton();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Current Tags in the System',
+                    style: LoginTypography.body.copyWith(fontSize: 13),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isCreatingTag ? null : _showCreateTagSheet,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Research Area'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _SectionPanel(
+              title: 'Tag Catalog',
+              child: _TagsPaginatedTable(tags: tags),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<List<ModuleLeaderTag>> _loadTagsData() async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      return _fallbackTags();
+    }
+
+    try {
+      return await _moduleLeaderService.fetchTags(jwtToken: token);
+    } catch (_) {
+      return _fallbackTags();
+    }
+  }
+
+  Future<void> _refreshTags() async {
+    setState(() {
+      _tagsFuture = _loadTagsData();
+    });
+  }
+
+  Future<void> _showCreateTagSheet() async {
+    final controller = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: LoginColors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              border: Border.all(color: LoginColors.border),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add Research Area',
+                  style: LoginTypography.headline.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Create a new tag for the research taxonomy.',
+                  style: LoginTypography.body.copyWith(fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Tag name',
+                    hintText: 'Machine Learning',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: _isCreatingTag
+                          ? null
+                          : () async {
+                              final name = controller.text.trim();
+                              if (name.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please enter a tag name.'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              Navigator.of(sheetContext).pop();
+                              await _createTag(name);
+                            },
+                      child: const Text('Create'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    controller.dispose();
+  }
+
+  Future<void> _createTag(String name) async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You need to be signed in to add tags.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isCreatingTag = true;
+    });
+
+    try {
+      await _moduleLeaderService.createTag(jwtToken: token, name: name);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Created "$name" successfully.')));
+      await _refreshTags();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create tag: $error')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreatingTag = false;
+        });
+      }
+    }
+  }
+
+  List<ModuleLeaderTag> _fallbackTags() {
+    return const [
+      ModuleLeaderTag(id: 'tag_001', name: 'Next.js'),
+      ModuleLeaderTag(id: 'tag_002', name: 'Machine Learning'),
+      ModuleLeaderTag(id: 'tag_003', name: 'Cybersecurity'),
+      ModuleLeaderTag(id: 'tag_004', name: 'Flutter'),
+      ModuleLeaderTag(id: 'tag_005', name: 'Data Science'),
+      ModuleLeaderTag(id: 'tag_006', name: 'Cloud Computing'),
+    ];
+  }
+
+  Widget _buildTagsSkeleton() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionPanel(
-          title: 'Current Tag Set',
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: tags
-                .map(
-                  (tag) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: LoginColors.panel,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: LoginColors.border),
-                    ),
-                    child: Text(
-                      tag,
-                      style: LoginTypography.label.copyWith(fontSize: 12),
-                    ),
-                  ),
-                )
-                .toList(),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+            width: 160,
+            height: 42,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
         ),
         const SizedBox(height: 20),
         _SectionPanel(
-          title: 'Tag Administration',
+          title: 'Tag Catalog',
           child: Column(
-            children: const [
-              _InfoRow(label: 'Add new tag', value: 'Ready'),
-              _DividerSpacer(),
-              _InfoRow(label: 'Duplicate checks', value: 'Enabled'),
-              _DividerSpacer(),
-              _InfoRow(label: 'Review status', value: 'Pending updates'),
-            ],
+            children: List.generate(
+              5,
+              (index) => Padding(
+                padding: EdgeInsets.only(bottom: index == 4 ? 0 : 10),
+                child: const _TagTableSkeletonRow(),
+              ),
+            ),
           ),
         ),
       ],
@@ -547,12 +812,14 @@ class _MetricCard extends StatelessWidget {
     required this.value,
     required this.detail,
     required this.width,
+    this.accentColor,
   });
 
   final String title;
   final String value;
   final String detail;
   final double width;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -562,7 +829,14 @@ class _MetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: LoginColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: LoginColors.border),
+        border: Border.all(color: accentColor ?? LoginColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: (accentColor ?? LoginColors.shadow).withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,6 +848,7 @@ class _MetricCard extends StatelessWidget {
             style: LoginTypography.headline.copyWith(
               fontSize: 34,
               fontWeight: FontWeight.w700,
+              color: accentColor ?? LoginColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -582,6 +857,430 @@ class _MetricCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TagsPaginatedTable extends StatelessWidget {
+  const _TagsPaginatedTable({required this.tags});
+
+  final List<ModuleLeaderTag> tags;
+
+  @override
+  Widget build(BuildContext context) {
+    return PaginatedDataTable(
+      header: Text(
+        'All Tags',
+        style: LoginTypography.label.copyWith(fontSize: 14),
+      ),
+      rowsPerPage: tags.length < 10 ? tags.length.clamp(1, 10) : 10,
+      availableRowsPerPage: const [5, 10, 20],
+      columns: const [
+        DataColumn(label: Text('Tag')),
+        DataColumn(label: Text('Tag ID')),
+      ],
+      source: _TagsDataSource(tags),
+      columnSpacing: 32,
+      showCheckboxColumn: false,
+      horizontalMargin: 20,
+    );
+  }
+}
+
+class _TagsDataSource extends DataTableSource {
+  _TagsDataSource(this.tags);
+
+  final List<ModuleLeaderTag> tags;
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= tags.length) return null;
+    final tag = tags[index];
+
+    return DataRow.byIndex(
+      index: index,
+      cells: [
+        DataCell(
+          Text(tag.name, style: LoginTypography.label.copyWith(fontSize: 13)),
+        ),
+        DataCell(
+          Text(tag.id, style: LoginTypography.body.copyWith(fontSize: 12)),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => tags.length;
+
+  @override
+  int get selectedRowCount => 0;
+}
+
+class _TagTableSkeletonRow extends StatelessWidget {
+  const _TagTableSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        color: LoginColors.panel,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.surface,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.surface,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricSkeleton extends StatelessWidget {
+  const _MetricSkeleton({required this.width, this.isCritical = false});
+
+  final double width;
+  final bool isCritical;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = isCritical ? LoginColors.error : LoginColors.border;
+
+    return Container(
+      width: width < 220 ? double.infinity : width,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: LoginColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 120,
+            height: 10,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Container(
+            width: 64,
+            height: 30,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            height: 10,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionRequiredTable extends StatelessWidget {
+  const _ActionRequiredTable({required this.items});
+
+  final List<ModuleLeaderActionRequiredGroup> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: LoginColors.panel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: LoginColors.border),
+        ),
+        child: Text(
+          'No MISSED meetings at the moment.',
+          style: LoginTypography.body.copyWith(fontSize: 13),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 720),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: LoginColors.border),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      'Project Group',
+                      style: LoginTypography.label.copyWith(fontSize: 12),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Meeting Date',
+                      style: LoginTypography.label.copyWith(fontSize: 12),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Status',
+                      style: LoginTypography.label.copyWith(fontSize: 12),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Supervisor',
+                      style: LoginTypography.label.copyWith(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: LoginColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: LoginColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.groupName?.isNotEmpty == true
+                                  ? item.groupName!
+                                  : 'Group ${item.groupId}',
+                              style: LoginTypography.label.copyWith(
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.projectTitle.isNotEmpty
+                                  ? item.projectTitle
+                                  : 'Project title unavailable',
+                              style: LoginTypography.body.copyWith(
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          item.meetingDate == null
+                              ? 'TBD'
+                              : item.meetingDate!
+                                    .toLocal()
+                                    .toIso8601String()
+                                    .split('T')
+                                    .first,
+                          style: LoginTypography.body.copyWith(fontSize: 12),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: LoginColors.error.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: LoginColors.error),
+                          ),
+                          child: Text(
+                            item.meetingStatus,
+                            textAlign: TextAlign.center,
+                            style: LoginTypography.label.copyWith(
+                              fontSize: 11,
+                              color: LoginColors.error,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          item.supervisorName ?? 'Unassigned',
+                          style: LoginTypography.body.copyWith(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TableSkeletonRow extends StatelessWidget {
+  const _TableSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: LoginColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: LoginColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 24,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: LoginColors.panel,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewViewModel {
+  const _OverviewViewModel({
+    required this.statistics,
+    required this.actionRequiredGroups,
+  });
+
+  factory _OverviewViewModel.fallback() {
+    return const _OverviewViewModel(
+      statistics: ModuleLeaderOverviewStatistics(
+        totalProjects: 24,
+        pendingBlindMatches: 7,
+        ghostedMissedMeetings: 3,
+      ),
+      actionRequiredGroups: [
+        ModuleLeaderActionRequiredGroup(
+          groupId: 'grp_1001',
+          groupName: 'Group Atlas',
+          projectTitle: 'AI-Based Student Support',
+          meetingStatus: 'MISSED',
+          meetingDate: null,
+          supervisorName: 'Dr. Perera',
+        ),
+        ModuleLeaderActionRequiredGroup(
+          groupId: 'grp_1004',
+          groupName: 'Group Nova',
+          projectTitle: 'Secure Campus Access',
+          meetingStatus: 'MISSED',
+          meetingDate: null,
+          supervisorName: 'Dr. Silva',
+        ),
+        ModuleLeaderActionRequiredGroup(
+          groupId: 'grp_1010',
+          groupName: 'Group Verde',
+          projectTitle: 'Green Campus Analytics',
+          meetingStatus: 'MISSED',
+          meetingDate: null,
+          supervisorName: 'Dr. Fernando',
+        ),
+      ],
+    );
+  }
+
+  final ModuleLeaderOverviewStatistics statistics;
+  final List<ModuleLeaderActionRequiredGroup> actionRequiredGroups;
 }
 
 class _SectionPanel extends StatelessWidget {
@@ -608,36 +1307,6 @@ class _SectionPanel extends StatelessWidget {
           child,
         ],
       ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: LoginTypography.body.copyWith(fontSize: 13)),
-        Text(value, style: LoginTypography.label.copyWith(fontSize: 13)),
-      ],
-    );
-  }
-}
-
-class _DividerSpacer extends StatelessWidget {
-  const _DividerSpacer();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Divider(height: 1, color: LoginColors.border),
     );
   }
 }

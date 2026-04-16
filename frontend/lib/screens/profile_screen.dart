@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 import 'personal_info_screen.dart';
+import 'academic_records_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -81,7 +82,11 @@ class ProfileScreen extends StatelessWidget {
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoScreen())),
                         ),
                         _buildDivider(),
-                        _buildListTile(Icons.history_edu, "Academic Records"),
+                        _buildListTile(
+                          Icons.history_edu, 
+                          "Academic Records",
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AcademicRecordsScreen())),
+                        ),
                         _buildDivider(),
                         _buildListTile(Icons.settings_outlined, "Account Settings"),
                         _buildDivider(),

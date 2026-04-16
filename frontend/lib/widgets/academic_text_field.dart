@@ -5,7 +5,7 @@ import '../theme/login_design.dart';
 class AcademicTextField extends StatelessWidget {
   const AcademicTextField({
     super.key,
-    required this.label,
+    this.label,
     required this.hintText,
     this.controller,
     this.errorText,
@@ -13,13 +13,14 @@ class AcademicTextField extends StatelessWidget {
     this.onChanged,
     this.onTap,
     this.suffixIcon,
+    this.onSuffixIconTap,
     this.keyboardType = TextInputType.text,
     this.focusNode,
     this.autofillHints,
     this.validator,
   });
 
-  final String label;
+  final String? label;
   final String hintText;
   final TextEditingController? controller;
   final String? errorText;
@@ -27,6 +28,7 @@ class AcademicTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final VoidCallback? onTap;
   final Widget? suffixIcon;
+  final VoidCallback? onSuffixIconTap;
   final TextInputType keyboardType;
   final FocusNode? focusNode;
   final Iterable<String>? autofillHints;
@@ -37,8 +39,10 @@ class AcademicTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: LoginTypography.label),
-        const SizedBox(height: LoginSpacing.xsmall),
+        if (label != null) ...[
+          Text(label!, style: LoginTypography.label),
+          const SizedBox(height: LoginSpacing.xsmall),
+        ],
         TextFormField(
           controller: controller,
           focusNode: focusNode,
@@ -84,7 +88,12 @@ class AcademicTextField extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: LoginColors.error, width: 1.6),
             ),
-            suffixIcon: suffixIcon,
+            suffixIcon: suffixIcon != null
+                ? GestureDetector(
+                    onTap: onSuffixIconTap,
+                    child: suffixIcon,
+                  )
+                : null,
             errorText: errorText,
             errorStyle: GoogleFonts.montserrat(
               color: LoginColors.error,
@@ -97,3 +106,4 @@ class AcademicTextField extends StatelessWidget {
     );
   }
 }
+

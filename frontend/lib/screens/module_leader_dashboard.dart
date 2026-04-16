@@ -5,7 +5,12 @@ import '../theme/login_design.dart';
 import '../services/auth_service.dart';
 import '../services/module_leader_service.dart';
 
-enum _ModuleLeaderSection { overview, researchAreas, projectAllocations }
+enum _ModuleLeaderSection {
+  overview,
+  researchAreas,
+  projectAllocations,
+  academicModules,
+}
 
 enum _ProjectAllocationFilter { all, pending, matched }
 
@@ -23,7 +28,10 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   late Future<_OverviewViewModel> _overviewFuture;
   late Future<List<ModuleLeaderTag>> _tagsFuture;
   late Future<List<ModuleLeaderProject>> _projectsFuture;
+  late Future<ModuleLeaderAcademicModulesPayload> _academicModulesFuture;
   bool _isCreatingTag = false;
+  bool _isCreatingModule = false;
+  bool _isAssigningSupervisors = false;
   _ProjectAllocationFilter _projectFilter = _ProjectAllocationFilter.all;
 
   static const double _sidebarWidth = 288;
@@ -37,6 +45,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     _overviewFuture = _loadOverviewData();
     _tagsFuture = _loadTagsData();
     _projectsFuture = _loadProjectsData();
+    _academicModulesFuture = _loadAcademicModulesData();
   }
 
   @override
@@ -162,6 +171,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
               subtitle: 'Assignments',
               icon: Icons.assignment_ind_outlined,
               section: _ModuleLeaderSection.projectAllocations,
+            ),
+            _buildNavItem(
+              title: 'Academic Modules',
+              subtitle: 'Module Management',
+              icon: Icons.library_books_outlined,
+              section: _ModuleLeaderSection.academicModules,
             ),
             const Spacer(),
             Container(
@@ -306,6 +321,10 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
         'Project Allocations',
         'Review and adjust faculty or student assignments.',
       ),
+      _ModuleLeaderSection.academicModules => (
+        'Academic Modules',
+        'Create modules and manage supervisor assignment.',
+      ),
     };
 
     return Row(
@@ -352,6 +371,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
       _ModuleLeaderSection.researchAreas => _buildResearchAreasContent(),
       _ModuleLeaderSection.projectAllocations =>
         _buildProjectAllocationsContent(),
+      _ModuleLeaderSection.academicModules => _buildAcademicModulesContent(),
     };
   }
 
@@ -785,6 +805,542 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     );
   }
 
+  Widget _buildAcademicModulesContent() {
+    return FutureBuilder<ModuleLeaderAcademicModulesPayload>(
+      future: _academicModulesFuture,
+      builder: (context, snapshot) {
+        final payload = snapshot.data;
+
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            payload == null) {
+          return _buildAcademicModulesSkeleton();
+        }
+
+        if (snapshot.hasError) {
+          return _SectionPanel(
+            title: 'Academic Modules',
+            child: _ErrorState(
+              message: 'Unable to load modules.',
+              onRetry: _refreshAcademicModules,
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Manage active modules and their supervisor pool.',
+                    style: LoginTypography.body.copyWith(fontSize: 13),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isCreatingModule ? null : _showCreateModuleSheet,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Create New Module'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _SectionPanel(
+              title: 'Active Modules',
+              child: _AcademicModulesGrid(
+                modules: payload.modules,
+                availableSupervisors: payload.supervisors,
+                onAssignSupervisors: _showAssignSupervisorsSheet,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<ModuleLeaderAcademicModulesPayload> _loadAcademicModulesData() async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      return _fallbackAcademicModules();
+    }
+
+    try {
+      return await _moduleLeaderService.fetchAcademicModules(jwtToken: token);
+    } catch (_) {
+      return _fallbackAcademicModules();
+    }
+  }
+
+  Future<void> _refreshAcademicModules() async {
+    setState(() {
+      _academicModulesFuture = _loadAcademicModulesData();
+    });
+  }
+
+  Future<void> _showCreateModuleSheet() async {
+    final codeController = TextEditingController();
+    final nameController = TextEditingController();
+    final yearController = TextEditingController();
+    final batchController = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: LoginColors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              border: Border.all(color: LoginColors.border),
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Create New Module',
+                  style: LoginTypography.headline.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Define a module and attach supervisors afterward.',
+                  style: LoginTypography.body.copyWith(fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: codeController,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                    labelText: 'Module Code',
+                    hintText: 'PUSL2020',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Module Name',
+                    hintText: 'Software Development Tools',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: yearController,
+                  decoration: const InputDecoration(
+                    labelText: 'Academic Year',
+                    hintText: '2026/2027',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: batchController,
+                  decoration: const InputDecoration(
+                    labelText: 'Batch',
+                    hintText: 'Batch 24',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: _isCreatingModule
+                          ? null
+                          : () async {
+                              final moduleCode = codeController.text.trim();
+                              final moduleName = nameController.text.trim();
+                              final academicYear = yearController.text.trim();
+                              final batch = batchController.text.trim();
+
+                              if (moduleCode.isEmpty ||
+                                  moduleName.isEmpty ||
+                                  academicYear.isEmpty ||
+                                  batch.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Please complete all module fields.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              Navigator.of(sheetContext).pop();
+                              await _createAcademicModule(
+                                moduleCode: moduleCode,
+                                moduleName: moduleName,
+                                academicYear: academicYear,
+                                batch: batch,
+                              );
+                            },
+                      child: const Text('Create Module'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    codeController.dispose();
+    nameController.dispose();
+    yearController.dispose();
+    batchController.dispose();
+  }
+
+  Future<void> _createAcademicModule({
+    required String moduleCode,
+    required String moduleName,
+    required String academicYear,
+    required String batch,
+  }) async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You need to be signed in to create modules.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isCreatingModule = true;
+    });
+
+    try {
+      await _moduleLeaderService.createAcademicModule(
+        jwtToken: token,
+        moduleCode: moduleCode,
+        moduleName: moduleName,
+        academicYear: academicYear,
+        batch: batch,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Created module $moduleCode successfully.')),
+      );
+      await _refreshAcademicModules();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create module: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreatingModule = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _showAssignSupervisorsSheet(
+    ModuleLeaderAcademicModule module,
+    List<ModuleLeaderSupervisor> allSupervisors,
+  ) async {
+    final selectedSupervisorIds = module.assignedSupervisors
+        .map((supervisor) => supervisor.id)
+        .toSet();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              height: MediaQuery.of(sheetContext).size.height * 0.72,
+              decoration: BoxDecoration(
+                color: LoginColors.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                border: Border.all(color: LoginColors.border),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Assign Supervisors',
+                      style: LoginTypography.headline.copyWith(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${module.moduleCode} • ${module.moduleName}',
+                      style: LoginTypography.body.copyWith(fontSize: 13),
+                    ),
+                    const SizedBox(height: 18),
+                    Expanded(
+                      child: allSupervisors.isEmpty
+                          ? Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: LoginColors.panel,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: LoginColors.border),
+                              ),
+                              child: Text(
+                                'No supervisors found in the database.',
+                                style: LoginTypography.body.copyWith(fontSize: 13),
+                              ),
+                            )
+                          : ListView.separated(
+                              itemCount: allSupervisors.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final supervisor = allSupervisors[index];
+                                final isSelected = selectedSupervisorIds.contains(
+                                  supervisor.id,
+                                );
+
+                                return InkWell(
+                                  onTap: () {
+                                    setSheetState(() {
+                                      if (isSelected) {
+                                        selectedSupervisorIds.remove(supervisor.id);
+                                      } else {
+                                        selectedSupervisorIds.add(supervisor.id);
+                                      }
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? LoginColors.panel
+                                          : LoginColors.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? LoginColors.borderActive
+                                            : LoginColors.border,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Checkbox(
+                                          value: isSelected,
+                                          onChanged: (_) {
+                                            setSheetState(() {
+                                              if (isSelected) {
+                                                selectedSupervisorIds.remove(
+                                                  supervisor.id,
+                                                );
+                                              } else {
+                                                selectedSupervisorIds.add(
+                                                  supervisor.id,
+                                                );
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                supervisor.fullName,
+                                                style: LoginTypography.label
+                                                    .copyWith(fontSize: 13),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                supervisor.email,
+                                                style: LoginTypography.body
+                                                    .copyWith(fontSize: 12),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: _isAssigningSupervisors
+                              ? null
+                              : () async {
+                                  Navigator.of(sheetContext).pop();
+                                  await _assignSupervisorsToModule(
+                                    module.id,
+                                    selectedSupervisorIds.toList(),
+                                  );
+                                },
+                          child: const Text('Save Assignment'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _assignSupervisorsToModule(
+    String moduleId,
+    List<String> supervisorIds,
+  ) async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You need to be signed in to assign supervisors.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isAssigningSupervisors = true;
+    });
+
+    try {
+      await _moduleLeaderService.assignSupervisorsToModule(
+        jwtToken: token,
+        moduleId: moduleId,
+        supervisorIds: supervisorIds,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Supervisor assignment updated.')),
+      );
+      await _refreshAcademicModules();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to assign supervisors: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAssigningSupervisors = false;
+        });
+      }
+    }
+  }
+
+  ModuleLeaderAcademicModulesPayload _fallbackAcademicModules() {
+    return const ModuleLeaderAcademicModulesPayload(
+      modules: [
+        ModuleLeaderAcademicModule(
+          id: 'mod_001',
+          moduleCode: 'PUSL2020',
+          moduleName: 'Software Development Tools',
+          academicYear: '2026/2027',
+          batch: 'Batch 24',
+          assignedSupervisors: [
+            ModuleLeaderSupervisor(
+              id: 'sup_1',
+              fullName: 'Dr. Perera',
+              email: 'perera@nsbm.edu',
+            ),
+          ],
+        ),
+        ModuleLeaderAcademicModule(
+          id: 'mod_002',
+          moduleCode: 'PUSL3022',
+          moduleName: 'Enterprise Applications',
+          academicYear: '2026/2027',
+          batch: 'Batch 23',
+          assignedSupervisors: [],
+        ),
+      ],
+      supervisors: [
+        ModuleLeaderSupervisor(
+          id: 'sup_1',
+          fullName: 'Dr. Perera',
+          email: 'perera@nsbm.edu',
+        ),
+        ModuleLeaderSupervisor(
+          id: 'sup_2',
+          fullName: 'Dr. Silva',
+          email: 'silva@nsbm.edu',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAcademicModulesSkeleton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+            width: 180,
+            height: 42,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _SectionPanel(
+          title: 'Active Modules',
+          child: Column(
+            children: List.generate(
+              3,
+              (index) => Padding(
+                padding: EdgeInsets.only(bottom: index == 2 ? 0 : 12),
+                child: const _ModuleCardSkeleton(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<List<ModuleLeaderProject>> _loadProjectsData() async {
     final token = await _authService.getToken();
     if (token == null || token.isEmpty) {
@@ -990,6 +1546,207 @@ class _ProjectsPaginatedTable extends StatelessWidget {
       columnSpacing: 28,
       showCheckboxColumn: false,
       horizontalMargin: 20,
+    );
+  }
+}
+
+class _AcademicModulesGrid extends StatelessWidget {
+  const _AcademicModulesGrid({
+    required this.modules,
+    required this.availableSupervisors,
+    required this.onAssignSupervisors,
+  });
+
+  final List<ModuleLeaderAcademicModule> modules;
+  final List<ModuleLeaderSupervisor> availableSupervisors;
+  final Future<void> Function(
+    ModuleLeaderAcademicModule module,
+    List<ModuleLeaderSupervisor> supervisors,
+  )
+  onAssignSupervisors;
+
+  @override
+  Widget build(BuildContext context) {
+    if (modules.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: LoginColors.panel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: LoginColors.border),
+        ),
+        child: Text(
+          'No modules found. Create your first module to begin.',
+          style: LoginTypography.body.copyWith(fontSize: 13),
+        ),
+      );
+    }
+
+    return Column(
+      children: modules
+          .map(
+            (module) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: LoginColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: LoginColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                module.moduleCode,
+                                style: LoginTypography.label.copyWith(
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                module.moduleName,
+                                style: LoginTypography.body.copyWith(
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => onAssignSupervisors(
+                            module,
+                            availableSupervisors,
+                          ),
+                          child: const Text('Assign Supervisors'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _MetaPill(label: 'Academic Year: ${module.academicYear}'),
+                        _MetaPill(label: 'Batch: ${module.batch}'),
+                        _MetaPill(
+                          label: 'Assigned: ${module.assignedSupervisors.length}',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (module.assignedSupervisors.isEmpty)
+                      Text(
+                        'No supervisors assigned.',
+                        style: LoginTypography.body.copyWith(fontSize: 12),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: module.assignedSupervisors
+                            .map(
+                              (supervisor) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: LoginColors.panel,
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: LoginColors.border),
+                                ),
+                                child: Text(
+                                  supervisor.fullName,
+                                  style: LoginTypography.label.copyWith(
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  const _MetaPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: LoginColors.panel,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: LoginColors.border),
+      ),
+      child: Text(label, style: LoginTypography.label.copyWith(fontSize: 11)),
+    );
+  }
+}
+
+class _ModuleCardSkeleton extends StatelessWidget {
+  const _ModuleCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: LoginColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LoginColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 120,
+            height: 14,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: 240,
+            height: 12,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            height: 30,
+            decoration: BoxDecoration(
+              color: LoginColors.panel,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

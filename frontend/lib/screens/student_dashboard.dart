@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
+import 'profile_screen.dart';
 
 // --- MOCK VIEW MODEL ---
 class StudentDashboardViewModel extends ChangeNotifier {
@@ -184,7 +185,12 @@ class _StudentDashboardContentState extends State<_StudentDashboardContent> {
             ),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
-            _buildAppBarIcon(Icons.person),
+            _buildAppBarIcon(Icons.person, onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            }),
             const SizedBox(width: 16),
           ],
         ),
@@ -192,23 +198,27 @@ class _StudentDashboardContentState extends State<_StudentDashboardContent> {
     );
   }
 
-  Widget _buildAppBarIcon(IconData icon) {
+  Widget _buildAppBarIcon(IconData icon, {VoidCallback? onTap}) {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-              blurRadius: 10,
-              spreadRadius: 1,
-            ),
-          ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(30),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                blurRadius: 10,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 22, color: Colors.white.withValues(alpha: 0.9)),
         ),
-        child: Icon(icon, size: 22, color: Colors.white.withValues(alpha: 0.9)),
       ),
     );
   }

@@ -54,10 +54,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   _ProposalData? _proposal;
 
-  void _showSubmissionForm({bool isEditing = false}) {
-    final titleController = TextEditingController(text: isEditing ? _proposal?.title : '');
-    final abstractController = TextEditingController(text: isEditing ? _proposal?.abstractText : '');
-    final techStackController = TextEditingController(text: isEditing ? _proposal?.techStack : '');
+  void _showSubmissionForm({bool isEditing = false, String? defaultTitle, String? defaultAbstract, String? defaultTechStack}) {
+    final titleController = TextEditingController(text: isEditing ? _proposal?.title : (defaultTitle ?? ''));
+    final abstractController = TextEditingController(text: isEditing ? _proposal?.abstractText : (defaultAbstract ?? ''));
+    final techStackController = TextEditingController(text: isEditing ? _proposal?.techStack : (defaultTechStack ?? ''));
     String researchArea = isEditing ? (_proposal?.researchArea ?? 'Artificial Intelligence') : 'Artificial Intelligence';
 
     showModalBottomSheet(
@@ -348,6 +348,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             if (_proposal == null) ...[
               _buildEmptyState(),
               const SizedBox(height: 32),
+              _buildSuggestedResearchCarousel(),
+              const SizedBox(height: 32),
               _buildHowItWorksTimeline(),
               const SizedBox(height: 32),
               _buildProfileCompleteness(),
@@ -388,17 +390,64 @@ class _StudentDashboardState extends State<StudentDashboard> {
             style: TextStyle(color: mutedTextColor, height: 1.5),
           ),
           const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () => _showSubmissionForm(),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Create Proposal', style: TextStyle(fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _showSubmissionForm(),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Start from Scratch', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B82F6),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+              const SizedBox(width: 12),
+              PopupMenuButton<String>(
+                color: cardColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                onSelected: (value) {
+                  if (value == 'capstone') {
+                    _showSubmissionForm(defaultTitle: '[Capstone Project] ', defaultAbstract: 'This capstone project aims to...', defaultTechStack: 'Flutter, Firebase');
+                  } else if (value == 'grant') {
+                    _showSubmissionForm(defaultTitle: 'Grant Proposal: ', defaultAbstract: 'This research aims to investigate the impact of...', defaultTechStack: 'Python, TensorFlow');
+                  } else if (value == 'industry') {
+                    _showSubmissionForm(defaultTitle: 'Industry Partnership: ', defaultAbstract: 'In collaboration with [Company], we will develop...', defaultTechStack: 'React, Node.js');
+                  } else if (value == 'thesis') {
+                    _showSubmissionForm(defaultTitle: 'Master\'s Thesis: ', defaultAbstract: 'A comprehensive study to evaluate the performance of...', defaultTechStack: 'R, SQL');
+                  } else if (value == 'open_source') {
+                    _showSubmissionForm(defaultTitle: 'Open Source Initiative: ', defaultAbstract: 'This project focuses on enhancing the core libraries of...', defaultTechStack: 'Rust, WebAssembly');
+                  } else {
+                    _showSubmissionForm();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'capstone', child: Text('Capstone Template', style: TextStyle(color: Colors.white))),
+                  const PopupMenuItem(value: 'thesis', child: Text('Master\'s Thesis', style: TextStyle(color: Colors.white))),
+                  const PopupMenuItem(value: 'industry', child: Text('Industry Partnership', style: TextStyle(color: Colors.white))),
+                  const PopupMenuItem(value: 'grant', child: Text('Research Grant', style: TextStyle(color: Colors.white))),
+                  const PopupMenuItem(value: 'open_source', child: Text('Open Source Project', style: TextStyle(color: Colors.white))),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2B364E),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.copy, size: 16, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Use Template', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Icon(Icons.arrow_drop_down, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           TextButton.icon(
@@ -916,6 +965,58 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestedResearchCarousel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Inspiration & Trending Ideas',
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 140,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildIdeaCard('AI in Healthcare', 'Explore predictive modeling for early disease detection.', Icons.medical_services_outlined, const Color(0xFF10B981)),
+              _buildIdeaCard('Sustainable Blockchain', 'Reduce the carbon footprint of distributed ledgers.', Icons.eco_outlined, const Color(0xFF3B82F6)),
+              _buildIdeaCard('Smart IoT Agriculture', 'Optimize water usage using real-time soil sensors.', Icons.water_drop_outlined, const Color(0xFFFACC15)),
+              _buildIdeaCard('Cyber-physical Security', 'New frameworks for protecting critical grid infrastructure.', Icons.security_outlined, const Color(0xFF8B5CF6)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIdeaCard(String title, String description, IconData icon, Color iconColor) {
+    return Container(
+      width: 220,
+      margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF2B364E)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: iconColor.withOpacity(0.15), shape: BoxShape.circle),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const Spacer(),
+          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 4),
+          Text(description, style: TextStyle(color: mutedTextColor, fontSize: 12, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
         ],
       ),
     );

@@ -1,13 +1,29 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MatchProjectDto } from './dto/match-project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ProjectsService.name);
 
-  async submitProposal(studentId: string, data: { title: string, abstract: string, moduleId: string, groupName?: string, tagIds?: string[], memberStudentIds?: string[] }) {
-    // Create the Project, ProjectGroup, and GroupMembers in a single Prisma nested write.
-    // The submitting student is automatically designated as the group leader.
+  constructor(private prisma: PrismaService) { }
+
+  async submitProposal(
+    studentId: string,
+    data: {
+      title: string;
+      abstract: string;
+      moduleId: string;
+      groupName?: string;
+      tagIds?: string[];
+      memberStudentIds?: string[];
+    },
+  ) {
     return this.prisma.project.create({
       data: {
         title: data.title,
@@ -15,7 +31,7 @@ export class ProjectsService {
         module: { connect: { id: data.moduleId } },
         status: 'PENDING',
         tags: {
-          create: data.tagIds?.map(tagId => ({ tagId })) || [],
+          create: data.tagIds?.map((tagId) => ({ tagId })) ?? [],
         },
         group: {
           create: {
@@ -23,17 +39,18 @@ export class ProjectsService {
             members: {
               create: [
                 { studentId: studentId, isLeader: true },
-                // Filter out the submitting student if accidentally passed in the array, then map
-                ...(data.memberStudentIds?.filter(id => id !== studentId).map(id => ({ studentId: id, isLeader: false })) || [])
-              ]
-            }
-          }
-        }
-      }
+                ...(data.memberStudentIds
+                  ?.filter((id) => id !== studentId)
+                  .map((id) => ({ studentId: id, isLeader: false })) ?? []),
+              ],
+            },
+          },
+        },
+      },
     });
   }
 
-  async getPendingProjectsForSupervisor() {
+  async getPendingAnonymousProjects() {
     return this.prisma.project.findMany({
       where: {
         status: 'PENDING',
@@ -42,43 +59,72 @@ export class ProjectsService {
         id: true,
         title: true,
         abstract: true,
+        status: true,
+        createdAt: true,
         tags: {
           select: {
             tag: {
               select: {
                 id: true,
                 name: true,
-              }
-            }
-          }
-        }
-        // CRITICAL SECURITY CONSTRAINT: 
-        // Group, GroupMembers, and Student relations are explicitly omitted 
-        // from the standard select to enforce the 'Blind Match' anonymity logic.
-      }
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
   }
 
-  async matchProject(supervisorId: string, projectId: string) {
-    // Wrapped in a transaction to prevent race conditions when multiple supervisors
-    // attempt to match with the same project simultaneously.
-    return this.prisma.$transaction(async (prisma) => {
-      const project = await prisma.project.findUnique({ where: { id: projectId } });
-      
+  async matchProject(
+    projectId: string,
+    supervisorId: string,
+    matchDto: MatchProjectDto,
+  ) {
+    if (!matchDto.confirmMatch) {
+      throw new BadRequestException(
+        'confirmMatch must be true to proceed with matching.',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.findUnique({
+        where: { id: projectId },
+      });
+
       if (!project) {
-        throw new NotFoundException('Project not found');
-      }
-      
-      if (project.status === 'MATCHED' || project.supervisorId) {
-        throw new BadRequestException('Project is already matched to a supervisor');
+        throw new NotFoundException(
+          `Project with id "${projectId}" was not found.`,
+        );
       }
 
-      return prisma.project.update({
+      if (project.status === 'MATCHED' || project.supervisorId !== null) {
+        throw new BadRequestException(
+          'This project has already been matched to a supervisor.',
+        );
+      }
+
+      if (matchDto.message) {
+        this.logger.log(
+          `Supervisor ${supervisorId} included a message for project ${projectId}: "${matchDto.message}"`,
+        );
+      }
+
+      return tx.project.update({
         where: { id: projectId },
         data: {
           status: 'MATCHED',
-          supervisorId: supervisorId,
-        }
+          supervisor: { connect: { id: supervisorId } },
+        },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          supervisorId: true,
+          updatedAt: true,
+        },
       });
     });
   }

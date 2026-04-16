@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/login_design.dart';
+import '../services/auth_provider.dart';
 import '../widgets/academic_text_field.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -9,75 +11,203 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final FocusNode _emailFocus = FocusNode();
-  final FocusNode _passwordFocus = FocusNode();
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  // View state
+  bool _isStaffView = false;
+  String _staffRole = 'supervisor'; // 'supervisor' or 'module_leader'
 
+  // Form states
+  final GlobalKey<FormState> _studentLoginFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _studentSignupFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _staffLoginFormKey = GlobalKey<FormState>();
+
+  bool _showStudentLogin = true; // Toggle between login and signup for students
   bool _showPassword = false;
   bool _rememberMe = true;
-  bool _submitted = false;
 
-  late final AnimationController _logoTransitionController;
+  // Student Login Controllers
+  final TextEditingController _studentEmailController = TextEditingController();
+  final TextEditingController _studentPasswordController =
+      TextEditingController();
+
+  // Student Signup Controllers
+  final TextEditingController _signupEmailController = TextEditingController();
+  final TextEditingController _signupPasswordController =
+      TextEditingController();
+  final TextEditingController _signupFullNameController =
+      TextEditingController();
+  final TextEditingController _signupStudentIdController =
+      TextEditingController();
+  final TextEditingController _signupDegreeController =
+      TextEditingController();
+
+  // Staff Login Controllers
+  final TextEditingController _staffEmailController = TextEditingController();
+  final TextEditingController _staffPasswordController =
+      TextEditingController();
+
+  // Focus nodes
+  late FocusNode _studentEmailFocus;
+  late FocusNode _studentPasswordFocus;
+  late FocusNode _signupEmailFocus;
+  late FocusNode _signupPasswordFocus;
+  late FocusNode _signupFullNameFocus;
+  late FocusNode _signupStudentIdFocus;
+  late FocusNode _signupDegreeFocus;
+  late FocusNode _staffEmailFocus;
+  late FocusNode _staffPasswordFocus;
+
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
-    _logoTransitionController = AnimationController(
+    _initializeFocusNodes();
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 400),
       vsync: this,
-      duration: const Duration(milliseconds: 650),
-    )..forward();
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+  }
+
+  void _initializeFocusNodes() {
+    _studentEmailFocus = FocusNode();
+    _studentPasswordFocus = FocusNode();
+    _signupEmailFocus = FocusNode();
+    _signupPasswordFocus = FocusNode();
+    _signupFullNameFocus = FocusNode();
+    _signupStudentIdFocus = FocusNode();
+    _signupDegreeFocus = FocusNode();
+    _staffEmailFocus = FocusNode();
+    _staffPasswordFocus = FocusNode();
   }
 
   @override
   void dispose() {
-    _logoTransitionController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _emailFocus.dispose();
-    _passwordFocus.dispose();
+    _disposeControllers();
+    _disposeFocusNodes();
+    _slideController.dispose();
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter your email address.';
-    }
-    const emailPattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}";
-    if (!RegExp(emailPattern).hasMatch(value.trim())) {
-      return 'Please enter a valid email address.';
-    }
-    return null;
+  void _disposeControllers() {
+    _studentEmailController.dispose();
+    _studentPasswordController.dispose();
+    _signupEmailController.dispose();
+    _signupPasswordController.dispose();
+    _signupFullNameController.dispose();
+    _signupStudentIdController.dispose();
+    _signupDegreeController.dispose();
+    _staffEmailController.dispose();
+    _staffPasswordController.dispose();
   }
 
-  String? _validatePassword(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter your password.';
-    }
-    if (value.trim().length < 8) {
-      return 'Password must be at least 8 characters.';
-    }
-    return null;
+  void _disposeFocusNodes() {
+    _studentEmailFocus.dispose();
+    _studentPasswordFocus.dispose();
+    _signupEmailFocus.dispose();
+    _signupPasswordFocus.dispose();
+    _signupFullNameFocus.dispose();
+    _signupStudentIdFocus.dispose();
+    _signupDegreeFocus.dispose();
+    _staffEmailFocus.dispose();
+    _staffPasswordFocus.dispose();
   }
 
-  void _submit() {
+  void _toggleStaffView() {
     setState(() {
-      _submitted = true;
+      _isStaffView = !_isStaffView;
+      if (_isStaffView) {
+        _slideController.forward();
+      } else {
+        _slideController.reverse();
+      }
     });
+  }
 
-    if (_formKey.currentState?.validate() ?? false) {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text;
-      debugPrint('Login submitted: email=$email, password=${'*' * password.length}, remember=$_rememberMe');
+  void _togglePasswordVisibility() {
+    setState(() {
+      _showPassword = !_showPassword;
+    });
+  }
 
+  void _toggleStudentForm() {
+    setState(() {
+      _showStudentLogin = !_showStudentLogin;
+    });
+  }
+
+  Future<void> _handleStudentLogin(BuildContext context) async {
+    if (!_studentLoginFormKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.studentLogin(
+      _studentEmailController.text.trim(),
+      _studentPasswordController.text,
+    );
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login successful!')),
+      );
+      // TODO: Navigate to student dashboard
+    }
+  }
+
+  Future<void> _handleStudentSignup(BuildContext context) async {
+    if (!_studentSignupFormKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.registerStudent(
+      email: _signupEmailController.text.trim(),
+      password: _signupPasswordController.text,
+      fullName: _signupFullNameController.text.trim(),
+      studentId: _signupStudentIdController.text.trim(),
+      degree: _signupDegreeController.text.trim(),
+    );
+
+    if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Credentials captured. Redirecting to dashboard...'),
-          duration: Duration(milliseconds: 1600),
+          content: Text('Registration successful! Please log in.'),
         ),
       );
+      _toggleStudentForm();
+      // Clear signup fields
+      _signupEmailController.clear();
+      _signupPasswordController.clear();
+      _signupFullNameController.clear();
+      _signupStudentIdController.clear();
+      _signupDegreeController.clear();
+    }
+  }
+
+  Future<void> _handleStaffLogin(BuildContext context) async {
+    if (!_staffLoginFormKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final success = _staffRole == 'supervisor'
+        ? await authProvider.supervisorLogin(
+            _staffEmailController.text.trim(),
+            _staffPasswordController.text,
+          )
+        : await authProvider.moduleLeaderLogin(
+            _staffEmailController.text.trim(),
+            _staffPasswordController.text,
+          );
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                '${_staffRole == 'supervisor' ? 'Supervisor' : 'Module Leader'} login successful!')),
+      );
+      // TODO: Navigate to staff dashboard
     }
   }
 
@@ -86,277 +216,773 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: LoginColors.background,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final bool isWide = constraints.maxWidth >= 860;
-
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 450),
-                    curve: Curves.easeOutCubic,
-                    decoration: BoxDecoration(
-                      color: LoginColors.background,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: isWide ? _buildWideLayout() : _buildCompactLayout(),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWideLayout() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          flex: 5,
-          child: AnimatedBuilder(
-            animation: _logoTransitionController,
-            builder: (context, child) {
-              return Opacity(
-                opacity: _logoTransitionController.value,
-                child: Transform.translate(
-                  offset: Offset(-24 * (1 - _logoTransitionController.value), 0),
-                  child: child,
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(40),
-              decoration: BoxDecoration(
-                color: LoginColors.panel,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(28),
-                  bottomLeft: Radius.circular(28),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: LoginColors.shadow,
-                    blurRadius: 28,
-                    offset: Offset(0, 16),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Academic Access', style: LoginTypography.headline.copyWith(fontSize: 38)),
-                  const SizedBox(height: LoginSpacing.small),
-                  Text(
-                    'A calm, structured login experience designed for modern institutions. Clear hierarchy, generous white space, and subtle monochrome refinement.',
-                    style: LoginTypography.subheadline,
-                  ),
-                  const SizedBox(height: LoginSpacing.large),
-                  _buildFeatureItem('Minimalist visual system'),
-                  const SizedBox(height: LoginSpacing.small),
-                  _buildFeatureItem('Access for students, staff, and faculty'),
-                  const SizedBox(height: LoginSpacing.small),
-                  _buildFeatureItem('Professional contrast and clean forms'),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 24),
-        Expanded(flex: 6, child: _buildFormPanel()),
-      ],
-    );
-  }
-
-  Widget _buildCompactLayout() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          decoration: BoxDecoration(
-            color: LoginColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: const [
-              BoxShadow(
-                color: LoginColors.shadow,
-                blurRadius: 24,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Academic Access', style: LoginTypography.headline),
-              const SizedBox(height: LoginSpacing.small),
-              Text(
-                'Login to your institutional workspace with a design that feels polished, calm, and easy to scan.',
-                style: LoginTypography.subheadline,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 22),
-        _buildFormPanel(),
-      ],
-    );
-  }
-
-  Widget _buildFeatureItem(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 4),
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            color: LoginColors.accent,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: LoginSpacing.small),
-        Expanded(child: Text(text, style: LoginTypography.body)),
-      ],
-    );
-  }
-
-  Widget _buildFormPanel() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 450),
-      curve: Curves.easeOut,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: LoginColors.surface,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: LoginColors.shadow,
-            blurRadius: 32,
-            offset: Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
           children: [
-            Text('Welcome back', style: LoginTypography.headline),
-            const SizedBox(height: LoginSpacing.small),
-            Text(
-              'Enter your details to continue with your academic portal.',
-              style: LoginTypography.subheadline,
-            ),
-            const SizedBox(height: LoginSpacing.large),
-            AcademicTextField(
-              label: 'Email address',
-              hintText: 'example@institution.edu',
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              focusNode: _emailFocus,
-              errorText: _submitted ? _validateEmail(_emailController.text) : null,
-              validator: _validateEmail,
-              autofillHints: const [AutofillHints.email],
-              onChanged: (_) {
-                if (_submitted) setState(() {});
-              },
-            ),
-            const SizedBox(height: LoginSpacing.medium),
-            AcademicTextField(
-              label: 'Password',
-              hintText: 'Enter your password',
-              controller: _passwordController,
-              obscureText: !_showPassword,
-              focusNode: _passwordFocus,
-              errorText: _submitted ? _validatePassword(_passwordController.text) : null,
-              validator: _validatePassword,
-              autofillHints: const [AutofillHints.password],
-              suffixIcon: GestureDetector(
-                onTap: () => setState(() => _showPassword = !_showPassword),
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Icon(
-                    _showPassword ? Icons.visibility_off : Icons.visibility,
-                    color: LoginColors.accentSoft,
-                    size: 22,
-                  ),
+            // Main content
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LoginSpacing.large,
+                  vertical: LoginSpacing.medium,
+                ),
+                child: Column(
+                  children: [
+                    // Top spacing
+                    const SizedBox(height: LoginSpacing.medium),
+
+                    // Logo/Branding
+                    _buildLogo(),
+
+                    const SizedBox(height: LoginSpacing.xlarge),
+
+                    // Student or Staff View
+                    if (!_isStaffView) _buildStudentView() else _buildStaffView(),
+
+                    const SizedBox(height: LoginSpacing.large),
+                  ],
                 ),
               ),
-              onChanged: (_) {
-                if (_submitted) setState(() {});
-              },
             ),
-            const SizedBox(height: LoginSpacing.small),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                InkWell(
-                  onTap: () => setState(() => _rememberMe = !_rememberMe),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: _rememberMe,
-                          onChanged: (value) => setState(() => _rememberMe = value ?? true),
-                          activeColor: LoginColors.accent,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        ),
-                        const SizedBox(width: 8),
-                        Text('Remember me', style: LoginTypography.body.copyWith(color: LoginColors.textPrimary)),
-                      ],
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    foregroundColor: LoginColors.accent,
-                    textStyle: LoginTypography.link,
-                  ),
-                  child: const Text('Forgot password?'),
-                ),
-              ],
-            ),
-            const SizedBox(height: LoginSpacing.medium),
-            ElevatedButton(
-              onPressed: _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: LoginColors.accent,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 0,
-              ),
-              child: Text('Sign in', style: LoginTypography.button),
-            ),
-            const SizedBox(height: LoginSpacing.large),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('New to the portal?', style: LoginTypography.body),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    foregroundColor: LoginColors.accent,
-                    textStyle: LoginTypography.link,
-                  ),
-                  child: const Text('Create account'),
-                ),
-              ],
+
+            // Hidden Lock Icon
+            Positioned(
+              top: LoginSpacing.medium,
+              right: LoginSpacing.medium,
+              child: _buildLockButton(),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // ==================== Widget Builders ====================
+
+  Widget _buildLogo() {
+    return Column(
+      children: [
+        Text(
+          'GreenMatch',
+          style: LoginTypography.headline.copyWith(
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1.5,
+          ),
+        ),
+        const SizedBox(height: LoginSpacing.xsmall),
+        Text(
+          _isStaffView ? 'Staff Access' : 'Student Portal',
+          style: LoginTypography.subheadline.copyWith(
+            fontSize: 14,
+            color: LoginColors.textSecondary,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLockButton() {
+    return Tooltip(
+      message: _isStaffView ? 'Switch to Student' : 'Staff Access',
+      child: GestureDetector(
+        onTap: _toggleStaffView,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: _isStaffView ? LoginColors.accent : LoginColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: LoginColors.border,
+              width: 0.5,
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              _isStaffView ? Icons.lock_open : Icons.lock,
+              color: _isStaffView ? LoginColors.surface : LoginColors.accent,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudentView() {
+    return Column(
+      children: [
+        if (_showStudentLogin)
+          _buildStudentLoginForm()
+        else
+          _buildStudentSignupForm(),
+        const SizedBox(height: LoginSpacing.medium),
+        _buildStudentToggleButton(),
+      ],
+    );
+  }
+
+  Widget _buildStudentLoginForm() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        return Form(
+          key: _studentLoginFormKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Email Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Email Address',
+                    style: LoginTypography.label,
+                  ),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _studentEmailController,
+                    focusNode: _studentEmailFocus,
+                    hintText: 'your.email@university.edu',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$')
+                          .hasMatch(value)) {
+                        return 'Enter a valid email address';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.large),
+
+              // Password Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Password',
+                    style: LoginTypography.label,
+                  ),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _studentPasswordController,
+                    focusNode: _studentPasswordFocus,
+                    hintText: 'Enter your password',
+                    obscureText: !_showPassword,
+                    onSuffixIconTap: _togglePasswordVisibility,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.medium),
+
+              // Remember Me & Forgot Password
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _rememberMe = !_rememberMe;
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (value) {
+                              setState(() {
+                                _rememberMe = value ?? false;
+                              });
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: LoginSpacing.small),
+                        Text(
+                          'Remember me',
+                          style: LoginTypography.body,
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      // TODO: Implement forgot password
+                    },
+                    child: Text(
+                      'Forgot password?',
+                      style: LoginTypography.link.copyWith(
+                        color: LoginColors.link,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.xlarge),
+
+              // Error Message
+              if (authProvider.errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(LoginSpacing.medium),
+                  decoration: BoxDecoration(
+                    color: LoginColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: LoginColors.error.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: LoginColors.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: LoginSpacing.small),
+                      Expanded(
+                        child: Text(
+                          authProvider.errorMessage!,
+                          style: LoginTypography.body.copyWith(
+                            color: LoginColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              if (authProvider.errorMessage != null)
+                const SizedBox(height: LoginSpacing.large),
+
+              // Sign In Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: authProvider.isLoading
+                      ? null
+                      : () => _handleStudentLogin(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: LoginColors.accent,
+                    disabledBackgroundColor: LoginColors.accentSoft,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: authProvider.isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              LoginColors.surface,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Sign In',
+                          style: LoginTypography.button,
+                        ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStudentSignupForm() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        return Form(
+          key: _studentSignupFormKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Full Name Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Full Name', style: LoginTypography.label),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _signupFullNameController,
+                    focusNode: _signupFullNameFocus,
+                    hintText: 'John Doe',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Full name is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.large),
+
+              // Student ID Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Student ID', style: LoginTypography.label),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _signupStudentIdController,
+                    focusNode: _signupStudentIdFocus,
+                    hintText: 'e.g., STU-123456',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Student ID is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.large),
+
+              // Degree Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Degree Programme', style: LoginTypography.label),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _signupDegreeController,
+                    focusNode: _signupDegreeFocus,
+                    hintText: 'e.g., BSc Computer Science',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Degree programme is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.large),
+
+              // Email Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Email Address', style: LoginTypography.label),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _signupEmailController,
+                    focusNode: _signupEmailFocus,
+                    hintText: 'your.email@university.edu',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$')
+                          .hasMatch(value)) {
+                        return 'Enter a valid email address';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.large),
+
+              // Password Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Password', style: LoginTypography.label),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _signupPasswordController,
+                    focusNode: _signupPasswordFocus,
+                    hintText: 'Create a strong password',
+                    obscureText: !_showPassword,
+                    onSuffixIconTap: _togglePasswordVisibility,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      if (value.length < 8) {
+                        return 'Password must be at least 8 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.xlarge),
+
+              // Error Message
+              if (authProvider.errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(LoginSpacing.medium),
+                  decoration: BoxDecoration(
+                    color: LoginColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: LoginColors.error.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: LoginColors.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: LoginSpacing.small),
+                      Expanded(
+                        child: Text(
+                          authProvider.errorMessage!,
+                          style: LoginTypography.body.copyWith(
+                            color: LoginColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              if (authProvider.errorMessage != null)
+                const SizedBox(height: LoginSpacing.large),
+
+              // Create Account Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: authProvider.isLoading
+                      ? null
+                      : () => _handleStudentSignup(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: LoginColors.accent,
+                    disabledBackgroundColor: LoginColors.accentSoft,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: authProvider.isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              LoginColors.surface,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Create Account',
+                          style: LoginTypography.button,
+                        ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStudentToggleButton() {
+    return Center(
+      child: GestureDetector(
+        onTap: _toggleStudentForm,
+        child: RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: _showStudentLogin
+                    ? "Don't have an account? "
+                    : 'Already have an account? ',
+                style: LoginTypography.body,
+              ),
+              TextSpan(
+                text: _showStudentLogin ? 'Create Account' : 'Sign In',
+                style: LoginTypography.link.copyWith(
+                  color: LoginColors.accent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaffView() {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: Column(
+        children: [
+          // Staff Role Selector
+          _buildStaffRoleSelector(),
+          const SizedBox(height: LoginSpacing.xlarge),
+
+          // Staff Login Form
+          _buildStaffLoginForm(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaffRoleSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: LoginColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: LoginColors.border,
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildRoleButton(
+              label: 'Supervisor',
+              value: 'supervisor',
+              isSelected: _staffRole == 'supervisor',
+              onTap: () {
+                setState(() {
+                  _staffRole = 'supervisor';
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: _buildRoleButton(
+              label: 'Module Leader',
+              value: 'module_leader',
+              isSelected: _staffRole == 'module_leader',
+              onTap: () {
+                setState(() {
+                  _staffRole = 'module_leader';
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleButton({
+    required String label,
+    required String value,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LoginSpacing.medium,
+          vertical: LoginSpacing.medium,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? LoginColors.accent : LoginColors.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: LoginTypography.label.copyWith(
+            color: isSelected ? LoginColors.surface : LoginColors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaffLoginForm() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        return Form(
+          key: _staffLoginFormKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Email Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Email Address', style: LoginTypography.label),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _staffEmailController,
+                    focusNode: _staffEmailFocus,
+                    hintText: 'staff.email@university.edu',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$')
+                          .hasMatch(value)) {
+                        return 'Enter a valid email address';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.large),
+
+              // Password Field
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Password', style: LoginTypography.label),
+                  const SizedBox(height: LoginSpacing.small),
+                  AcademicTextField(
+                    controller: _staffPasswordController,
+                    focusNode: _staffPasswordFocus,
+                    hintText: 'Enter your password',
+                    obscureText: !_showPassword,
+                    onSuffixIconTap: _togglePasswordVisibility,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: LoginSpacing.xlarge),
+
+              // Error Message
+              if (authProvider.errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(LoginSpacing.medium),
+                  decoration: BoxDecoration(
+                    color: LoginColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: LoginColors.error.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: LoginColors.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: LoginSpacing.small),
+                      Expanded(
+                        child: Text(
+                          authProvider.errorMessage!,
+                          style: LoginTypography.body.copyWith(
+                            color: LoginColors.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              if (authProvider.errorMessage != null)
+                const SizedBox(height: LoginSpacing.large),
+
+              // Sign In Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: authProvider.isLoading
+                      ? null
+                      : () => _handleStaffLogin(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: LoginColors.accent,
+                    disabledBackgroundColor: LoginColors.accentSoft,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: authProvider.isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              LoginColors.surface,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Sign In',
+                          style: LoginTypography.button,
+                        ),
+                ),
+              ),
+
+              const SizedBox(height: LoginSpacing.medium),
+
+              // Info note
+              Container(
+                padding: const EdgeInsets.all(LoginSpacing.medium),
+                decoration: BoxDecoration(
+                  color: LoginColors.panel,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: LoginColors.border,
+                  ),
+                ),
+                child: Text(
+                  'Staff accounts are created by administrators only.',
+                  style: LoginTypography.body.copyWith(
+                    fontSize: 13,
+                    color: LoginColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme/login_design.dart';
 import '../services/auth_provider.dart';
 import '../widgets/academic_text_field.dart';
-import 'supervisor_dashboard.dart';
+import 'simple_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -147,16 +147,21 @@ class _LoginScreenState extends State<LoginScreen>
 
     final authProvider = context.read<AuthProvider>();
     final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     final success = await authProvider.studentLogin(
       _studentEmailController.text.trim(),
       _studentPasswordController.text,
     );
 
-    if (success && mounted) {
+    if (success && context.mounted) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Login successful!')),
       );
-      // TODO: Navigate to student dashboard
+      navigator.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const SimpleDashboard(title: 'Student Dashboard'),
+        ),
+      );
     }
   }
 
@@ -173,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen>
       degree: _signupDegreeController.text.trim(),
     );
 
-    if (success && mounted) {
+    if (success && context.mounted) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text('Registration successful! Please log in.'),
@@ -194,6 +199,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     final authProvider = context.read<AuthProvider>();
     final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     final success = _staffRole == 'supervisor'
         ? await authProvider.supervisorLogin(
             _staffEmailController.text.trim(),
@@ -204,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen>
             _staffPasswordController.text,
           );
 
-    if (success && mounted) {
+    if (success && context.mounted) {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -213,19 +219,13 @@ class _LoginScreenState extends State<LoginScreen>
         ),
       );
 
-      // Navigate based on staff role
-      if (_staffRole == 'supervisor') {
-        // Navigate to Supervisor Dashboard
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const SupervisorDashboard(),
-            ),
-          );
-        }
-      } else {
-        // TODO: Navigate to Module Leader dashboard
-      }
+      final dashboardTitle =
+          _staffRole == 'supervisor' ? 'Supervisor Dashboard' : 'Module Leader Dashboard';
+      navigator.pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => SimpleDashboard(title: dashboardTitle),
+        ),
+      );
     }
   }
 

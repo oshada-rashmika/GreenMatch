@@ -3,7 +3,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
-import '../services/mock_project_service.dart';
+import '../services/project_service.dart';
 import '../widgets/glass_container.dart';
 import 'matches_screen.dart';
 
@@ -15,7 +15,7 @@ class SupervisorDashboard extends StatefulWidget {
 }
 
 class _SupervisorDashboardState extends State<SupervisorDashboard> {
-  late final MockProjectService projectService;
+  late final ProjectService projectService;
   List<Map<String, dynamic>> projects = [];
   bool isLoading = true;
   final Set<String> matchedProjectIds = {};
@@ -33,7 +33,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   @override
   void initState() {
     super.initState();
-    projectService = MockProjectService();
+    projectService = ProjectService();
     _fetchProjects();
   }
 
@@ -66,10 +66,21 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     return projects.where((p) => p['researchArea'] == _selectedFilter).toList();
   }
 
-  void _onMatchConfirmed(String projectId) {
-    setState(() {
-      matchedProjectIds.add(projectId);
-    });
+  Future<void> _onMatchConfirmed(String projectId) async {
+    try {
+      await projectService.confirmMatch(projectId);
+      if (mounted) {
+        setState(() {
+          matchedProjectIds.add(projectId);
+        });
+      }
+    } on ProjectServiceException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Match failed: ${e.message}')),
+        );
+      }
+    }
   }
 
   @override
@@ -390,7 +401,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       project: project,
       index: index,
       isMatched: matchedProjectIds.contains(project['id']),
-      onMatch: () => _onMatchConfirmed(project['id']),
+      onMatch: () => _onMatchConfirmed(project['id'] as String),
     );
   }
 }
@@ -399,7 +410,7 @@ class _ProjectCardHolder extends StatefulWidget {
   final Map<String, dynamic> project;
   final int index;
   final bool isMatched;
-  final VoidCallback onMatch;
+  final Future<void> Function() onMatch;
 
   const _ProjectCardHolder({
     required this.project,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
+import 'personal_info_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -74,7 +75,11 @@ class ProfileScreen extends StatelessWidget {
                     borderColor: Colors.white.withValues(alpha: 0.1),
                     child: Column(
                       children: [
-                        _buildListTile(Icons.person_outline, "Personal Information"),
+                        _buildListTile(
+                          Icons.person_outline, 
+                          "Personal Information",
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalInfoScreen())),
+                        ),
                         _buildDivider(),
                         _buildListTile(Icons.history_edu, "Academic Records"),
                         _buildDivider(),
@@ -105,12 +110,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildListTile(IconData icon, String title) {
+  Widget _buildListTile(IconData icon, String title, {VoidCallback? onTap}) {
     return ListTile(
       leading: Icon(icon, color: Colors.white70),
       title: Text(title, style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.w500)),
       trailing: const Icon(Icons.chevron_right, color: Colors.white30),
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 

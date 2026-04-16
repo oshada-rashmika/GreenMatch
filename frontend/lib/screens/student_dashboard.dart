@@ -366,6 +366,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
               if (_proposal!.status == ProposalStatus.matched) ...[
                 _buildRevealCard(),
                 const SizedBox(height: 24),
+                _buildPostMatchMilestones(),
+                const SizedBox(height: 24),
               ],
               _buildProposalCard(),
               const SizedBox(height: 24),
@@ -1024,6 +1026,106 @@ class _StudentDashboardState extends State<StudentDashboard> {
           Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(height: 4),
           Text(description, style: TextStyle(color: mutedTextColor, fontSize: 12, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPostMatchMilestones() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF2B364E)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('PROJECT MILESTONES', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('25% Complete', style: TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 11)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildMilestoneRow(title: 'Supervisor Matched', date: 'Oct 18, 2026', isCompleted: true, isLast: false),
+          _buildMilestoneRow(title: 'Literature Review Submitted', date: 'Due: Nov 15, 2026', isCompleted: false, isActive: true, isLast: false),
+          _buildMilestoneRow(title: 'Mid-term Defense', date: 'Dec 10, 2026', isCompleted: false, isLast: false),
+          _buildMilestoneRow(title: 'Final Thesis/Code Submission', date: 'Mar 15, 2027', isCompleted: false, isLast: false),
+          _buildMilestoneRow(title: 'Final Viva/Presentation', date: 'Apr 05, 2027', isCompleted: false, isLast: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMilestoneRow({required String title, required String date, required bool isCompleted, bool isActive = false, required bool isLast}) {
+    Color iconColor = isCompleted ? const Color(0xFF10B981) : (isActive ? accentColor : const Color(0xFF334155));
+    Color lineColor = isCompleted ? const Color(0xFF10B981) : const Color(0xFF334155);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: isCompleted ? iconColor : (isActive ? iconColor.withOpacity(0.2) : Colors.transparent),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: isActive && !isCompleted ? iconColor : (isCompleted ? Colors.transparent : const Color(0xFF334155)), width: 2),
+                ),
+                child: isCompleted 
+                     ? const Icon(Icons.check, size: 14, color: Colors.white) 
+                     : (isActive ? Center(child: Container(width: 8, height: 8, decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle))) : null),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: lineColor,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isCompleted || isActive ? Colors.white : mutedTextColor,
+                      fontSize: 15,
+                      fontWeight: isCompleted || isActive ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    date,
+                    style: TextStyle(
+                      color: isActive ? accentColor : mutedTextColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

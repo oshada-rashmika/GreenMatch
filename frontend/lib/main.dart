@@ -15,21 +15,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'GreenMatch',
-      // Phase 3: Brand Cleanup - Hide Debug Banner
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark, // Default to dark for the premium experience
-      home: const StudentDashboardScreen(),
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
       child: MaterialApp(
         title: 'GreenMatch',
+        // Phase 3: Brand Cleanup - Hide Debug Banner
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.monochromeTheme,
-        home: const LoginScreen(),
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark, // Default to dark for the premium experience
+        home: const StudentDashboardScreen(),
       ),
     );
   }

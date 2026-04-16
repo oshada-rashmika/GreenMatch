@@ -45,8 +45,6 @@ dependencies:
   go_router: ^14.0.0
 
   # State management
-  provider: ^6.1.5+1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

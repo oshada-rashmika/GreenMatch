@@ -4,16 +4,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
+import { MatchProjectDto } from './dto/match-project.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(private readonly projectsService: ProjectsService) { }
 
   @Post('submit')
   @Roles(Role.STUDENT)
   async submitProposal(@Request() req, @Body() body: Record<string, any>) {
-    // The requesting user is injected securely from the JWT payload
     const studentId = req.user.id;
     return this.projectsService.submitProposal(studentId, {
       title: body.title,
@@ -25,16 +25,20 @@ export class ProjectsController {
     });
   }
 
-  @Get('pending')
+  @Get('anonymous')
   @Roles(Role.SUPERVISOR)
-  async getPendingProjects() {
-    return this.projectsService.getPendingProjectsForSupervisor();
+  async getAnonymousFeed() {
+    return this.projectsService.getPendingAnonymousProjects();
   }
 
   @Post(':id/match')
   @Roles(Role.SUPERVISOR)
-  async matchProject(@Request() req, @Param('id') projectId: string) {
+  async matchProject(
+    @Request() req,
+    @Param('id') projectId: string,
+    @Body() matchDto: MatchProjectDto,
+  ) {
     const supervisorId = req.user.id;
-    return this.projectsService.matchProject(supervisorId, projectId);
+    return this.projectsService.matchProject(projectId, supervisorId, matchDto);
   }
 }

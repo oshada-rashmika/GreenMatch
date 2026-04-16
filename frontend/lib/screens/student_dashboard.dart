@@ -333,6 +333,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildDeadlineBanner(),
             const Text(
               'Welcome back, Elena\nFisher',
               style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, height: 1.2),
@@ -344,9 +345,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             const SizedBox(height: 32),
 
-            if (_proposal == null)
-              _buildEmptyState()
-            else ...[
+            if (_proposal == null) ...[
+              _buildEmptyState(),
+              const SizedBox(height: 32),
+              _buildHowItWorksTimeline(),
+              const SizedBox(height: 32),
+              _buildProfileCompleteness(),
+            ] else ...[
               _buildTimelineStatusCard(),
               const SizedBox(height: 24),
               if (_proposal!.status == ProposalStatus.matched) ...[
@@ -754,6 +759,164 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: Text(
         text,
         style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  Widget _buildDeadlineBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3B82F6).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_outlined, color: Color(0xFF60A5FA), size: 20),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Upcoming Deadline: Fall 2026 Proposal Submissions close in 14 days.',
+              style: TextStyle(color: Color(0xFFDBEAFE), fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B82F6).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'Nov 1, 2026',
+              style: TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHowItWorksTimeline() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'How it Works',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            _buildProcessStep('1', 'Submit\nProposal', Icons.description_outlined),
+            _buildProcessArrow(),
+            _buildProcessStep('2', 'Faculty\nReview', Icons.school_outlined),
+            _buildProcessArrow(),
+            _buildProcessStep('3', 'Matched with\nSupervisor', Icons.handshake_outlined),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProcessStep(String number, String title, IconData icon) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF2B364E)),
+            ),
+            child: Icon(icon, color: accentColor, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: mutedTextColor, fontSize: 13, height: 1.3, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProcessArrow() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 32.0), // Align with circles
+      child: Icon(Icons.arrow_forward, color: mutedTextColor.withOpacity(0.3), size: 20),
+    );
+  }
+
+  Widget _buildProfileCompleteness() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF2B364E)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  const Text('Profile Prerequisites', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text('80% Complete', style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: 0.8,
+              backgroundColor: bgColor,
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Complete your profile by adding your major and past courses to unlock proposal submission and find the perfect supervisor.',
+            style: TextStyle(color: mutedTextColor, fontSize: 13, height: 1.5),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward, size: 16),
+              label: const Text('Complete Profile'),
+              style: TextButton.styleFrom(
+                foregroundColor: accentColor,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

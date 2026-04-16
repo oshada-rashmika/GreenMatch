@@ -21,6 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isMatched = true;
   bool _supervisorRevealed = false;
   bool _isPersonalInfoExpanded = false;
+  bool _isSettingsExpanded = false;
 
   late AnimationController _revealController;
   late Animation<double> _revealAnimation;
@@ -130,6 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen>
             // ── Settings ──
             _buildSectionCard(
               title: 'Settings',
+              isExpanded: _isSettingsExpanded,
+              onToggle: () {
+                setState(() {
+                  _isSettingsExpanded = !_isSettingsExpanded;
+                });
+              },
               children: [
                 _buildActionTile(
                   icon: Icons.lock_outline,
@@ -529,32 +536,52 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ── Section Card ──
   Widget _buildSectionCard({
     required String title,
+    required bool isExpanded,
+    required VoidCallback onToggle,
     required List<Widget> children,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
+        GestureDetector(
+          onTap: onToggle,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Icon(
+                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: mutedTextColor,
+                  size: 24,
+                ),
+              ],
             ),
           ),
         ),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: dividerColor, width: 0.5),
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity),
+          secondChild: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: dividerColor, width: 0.5),
+            ),
+            child: Column(children: children),
           ),
-          child: Column(children: children),
+          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
         ),
       ],
     );

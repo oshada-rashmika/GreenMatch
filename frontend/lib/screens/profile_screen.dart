@@ -13,12 +13,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   final Color bgColor = const Color(0xFF12151C);
   final Color cardColor = const Color(0xFF1E222D);
   final Color accentColor = const Color(0xFFFACC15);
-  final Color mutedTextColor = const Color(0xFF94A3B8);
-  final Color dividerColor = const Color(0xFF2B3544);
+  final Color mutedTextColor = const Color(0xFF6B7B8F);
+  final Color dividerColor = const Color(0xFF282E3A);
+  final Color iconBgColor = const Color(0xFF262C3A);
 
   // --- Mock State ---
   bool _isMatched = true;
   bool _supervisorRevealed = false;
+  bool _isPersonalInfoExpanded = false;
 
   late AnimationController _revealController;
   late Animation<double> _revealAnimation;
@@ -70,84 +72,92 @@ class _ProfileScreenState extends State<ProfileScreen>
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
           ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
-            // --- 1. Profile Avatar ---
+            // ── Profile Avatar ──
             _buildProfileAvatar(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
 
-            // --- 2. Name & ID ---
+            // ── Name & ID ──
             const Text(
               'Elena Fisher',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              'Student ID: ST-2026-9482',
-              style: TextStyle(color: mutedTextColor, fontSize: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Student ID: ST-2026-9482',
+                style: TextStyle(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.w500),
+              ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 30),
 
-            // --- 3. Project Status Card ---
+            // ── Project Status Card ──
             _buildProjectStatusCard(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // --- 4. Supervisor Reveal Card ---
+            // ── Supervisor Reveal Card ──
             if (_isMatched) ...[
               _buildSupervisorRevealCard(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
             ],
 
-            // --- 5. Personal Information ---
-            _buildSectionCard(
-              title: 'Personal Information',
-              children: [
-                _buildInfoRow(Icons.email_outlined, 'Email', 'elena.fisher@example.edu'),
-                Divider(color: dividerColor, height: 1, thickness: 0.5),
-                _buildInfoRow(Icons.school_outlined, 'Degree', 'BSc Computer Science'),
-                Divider(color: dividerColor, height: 1, thickness: 0.5),
-                _buildInfoRow(Icons.phone_outlined, 'Phone', '+1 (555) 123-4567'),
-              ],
-            ),
-            const SizedBox(height: 20),
+            // ── Personal Information (Editable Form) ──
+            _buildPersonalInfoForm(),
+            const SizedBox(height: 16),
 
-            // --- 6. Settings ---
+            // ── Settings ──
             _buildSectionCard(
               title: 'Settings',
               children: [
-                _buildActionRow(Icons.lock_outline, 'Change Password'),
-                Divider(color: dividerColor, height: 1, thickness: 0.5),
-                _buildActionRow(Icons.notifications_active_outlined, 'Notification Preferences'),
+                _buildActionTile(
+                  icon: Icons.lock_outline,
+                  iconColor: const Color(0xFFFBBF24),
+                  label: 'Change Password',
+                ),
+                _buildDivider(),
+                _buildActionTile(
+                  icon: Icons.notifications_active_outlined,
+                  iconColor: const Color(0xFFF472B6),
+                  label: 'Notification Preferences',
+                ),
               ],
             ),
             const SizedBox(height: 28),
 
-            // --- 7. Log Out ---
+            // ── Log Out ──
             _buildLogOutButton(),
-            const SizedBox(height: 32),
+            const SizedBox(height: 36),
           ],
         ),
       ),
     );
   }
 
-  // ==========================================
+  // ══════════════════════════════════════════
   //  WIDGET BUILDERS
-  // ==========================================
+  // ══════════════════════════════════════════
 
   Widget _buildProfileAvatar() {
     return Center(
@@ -155,41 +165,57 @@ class _ProfileScreenState extends State<ProfileScreen>
         width: 130,
         height: 130,
         child: Stack(
+          alignment: Alignment.center,
           children: [
-            // Outer yellow ring
-            Center(
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: accentColor, width: 2.5),
-                ),
-                child: Container(
-                  margin: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: cardColor,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    size: 56,
-                    color: Color(0xFF6B7280),
-                  ),
+            // Glow ring
+            Container(
+              width: 124,
+              height: 124,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    accentColor.withOpacity(0.5),
+                    accentColor.withOpacity(0.15),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
             ),
-            // Edit button overlay
+            // Inner circle
+            Container(
+              width: 116,
+              height: 116,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: cardColor,
+                border: Border.all(color: accentColor, width: 2.5),
+              ),
+              child: const Icon(
+                Icons.person,
+                size: 52,
+                color: Color(0xFF5A6577),
+              ),
+            ),
+            // Edit badge
             Positioned(
-              bottom: 6,
-              right: 6,
+              bottom: 4,
+              right: 4,
               child: Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: accentColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: bgColor, width: 3),
+                  border: Border.all(color: const Color(0xFF12151C), width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: const Icon(Icons.edit, color: Color(0xFF1A1A1A), size: 16),
               ),
@@ -202,10 +228,10 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProjectStatusCard() {
     final String statusLabel = _isMatched ? 'MATCHED' : 'PENDING';
-    final Color statusColor =
-        _isMatched ? const Color(0xFF10B981) : accentColor;
-    final Color statusBgColor =
-        _isMatched ? const Color(0xFF10B981).withOpacity(0.12) : accentColor.withOpacity(0.12);
+    final Color statusColor = _isMatched ? const Color(0xFF10B981) : accentColor;
+    final Color statusBgColor = _isMatched
+        ? const Color(0xFF10B981).withOpacity(0.1)
+        : accentColor.withOpacity(0.1);
 
     return Container(
       width: double.infinity,
@@ -213,6 +239,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: dividerColor, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,17 +252,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                 style: TextStyle(
                   color: mutedTextColor,
                   fontSize: 11,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 1.5,
                 ),
               ),
-              // Dynamic Status Badge
+              // Status Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: statusBgColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                  border: Border.all(color: statusColor.withOpacity(0.25)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -246,6 +273,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                       decoration: BoxDecoration(
                         color: statusColor,
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: statusColor.withOpacity(0.5), blurRadius: 4),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -273,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           // Research Tags
           Wrap(
             spacing: 8,
@@ -284,8 +314,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               _buildResearchTag('TensorFlow', const Color(0xFF10B981)),
             ],
           ),
-          const SizedBox(height: 4),
-          // Demo toggle for testing
+          const SizedBox(height: 6),
+          // Demo toggle
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
@@ -298,12 +328,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                   }
                 });
               },
-              icon: const Icon(Icons.swap_horiz, size: 14),
-              label: Text(_isMatched ? 'Demo: Set Pending' : 'Demo: Set Matched', style: const TextStyle(fontSize: 11)),
+              icon: Icon(Icons.swap_horiz, size: 14, color: mutedTextColor),
+              label: Text(
+                _isMatched ? 'Demo: Set Pending' : 'Demo: Set Matched',
+                style: TextStyle(fontSize: 11, color: mutedTextColor),
+              ),
               style: TextButton.styleFrom(
-                foregroundColor: mutedTextColor,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(0, 30),
+                minimumSize: const Size(0, 28),
               ),
             ),
           ),
@@ -316,17 +348,13 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -341,16 +369,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF064E3B).withOpacity(0.6),
-                const Color(0xFF022C22).withOpacity(0.8),
+                const Color(0xFF064E3B).withOpacity(0.5),
+                const Color(0xFF022C22).withOpacity(0.7),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF10B981).withOpacity(0.25),
-            ),
+            border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,50 +402,48 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(height: 16),
               if (!_supervisorRevealed) ...[
-                // Blurred / locked state
+                // Locked state
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.black.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
                     ),
                     child: Column(
                       children: [
-                        Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.4), size: 32),
-                        const SizedBox(height: 8),
+                        Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.3), size: 32),
+                        const SizedBox(height: 10),
                         Text(
-                          'Tap to reveal supervisor identity',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 13,
-                          ),
+                          'Tap below to reveal supervisor identity',
+                          style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 13),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _toggleReveal,
                     icon: const Icon(Icons.lock_open, size: 16),
-                    label: const Text('Reveal Identity', style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: const Text('Reveal Identity', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
+                      backgroundColor: const Color(0xFF10B981).withOpacity(0.15),
                       foregroundColor: const Color(0xFF34D399),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      side: BorderSide(color: const Color(0xFF10B981).withOpacity(0.3)),
+                      side: BorderSide(color: const Color(0xFF10B981).withOpacity(0.25)),
                     ),
                   ),
                 ),
               ] else ...[
-                // Revealed state with animation
+                // Revealed state
                 FadeTransition(
                   opacity: _revealAnimation,
                   child: SlideTransition(
@@ -438,33 +462,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(Icons.email_outlined, color: Colors.white.withOpacity(0.6), size: 16),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'alan.turing@example.edu',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.white54,
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(height: 14),
+                        _buildSupervisorDetail(Icons.email_outlined, 'alan.turing@example.edu'),
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_outlined, color: Colors.white.withOpacity(0.6), size: 16),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Room 4.12, Computing Building',
-                              style: TextStyle(color: Colors.white70, fontSize: 14),
-                            ),
-                          ],
-                        ),
+                        _buildSupervisorDetail(Icons.location_on_outlined, 'Room 4.12, Computing Building'),
                         const SizedBox(height: 16),
                         Row(
                           children: [
@@ -472,26 +473,27 @@ class _ProfileScreenState extends State<ProfileScreen>
                               child: ElevatedButton.icon(
                                 onPressed: () {},
                                 icon: const Icon(Icons.note_add_outlined, size: 16),
-                                label: const Text('Send Note', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                label: const Text('Send Note', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF10B981).withOpacity(0.2),
+                                  backgroundColor: const Color(0xFF10B981).withOpacity(0.15),
                                   foregroundColor: const Color(0xFF34D399),
                                   elevation: 0,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  side: BorderSide(color: const Color(0xFF10B981).withOpacity(0.3)),
+                                  padding: const EdgeInsets.symmetric(vertical: 13),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  side: BorderSide(color: const Color(0xFF10B981).withOpacity(0.25)),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white.withOpacity(0.08)),
                               ),
                               child: IconButton(
                                 onPressed: _toggleReveal,
-                                icon: const Icon(Icons.visibility_off_outlined, color: Colors.white54, size: 20),
+                                icon: const Icon(Icons.visibility_off_outlined, color: Colors.white38, size: 20),
                                 tooltip: 'Hide details',
                               ),
                             ),
@@ -509,6 +511,22 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildSupervisorDetail(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white.withOpacity(0.5), size: 16),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            text,
+            style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.3),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Section Card ──
   Widget _buildSectionCard({
     required String title,
     required List<Widget> children,
@@ -516,21 +534,25 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
-        const SizedBox(height: 12),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: dividerColor, width: 0.5),
           ),
           child: Column(children: children),
         ),
@@ -538,25 +560,56 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildDivider() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Divider(color: dividerColor, height: 1, thickness: 0.5),
+    );
+  }
+
+  // ── Info Tile (for Personal Information) ──
+  Widget _buildInfoTile({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       child: Row(
         children: [
-          Icon(icon, color: mutedTextColor, size: 22),
-          const SizedBox(width: 16),
+          // Icon with colored background
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: TextStyle(color: mutedTextColor, fontSize: 12, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: mutedTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   value,
-                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -566,25 +619,51 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildActionRow(IconData icon, String label) {
+  // ── Action Tile (for Settings) ──
+  Widget _buildActionTile({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       child: Row(
         children: [
-          Icon(icon, color: mutedTextColor, size: 22),
-          const SizedBox(width: 16),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          Icon(Icons.chevron_right, color: mutedTextColor, size: 22),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.chevron_right, color: mutedTextColor, size: 18),
+          ),
         ],
       ),
     );
   }
 
+  // ── Log Out Button ──
   Widget _buildLogOutButton() {
     return SizedBox(
       width: double.infinity,
@@ -595,16 +674,152 @@ class _ProfileScreenState extends State<ProfileScreen>
         icon: const Icon(Icons.logout, size: 20),
         label: const Text(
           'Log Out',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFEF4444).withOpacity(0.08),
           foregroundColor: const Color(0xFFEF4444),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: const Color(0xFFEF4444).withOpacity(0.15)),
+          ),
           elevation: 0,
         ),
       ),
+    );
+  }
+  // ── Personal Information Form ──
+  Widget _buildPersonalInfoForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isPersonalInfoExpanded = !_isPersonalInfoExpanded;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Personal Information',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Icon(
+                  _isPersonalInfoExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: mutedTextColor,
+                  size: 24,
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity),
+          secondChild: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: dividerColor, width: 0.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFormInput('FULL NAME', 'Elena Fisher'),
+                const SizedBox(height: 16),
+                _buildFormInput('STUDENT ID', 'ST-2026-9482'),
+                const SizedBox(height: 16),
+                _buildFormInput('EMAIL ADDRESS', 'elena.fisher@student.university.edu'),
+                const SizedBox(height: 16),
+                _buildFormInput('PHONE NUMBER', '+1 (555) 019-2834'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildFormInput('DEGREE LEVEL', 'Undergraduate')),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildFormInput('MAJOR', 'Computer Science')),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Changes saved successfully.')),
+                      );
+                      setState(() {
+                        _isPersonalInfoExpanded = false;
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF34D399).withOpacity(0.9),
+                      foregroundColor: const Color(0xFF0F1522),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          crossFadeState: _isPersonalInfoExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormInput(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: mutedTextColor,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          initialValue: value,
+          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            filled: true,
+            fillColor: const Color(0xFF262C3A).withOpacity(0.4),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: dividerColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: dividerColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: accentColor.withOpacity(0.5)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

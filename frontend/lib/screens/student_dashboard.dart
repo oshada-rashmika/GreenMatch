@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../theme/app_theme.dart';
+import '../widgets/glass_container.dart';
 
 // --- MOCK VIEW MODEL ---
 class StudentDashboardViewModel extends ChangeNotifier {
-  // Toggle this value to test different states: 'Pending', 'Under Review', 'Matched'
-  String _currentStatus = 'Matched';
-
+  String _currentStatus = 'Pending';
   String get currentStatus => _currentStatus;
 
   void setStatus(String newStatus) {
@@ -13,16 +15,14 @@ class StudentDashboardViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Mock student data
   final String studentName = "Elena Fisher";
   final String studentId = "ST-2026-9482";
 
-  // Mock proposal data
   final String proposalTitle = "AI-Driven Climate Modeling for Urban Microclimates";
   final String abstractSnippet = "This research focuses on leveraging machine learning to predict temperature spikes in dense urban areas, offering actionable insights for city planning and green infrastructure placement...";
   final String researchArea = "Artificial Intelligence";
+  final List<String> techStack = ['Python', 'TensorFlow', 'PostGIS', 'React'];
 
-  // Mock supervisor data (only used when matched)
   final String supervisorName = "Dr. Alan Turing";
   final String supervisorDepartment = "Faculty of Computer Science";
   final String supervisorEmail = "a.turing@university.edu";
@@ -30,7 +30,7 @@ class StudentDashboardViewModel extends ChangeNotifier {
 
 // --- MAIN SCREEN ---
 class StudentDashboardScreen extends StatelessWidget {
-  const StudentDashboardScreen({Key? key}) : super(key: key);
+  const StudentDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -41,111 +41,183 @@ class StudentDashboardScreen extends StatelessWidget {
   }
 }
 
-class _StudentDashboardContent extends StatelessWidget {
-  const _StudentDashboardContent({Key? key}) : super(key: key);
+class _StudentDashboardContent extends StatefulWidget {
+  const _StudentDashboardContent({super.key});
 
+  @override
+  State<_StudentDashboardContent> createState() => _StudentDashboardContentState();
+}
+
+class _StudentDashboardContentState extends State<_StudentDashboardContent> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<StudentDashboardViewModel>();
     final isDesktop = MediaQuery.of(context).size.width > 900;
-    
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Subtle light gray background
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: const Text(
-          "Project Approval System",
-          style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          // Dropdown to toggle status for testing
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: DropdownButton<String>(
-              value: viewModel.currentStatus,
-              underline: const SizedBox(),
-              items: ['Pending', 'Under Review', 'Matched']
-                  .map((e) => DropdownMenuItem(value: e, child: Text("Test: $e")))
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) viewModel.setStatus(val);
-              },
-            ),
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _WelcomeHeader(name: viewModel.studentName, id: viewModel.studentId),
-                const SizedBox(height: 32),
-                if (isDesktop)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 7,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const StatusBannerWidget(),
-                            const SizedBox(height: 24),
-                            const ProposalOverviewCard(),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 4,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const QuickActionsCard(),
-                            const SizedBox(height: 24),
-                            if (viewModel.currentStatus == 'Matched')
-                              const SupervisorRevealCard(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const StatusBannerWidget(),
-                      const SizedBox(height: 24),
-                      const QuickActionsCard(),
-                      const SizedBox(height: 24),
-                      const ProposalOverviewCard(),
-                      const SizedBox(height: 24),
-                      if (viewModel.currentStatus == 'Matched')
-                        const SupervisorRevealCard(),
-                    ],
+
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        backgroundColor: const Color(0xFF0F172A), // deep dark background
+        appBar: _buildAppBar(viewModel),
+        body: Stack(
+          children: [
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                      blurRadius: 100,
+                      spreadRadius: 50,
+                    ),
+                  ],
+                ),
+              ),
+            ).animate().fadeIn(duration: 800.ms),
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1000),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _WelcomeHeader(name: viewModel.studentName, id: viewModel.studentId),
+                        const SizedBox(height: 32),
+                        if (isDesktop)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  children: [
+                                    const StatusBannerWidget(),
+                                    const SizedBox(height: 24),
+                                    if (viewModel.currentStatus == 'Matched')
+                                      const SupervisorRevealCard()
+                                    else
+                                      const QuickActionsCard(),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                flex: 4,
+                                child: const ProposalOverviewCard(),
+                              ),
+                            ],
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const StatusBannerWidget(),
+                              const SizedBox(height: 24),
+                              const ProposalOverviewCard(),
+                              const SizedBox(height: 24),
+                              if (viewModel.currentStatus == 'Matched')
+                                const SupervisorRevealCard()
+                              else
+                                const QuickActionsCard(),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
-              ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(StudentDashboardViewModel viewModel) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(70),
+      child: GlassContainer(
+        borderRadius: 0,
+        opacity: 0.02,
+        blur: 15,
+        borderColor: Colors.transparent,
+        child: AppBar(
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            "Student Dashboard",
+            style: GoogleFonts.montserrat(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              fontSize: 22,
+              color: Colors.white,
             ),
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  dropdownColor: const Color(0xFF1E293B),
+                  style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                  value: viewModel.currentStatus,
+                  items: ['Pending', 'Under Review', 'Matched']
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) viewModel.setStatus(val);
+                  },
+                ),
+              ),
+            ),
+            _buildAppBarIcon(Icons.notifications_none_rounded),
+            const SizedBox(width: 8),
+            _buildAppBarIcon(Icons.person),
+            const SizedBox(width: 16),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAppBarIcon(IconData icon) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Icon(icon, size: 22, color: Colors.white.withValues(alpha: 0.9)),
       ),
     );
   }
 }
 
-// --- WIDGETS ---
-
 class _WelcomeHeader extends StatelessWidget {
   final String name;
   final String id;
-  const _WelcomeHeader({required this.name, required this.id, Key? key}) : super(key: key);
+  const _WelcomeHeader({required this.name, required this.id});
 
   @override
   Widget build(BuildContext context) {
@@ -154,119 +226,99 @@ class _WelcomeHeader extends StatelessWidget {
       children: [
         Text(
           "Welcome back, $name",
-          style: const TextStyle(
-            fontSize: 32,
+          style: GoogleFonts.montserrat(
+            fontSize: 28,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A), // Deep charcoal
+            color: Colors.white,
             letterSpacing: -0.5,
           ),
-        ),
-        const SizedBox(height: 8),
+        ).animate().fadeIn().slideX(begin: -0.1),
+        const SizedBox(height: 6),
         Text(
           "Student ID: $id",
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF64748B), // Slate gray
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
           ),
-        ),
+        ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1),
       ],
     );
   }
 }
 
 class StatusBannerWidget extends StatelessWidget {
-  const StatusBannerWidget({Key? key}) : super(key: key);
+  const StatusBannerWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
     final status = context.watch<StudentDashboardViewModel>().currentStatus;
-    
-    Color bgColor;
+
     Color accentColor;
     IconData icon;
     String description;
 
-    switch (status) {
-      case 'Matched':
-        bgColor = const Color(0xFFECFDF5); // Emerald 50
-        accentColor = const Color(0xFF10B981); // Emerald 500
-        icon = Icons.check_circle_rounded;
-        description = "Your project proposal has been accepted and matched with a supervisor.";
-        break;
-      case 'Under Review':
-        bgColor = const Color(0xFFFFFBEB); // Amber 50
-        accentColor = const Color(0xFFF59E0B); // Amber 500
-        icon = Icons.hourglass_bottom_rounded;
-        description = "Your proposal is currently being evaluated by the committee.";
-        break;
-      case 'Pending':
-      default:
-        bgColor = const Color(0xFFEFF6FF); // Blue 50
-        accentColor = const Color(0xFF3B82F6); // Blue 500
-        icon = Icons.info_outline_rounded;
-        description = "Your proposal has been submitted and is awaiting review.";
-        break;
+    if (status == 'Matched') {
+      accentColor = AppTheme.forestEmerald;
+      icon = Icons.verified_rounded;
+      description = "Your proposal was approved and matched with a supervisor.";
+    } else if (status == 'Under Review') {
+      accentColor = Colors.orangeAccent;
+      icon = Icons.manage_search_rounded;
+      description = "Your proposal is being evaluated by the committee.";
+    } else {
+      accentColor = Colors.amber;
+      icon = Icons.schedule_rounded;
+      description = "Your proposal has been submitted and is awaiting review.";
     }
 
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          )
-        ],
-      ),
+      borderRadius: 24,
+      opacity: 0.04,
+      borderColor: Colors.white.withValues(alpha: 0.05),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: bgColor,
+              color: accentColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: accentColor, size: 32),
+            child: Icon(icon, color: accentColor, size: 28),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Current Status",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF64748B),
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                Text(
+                  "STATUS",
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: accentColor,
-                      ),
-                    ),
-                  ],
+                Text(
+                  status.toUpperCase(),
+                  style: GoogleFonts.montserrat(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: accentColor,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   description,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF334155),
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
                     height: 1.5,
                   ),
                 ),
@@ -275,196 +327,253 @@ class StatusBannerWidget extends StatelessWidget {
           )
         ],
       ),
-    );
+    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
   }
 }
 
-class ProposalOverviewCard extends StatelessWidget {
-  const ProposalOverviewCard({Key? key}) : super(key: key);
+class ProposalOverviewCard extends StatefulWidget {
+  const ProposalOverviewCard({super.key});
+
+  @override
+  State<ProposalOverviewCard> createState() => _ProposalOverviewCardState();
+}
+
+class _ProposalOverviewCardState extends State<ProposalOverviewCard> {
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<StudentDashboardViewModel>();
+    final isMatched = viewModel.currentStatus == 'Matched';
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Proposal Overview",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9), // Slate 100
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              viewModel.researchArea,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF475569), // Slate 600
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.01 : 1.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutQuart,
+        child: GlassContainer(
+          padding: const EdgeInsets.all(24),
+          borderRadius: 24,
+          opacity: _isHovered ? 0.08 : 0.04,
+          borderColor: _isHovered
+              ? AppTheme.forestEmerald.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.05),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      viewModel.researchArea.toUpperCase(),
+                      style: GoogleFonts.montserrat(
+                        color: AppTheme.forestEmerald,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      if (!isMatched)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Row(
+                            children: [
+                              _buildActionButton(Icons.edit_outlined, "Edit", Colors.blue),
+                              const SizedBox(width: 8),
+                              _buildActionButton(Icons.delete_outline, "Withdraw", Colors.redAccent),
+                            ],
+                          ),
+                        ),
+                      Icon(Icons.more_horiz, color: Colors.white.withValues(alpha: 0.3)),
+                    ],
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 24),
+              Text(
+                viewModel.proposalTitle,
+                style: GoogleFonts.montserrat(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                viewModel.abstractSnippet,
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 14,
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: viewModel.techStack.map((tech) => _buildTechBadge(tech)).toList(),
+              ),
+              if (!isMatched) ...[
+                const SizedBox(height: 32),
+                InkWell(
+                  onTap: () {},
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "Resubmit Document",
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ]
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            viewModel.proposalTitle,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1E293B),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            viewModel.abstractSnippet,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF64748B),
-              height: 1.6,
-            ),
-          ),
-        ],
+        ),
+      ),
+    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildTechBadge(String tech) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Text(
+        tech,
+        style: GoogleFonts.montserrat(
+          color: Colors.white.withValues(alpha: 0.6),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label, Color color) {
+    return InkWell(
+      onTap: () {},
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: GoogleFonts.montserrat(fontSize: 10, color: color, fontWeight: FontWeight.w700)),
+          ],
+        ),
       ),
     );
   }
 }
 
 class QuickActionsCard extends StatelessWidget {
-  const QuickActionsCard({Key? key}) : super(key: key);
+  const QuickActionsCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isMatched = context.watch<StudentDashboardViewModel>().currentStatus == 'Matched';
-
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          )
-        ],
-      ),
+      borderRadius: 24,
+      opacity: 0.02,
+      borderColor: Colors.white.withValues(alpha: 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Quick Actions",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
-            ),
+          Row(
+            children: [
+              Icon(Icons.bolt_rounded, color: Colors.amberAccent, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                "QUICK ACTIONS",
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          _ActionButton(
-            title: "View Proposal",
-            icon: Icons.visibility_outlined,
-            onPressed: () {},
-            isPrimary: true,
+          const SizedBox(height: 20),
+          _ActionRow(
+            icon: Icons.add_box_outlined,
+            label: "Submit New Proposal",
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => const _SubmissionModal(),
+              );
+            },
           ),
-          if (!isMatched) ...[
-            const SizedBox(height: 12),
-            _ActionButton(
-              title: "Edit Proposal",
-              icon: Icons.edit_outlined,
-              onPressed: () {},
-              isPrimary: false,
-            ),
-            const SizedBox(height: 12),
-            _ActionButton(
-              title: "Withdraw",
-              icon: Icons.delete_outline,
-              onPressed: () {},
-              isPrimary: false,
-              isDestructive: true,
-            ),
-          ]
+          const SizedBox(height: 12),
+          const _ActionRow(icon: Icons.chat_bubble_outline, label: "Contact Coordinator"),
         ],
       ),
-    );
+    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1);
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  final String title;
+class _ActionRow extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onPressed;
-  final bool isPrimary;
-  final bool isDestructive;
+  final String label;
+  final VoidCallback? onTap;
 
-  const _ActionButton({
-    required this.title,
-    required this.icon,
-    required this.onPressed,
-    this.isPrimary = false,
-    this.isDestructive = false,
-    Key? key,
-  }) : super(key: key);
+  const _ActionRow({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    Color tColor;
-    Color bColor;
-
-    if (isDestructive) {
-      tColor = const Color(0xFFEF4444);
-      bColor = const Color(0xFFFEF2F2);
-    } else if (isPrimary) {
-      tColor = Colors.white;
-      bColor = const Color(0xFF0F172A);
-    } else {
-      tColor = const Color(0xFF334155);
-      bColor = const Color(0xFFF1F5F9);
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bColor,
-          foregroundColor: tColor,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: (!isPrimary && !isDestructive)
-                ? const BorderSide(color: Color(0xFFE2E8F0))
-                : BorderSide.none,
-          ),
+    return InkWell(
+      onTap: onTap ?? () {},
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
-        icon: Icon(icon, size: 20),
-        label: Text(
-          title,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: Colors.white70),
+            const SizedBox(width: 12),
+            Text(label, style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+            const Spacer(),
+            const Icon(Icons.chevron_right, size: 16, color: Colors.white30),
+          ],
         ),
       ),
     );
@@ -472,26 +581,24 @@ class _ActionButton extends StatelessWidget {
 }
 
 class SupervisorRevealCard extends StatelessWidget {
-  const SupervisorRevealCard({Key? key}) : super(key: key);
+  const SupervisorRevealCard({super.key});
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<StudentDashboardViewModel>();
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x330F172A),
-            blurRadius: 15,
-            offset: Offset(0, 8),
+            color: AppTheme.forestEmerald.withValues(alpha: 0.05),
+            blurRadius: 20,
+            spreadRadius: 5,
           )
         ],
       ),
@@ -499,92 +606,278 @@ class SupervisorRevealCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.stars_rounded, color: Color(0xFFFBBF24), size: 28),
-              const SizedBox(width: 8),
-              Text(
-                "Match Successful!",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber[300],
+              Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: AppTheme.forestEmerald, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    "MATCH SECURED",
+                    style: GoogleFonts.montserrat(
+                      color: AppTheme.forestEmerald,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  "CONFIDENTIAL",
+                  style: GoogleFonts.montserrat(fontSize: 8, color: Colors.white70, fontWeight: FontWeight.w800, letterSpacing: 1),
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                child: Text(
+                  viewModel.supervisorName.substring(0, 1),
+                  style: GoogleFonts.montserrat(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      viewModel.supervisorName,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      viewModel.supervisorDepartment,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            "Congratulations! Your proposal has been approved and you have been assigned an academic supervisor for your project.",
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFFCBD5E1),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: const Color(0xFF334155),
-                  child: Text(
-                    viewModel.supervisorName.substring(0, 1),
-                    style: const TextStyle(fontSize: 20, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        viewModel.supervisorName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        viewModel.supervisorDepartment,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.email_outlined, color: Color(0xFF94A3B8), size: 14),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              viewModel.supervisorEmail,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                const Icon(Icons.email_outlined, color: Colors.white54, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  viewModel.supervisorEmail,
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-          ),
+          )
         ],
       ),
+    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1);
+  }
+}
+
+class _SubmissionModal extends StatelessWidget {
+  const _SubmissionModal();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(32),
+        borderRadius: 24,
+        opacity: 0.05,
+        borderColor: Colors.white.withValues(alpha: 0.1),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Submit New Proposal",
+                      style: GoogleFonts.montserrat(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _buildLabel("Project Title"),
+                _buildTextField(hint: "e.g., Quantum Sensors for Bio-imaging"),
+                const SizedBox(height: 24),
+                _buildLabel("Abstract"),
+                _buildTextField(
+                  hint: "Briefly describe the research methodology and goals...",
+                  maxLines: 4,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel("Research Area"),
+                          _buildDropdown(['Artificial Intelligence', 'Cybersecurity', 'Data Science', 'Software Engineering']),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLabel("Technical Stack"),
+                          _buildDropdown(['Python', 'React', 'Flutter', 'AWS', 'TensorFlow']),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        "Cancel",
+                        style: GoogleFonts.montserrat(color: Colors.white54, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.forestEmerald,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                        ),
+                        child: Text(
+                          "Submit Proposal",
+                          style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        text.toUpperCase(),
+        style: GoogleFonts.montserrat(
+          color: Colors.white70,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({required String hint, int maxLines = 1}) {
+    return TextField(
+      maxLines: maxLines,
+      style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.montserrat(color: Colors.white30, fontSize: 14),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.03),
+        contentPadding: const EdgeInsets.all(16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown(List<String> items) {
+    return DropdownButtonFormField<String>(
+      dropdownColor: const Color(0xFF1E293B),
+      iconDisabledColor: Colors.white54,
+      iconEnabledColor: Colors.white54,
+      style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.03),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+      ),
+      hint: Text("Select...", style: GoogleFonts.montserrat(color: Colors.white30, fontSize: 14)),
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      onChanged: (val) {},
     );
   }
 }

@@ -1,14 +1,50 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
-  // Backend URL - adjust based on your environment
-  static const String _baseUrl = 'http://localhost:3000';
+  // Optional override: flutter run --dart-define=API_BASE_URL=http://<your-ip>:3000
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+  String get _baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl;
+    }
+
+    if (kIsWeb) {
+      return 'http://localhost:3000';
+    }
+
+    // Android emulator cannot access host via localhost; use 10.0.2.2.
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://10.0.2.2:3000';
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+      case TargetPlatform.fuchsia:
+        return 'http://localhost:3000';
+    }
+  }
+
+  String _mapNetworkError(Object error) {
+    if (error is SocketException) {
+      return 'Cannot reach backend at $_baseUrl. '
+          'If using Android emulator, 10.0.2.2 is required. '
+          'Also ensure NestJS is running on port 3000.';
+    }
+
+    return 'Network error: ${error.toString()}';
+  }
 
   // ==================== Authentication Endpoints ====================
 
@@ -41,7 +77,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error: ${e.toString()}'};
+      return {'success': false, 'message': _mapNetworkError(e)};
     }
   }
 
@@ -74,7 +110,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error: ${e.toString()}'};
+      return {'success': false, 'message': _mapNetworkError(e)};
     }
   }
 
@@ -107,7 +143,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error: ${e.toString()}'};
+      return {'success': false, 'message': _mapNetworkError(e)};
     }
   }
 
@@ -148,7 +184,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Network error: ${e.toString()}'};
+      return {'success': false, 'message': _mapNetworkError(e)};
     }
   }
 

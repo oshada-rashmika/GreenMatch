@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../services/project_service.dart';
 import '../widgets/glass_container.dart';
 import 'matches_screen.dart';
+import 'supervisor_profile_screen.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -205,8 +206,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         blur: 15,
         borderColor: Colors.transparent,
         child: AppBar(
-          centerTitle:
-              true, // Phase 3: Symmetry - Ensure title remains centered
+          centerTitle: true,
           title: Text(
             "Blind Review",
             style: GoogleFonts.montserrat(
@@ -216,11 +216,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             ),
           ),
           actions: [
-            // Phase 2: NavBar Expansion - Conditional "Matches" button
             if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
-            _buildAppBarIcon(Icons.person),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SupervisorProfileScreen(),
+                ),
+              ),
+              child: _buildAppBarIcon(Icons.person),
+            ),
             const SizedBox(width: 16),
           ],
         ),

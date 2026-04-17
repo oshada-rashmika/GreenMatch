@@ -658,63 +658,68 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     return Container(
       key: const ValueKey('focus_mode_swiper'),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                ),
-                child: const Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.forestEmerald),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                    ),
+                    child: const Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.forestEmerald),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    "You've reviewed\nall projects!",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              Text(
-                "You've reviewed\nall projects!",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.montserrat(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  height: 1.2,
-                ),
+              CardSwiper(
+                cardsCount: projects.length,
+                cardBuilder: (context, index, horizontalOffsetPercentage, verticalOffsetPercentage) {
+                  final project = projects[index];
+                  return FocusProjectCard(
+                    project: project,
+                    activeSpecifications: activeSpecifications,
+                    onMatch: () => _onMatchConfirmed(project.id),
+                    percentX: horizontalOffsetPercentage,
+                  );
+                },
+                allowedSwipeDirection: const AllowedSwipeDirection.symmetric(horizontal: true),
+                onSwipe: (previousIndex, currentIndex, direction) {
+                  final project = projects[previousIndex];
+                  if (direction == CardSwiperDirection.right) {
+                    final shortlistProvider = context.read<ShortlistProvider>();
+                    if (!shortlistProvider.isShortlisted(project.id)) {
+                      shortlistProvider.toggleShortlist(project.id);
+                      HapticFeedback.lightImpact();
+                    }
+                  } else if (direction == CardSwiperDirection.left) {
+                      HapticFeedback.selectionClick();
+                  }
+                  return true;
+                },
+                onEnd: () {
+                  HapticFeedback.mediumImpact();
+                },
               ),
             ],
           ),
-          CardSwiper(
-            cardsCount: projects.length,
-            cardBuilder: (context, index, horizontalOffsetPercentage, verticalOffsetPercentage) {
-              final project = projects[index];
-              return FocusProjectCard(
-                project: project,
-                activeSpecifications: activeSpecifications,
-                onMatch: () => _onMatchConfirmed(project.id),
-                percentX: horizontalOffsetPercentage,
-              );
-            },
-            allowedSwipeDirection: const AllowedSwipeDirection.symmetric(horizontal: true),
-            onSwipe: (previousIndex, currentIndex, direction) {
-              final project = projects[previousIndex];
-              if (direction == CardSwiperDirection.right) {
-                final shortlistProvider = context.read<ShortlistProvider>();
-                if (!shortlistProvider.isShortlisted(project.id)) {
-                  shortlistProvider.toggleShortlist(project.id);
-                  HapticFeedback.lightImpact();
-                }
-              } else if (direction == CardSwiperDirection.left) {
-                  HapticFeedback.selectionClick();
-              }
-              return true;
-            },
-            onEnd: () {
-              HapticFeedback.mediumImpact();
-            },
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -163,7 +163,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   children: [
                     Text(
                       isEditing ? 'Edit Proposal' : 'Submit Proposal',
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
                     if (_isLoadingData)
@@ -175,49 +175,55 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       const SizedBox(height: 16),
                       _buildTextField(groupNameController, 'Group Name (Optional)'),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: _selectedModuleId,
-                        dropdownColor: bgColor,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Academic Module',
-                          labelStyle: TextStyle(color: mutedTextColor),
-                          filled: true,
-                          fillColor: bgColor,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      if (_modules.isEmpty)
+                        const Text("No Modules Available. Please wait or referesh.", style: TextStyle(color: Colors.redAccent))
+                      else
+                        DropdownButtonFormField<String>(
+                          value: _modules.any((m) => m.id == _selectedModuleId) ? _selectedModuleId : _modules.first.id,
+                          dropdownColor: AppTheme.premiumBlack,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Academic Module',
+                            labelStyle: TextStyle(color: mutedTextColor),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.05),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          items: _modules
+                              .map((mod) => DropdownMenuItem(value: mod.id, child: Text('${mod.moduleCode} - ${mod.moduleName}', overflow: TextOverflow.ellipsis)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => _selectedModuleId = val);
+                          },
                         ),
-                        items: _modules
-                            .map((mod) => DropdownMenuItem(value: mod.id, child: Text('${mod.moduleCode} - ${mod.moduleName}')))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) setModalState(() => _selectedModuleId = val);
-                        },
-                      ),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: _selectedTagId,
-                        dropdownColor: bgColor,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          labelText: 'Research Area / Tech Stack',
-                          labelStyle: TextStyle(color: mutedTextColor),
-                          filled: true,
-                          fillColor: bgColor,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      if (_tags.isEmpty)
+                        const Text("No Research Areas Available.", style: TextStyle(color: Colors.redAccent))
+                      else
+                        DropdownButtonFormField<String>(
+                          value: _tags.any((t) => t.id == _selectedTagId) ? _selectedTagId : _tags.first.id,
+                          dropdownColor: AppTheme.premiumBlack,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Research Area / Tech Stack',
+                            labelStyle: TextStyle(color: mutedTextColor),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.05),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          items: _tags
+                              .map((tag) => DropdownMenuItem(value: tag.id, child: Text(tag.name)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => _selectedTagId = val);
+                          },
                         ),
-                        items: _tags
-                            .map((tag) => DropdownMenuItem(value: tag.id, child: Text(tag.name)))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) setModalState(() => _selectedTagId = val);
-                        },
-                      ),
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2B364E),
+                            backgroundColor: AppTheme.forestEmerald,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -247,7 +253,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                     expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
                                     impactBadges: [],
                                     activityLog: [
-                                      _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, const Color(0xFFFACC15)),
+                                      _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, AppTheme.forestEmerald),
                                     ],
                                   );
                                 });
@@ -489,9 +495,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.only(top: 100, left: 20.0, right: 20.0, bottom: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
               onTap: () {
@@ -597,7 +603,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Start from Scratch', style: TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
+                  backgroundColor: AppTheme.forestEmerald,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -633,15 +639,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2B364E),
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: const [
-                      Icon(Icons.copy, size: 16, color: Colors.white),
+                      Icon(Icons.copy, size: 16, color: AppTheme.forestEmerald),
                       SizedBox(width: 8),
-                      Text('Use Template', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Icon(Icons.arrow_drop_down, color: Colors.white),
+                      Text('Use Template', style: TextStyle(color: AppTheme.forestEmerald, fontWeight: FontWeight.bold)),
+                      Icon(Icons.arrow_drop_down, color: AppTheme.forestEmerald),
                     ],
                   ),
                 ),
@@ -717,7 +724,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildTimelineNode(String label, bool isCompleted, bool isActive) {
-    Color nodeColor = isCompleted ? const Color(0xFF10B981) : const Color(0xFF334155);
+    Color nodeColor = isCompleted ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.1);
     Color textColor = isCompleted || isActive ? Colors.white : mutedTextColor;
     
     return Expanded(
@@ -746,7 +753,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Expanded(
       child: Container(
         height: 2,
-        color: isActive ? const Color(0xFF10B981) : const Color(0xFF334155),
+        color: isActive ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.1),
         margin: const EdgeInsets.only(bottom: 24),
       ),
     );

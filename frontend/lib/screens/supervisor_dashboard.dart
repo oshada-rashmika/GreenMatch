@@ -26,10 +26,16 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   late final ProjectService projectService;
   List<AnonymousProject> projects = [];
   List<SupervisedProject> supervisedProjects = [];
-  int _currentTab = 0; // 0 = Available Projects, 1 = My Supervised Projects
+  int _currentTab = 0;
   bool isLoading = true;
   String? errorMessage;
   final Set<String> matchedProjectIds = {};
+
+  final List<String> activeSpecifications = [
+    'Artificial Intelligence',
+    'Python',
+    'TensorFlow',
+  ];
 
   String _selectedFilter = "All";
   List<String> _filters = ["All"];
@@ -745,6 +751,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     return _ProjectCardHolder(
       project: project,
       index: index,
+      activeSpecifications: activeSpecifications,
       isMatched: matchedProjectIds.contains(project.id),
       onMatch: () => _onMatchConfirmed(project.id),
     );
@@ -1059,12 +1066,14 @@ class _ProjectCardHolder extends StatefulWidget {
   final AnonymousProject project;
   final int index;
   final bool isMatched;
+  final List<String> activeSpecifications;
   final Future<void> Function() onMatch;
 
   const _ProjectCardHolder({
     required this.project,
     required this.index,
     required this.isMatched,
+    required this.activeSpecifications,
     required this.onMatch,
   });
 
@@ -1075,6 +1084,65 @@ class _ProjectCardHolder extends StatefulWidget {
 class _ProjectCardHolderState extends State<_ProjectCardHolder> {
   bool _isHovered = false;
   bool _isMatching = false;
+
+  double get _fraction {
+    if (widget.project.tags.isEmpty) return 0.0;
+    int matches = widget.project.tags
+        .where((tag) => widget.activeSpecifications
+            .map((s) => s.toLowerCase())
+            .contains(tag.toLowerCase()))
+        .length;
+    return matches / widget.project.tags.length;
+  }
+
+  int get _score => (_fraction * 100).round();
+
+  Color get _scoreColor {
+    if (_score >= 80) return AppTheme.forestEmerald;      // Premium Green
+    if (_score >= 50) return const Color(0xFFFBBF24);       // Amber
+    return Colors.white.withValues(alpha: 0.15);            // Muted, frosted grey
+  }
+
+  Widget _buildMatchScoreIndicator() {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _scoreColor.withValues(alpha: 0.1),
+        boxShadow: [
+          BoxShadow(
+            color: _scoreColor.withValues(alpha: _score >= 50 ? 0.2 : 0.0),
+            blurRadius: 10,
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 46,
+            height: 46,
+            child: CircularProgressIndicator(
+              value: _fraction,
+              strokeWidth: 3.5,
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              valueColor: AlwaysStoppedAnimation<Color>(_scoreColor),
+            ),
+          ),
+          Text(
+            '$_score%',
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1109,10 +1177,8 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                                   .toList(),
                             ),
                           ),
-                          Icon(
-                            Icons.more_horiz,
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
+                          const SizedBox(width: 12),
+                          _buildMatchScoreIndicator(),
                         ],
                       ),
                       const SizedBox(height: 16),

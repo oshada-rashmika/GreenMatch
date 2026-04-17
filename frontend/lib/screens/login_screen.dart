@@ -147,11 +147,26 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleStudentLogin(BuildContext context) async {
-    // TEMPORARY BYPASS to test the newly created StudentDashboard
-    // without requiring the NestJS backend to be running.
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const StudentDashboard()),
+    if (!_studentLoginFormKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final success = await authProvider.studentLogin(
+      _studentEmailController.text.trim(),
+      _studentPasswordController.text,
     );
+
+    if (success && context.mounted) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Student login successful!')),
+      );
+
+      navigator.pushReplacement(
+        MaterialPageRoute(builder: (context) => const StudentDashboard()),
+      );
+    }
   }
 
   Future<void> _handleStudentSignup(BuildContext context) async {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'module_leader_profile_screen.dart' as module_leader_profile;
+import 'profile_screen.dart';
 
 import '../theme/app_theme.dart';
 import '../theme/login_design.dart';
@@ -55,277 +55,140 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   Widget build(BuildContext context) {
     return Theme(
       data: AppTheme.darkTheme,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWideLayout = constraints.maxWidth >= _wideLayoutBreakpoint;
-
-          return Scaffold(
-            backgroundColor: LoginColors.background,
-            extendBodyBehindAppBar: true,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              automaticallyImplyLeading: !isWideLayout,
-              title: isWideLayout 
-                  ? null
-                  : Text(
-                      'Module Leader',
-                      style: LoginTypography.label.copyWith(fontSize: 16),
-                    ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Center(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const module_leader_profile.ModuleLeaderProfileScreen()),
-                        );
-                      },
-                      child: CircleAvatar(
-                        backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
-                        child: const Icon(Icons.person, color: AppTheme.forestEmerald),
-                      ),
-                    ),
+      child: Scaffold(
+        backgroundColor: AppTheme.premiumBlack,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          title: Text(
+            'Module Leader',
+            style: LoginTypography.label.copyWith(fontSize: 16),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                    );
+                  },
+                  child: CircleAvatar(
+                    backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
+                    child: const Icon(Icons.person, color: AppTheme.forestEmerald),
                   ),
                 ),
-              ],
-            ),
-            drawer: isWideLayout
-                ? null
-                : Drawer(
-                    backgroundColor: AppTheme.premiumBlack,
-                    child: SafeArea(child: _buildSidebar(compact: true)),
-                  ),
-            body: Stack(
-              children: [
-                Positioned(
-                  top: -100,
-                  right: -100,
-                  child: Container(
-                    width: 300,
-                    height: 300,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.forestEmerald.withValues(alpha: 0.15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                          blurRadius: 100,
-                          spreadRadius: 50,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SafeArea(
-                  child: isWideLayout
-                      ? Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Row(
-                            children: [
-                              _buildSidebar(),
-                              const SizedBox(width: 20),
-                              Expanded(child: _buildMainContent()),
-                            ],
-                          ),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: _buildMainContent(),
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSidebar({bool compact = false}) {
-    return Container(
-      width: compact ? null : _sidebarWidth,
-      decoration: BoxDecoration(
-        color: LoginColors.surface,
-        borderRadius: BorderRadius.circular(compact ? 0 : 24),
-        border: Border.all(color: LoginColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: LoginColors.accent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: LoginColors.surface,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Module Leader',
-                        style: LoginTypography.label.copyWith(fontSize: 16),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Administrative Control Center',
-                        style: LoginTypography.body.copyWith(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-            Text(
-              'Navigation',
-              style: LoginTypography.label.copyWith(
-                color: LoginColors.textSecondary,
-                fontSize: 12,
-                letterSpacing: 0.8,
               ),
             ),
-            const SizedBox(height: 12),
-            _buildNavItem(
-              title: 'Overview',
-              subtitle: 'System Health',
-              icon: Icons.dashboard_outlined,
-              section: _ModuleLeaderSection.overview,
+          ],
+        ),
+        body: Stack(
+          children: [
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                      blurRadius: 100,
+                      spreadRadius: 50,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            _buildNavItem(
-              title: 'Research Areas',
-              subtitle: 'Tags',
-              icon: Icons.sell_outlined,
-              section: _ModuleLeaderSection.researchAreas,
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildTabToggle(),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: _buildMainContent(),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            _buildNavItem(
-              title: 'Project Allocations',
-              subtitle: 'Assignments',
-              icon: Icons.assignment_ind_outlined,
-              section: _ModuleLeaderSection.projectAllocations,
-            ),
-            _buildNavItem(
-              title: 'Academic Modules',
-              subtitle: 'Module Management',
-              icon: Icons.library_books_outlined,
-              section: _ModuleLeaderSection.academicModules,
-            ),
-            const Spacer(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required _ModuleLeaderSection section,
-  }) {
-    final isSelected = _selectedSection == section;
+  Widget _buildTabToggle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildTabButton('Overview', _ModuleLeaderSection.overview),
+            _buildTabButton('Research Areas', _ModuleLeaderSection.researchAreas),
+            _buildTabButton('Project Allocations', _ModuleLeaderSection.projectAllocations),
+            _buildTabButton('Academic Modules', _ModuleLeaderSection.academicModules),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedSection = section;
-          });
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected ? LoginColors.panel : LoginColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? LoginColors.borderActive : LoginColors.border,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected
-                    ? LoginColors.accent
-                    : LoginColors.textSecondary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: LoginTypography.label.copyWith(fontSize: 14),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: LoginTypography.body.copyWith(fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: LoginColors.accent,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-            ],
+  Widget _buildTabButton(String title, _ModuleLeaderSection section) {
+    bool isSelected = _selectedSection == section;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedSection = section),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.forestEmerald : Colors.transparent,
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white60,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 14,
           ),
         ),
       ),
     );
   }
 
+
+
   Widget _buildMainContent() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: Container(
         key: ValueKey(_selectedSection),
-        decoration: BoxDecoration(
-          color: LoginColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: LoginColors.border),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildSectionContent(),
-              ],
-            ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              _buildSectionContent(),
+            ],
           ),
         ),
       ),
@@ -681,7 +544,9 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
       },
     );
 
-    controller.dispose();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      controller.dispose();
+    });
   }
 
   Future<void> _createTag(String name) async {
@@ -1027,10 +892,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
       },
     );
 
-    codeController.dispose();
-    nameController.dispose();
-    yearController.dispose();
-    batchController.dispose();
+    Future.delayed(const Duration(milliseconds: 500), () {
+      codeController.dispose();
+      nameController.dispose();
+      yearController.dispose();
+      batchController.dispose();
+    });
   }
 
   Future<void> _createAcademicModule({

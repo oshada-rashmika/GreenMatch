@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import '../services/student_service.dart';
 import 'login_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
@@ -62,11 +63,46 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   _ProposalData? _proposal;
 
-  void _showSubmissionForm({bool isEditing = false, String? defaultTitle, String? defaultAbstract, String? defaultTechStack}) {
+  bool _isLoadingData = true;
+  List<ModuleData> _modules = [];
+  List<TagData> _tags = [];
+  String? _selectedModuleId;
+  String? _selectedTagId;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInitialData();
+  }
+
+  Future<void> _fetchInitialData() async {
+    try {
+      final service = StudentService();
+      final fetchedModules = await service.fetchModules();
+      final fetchedTags = await service.fetchTags();
+      if (mounted) {
+        setState(() {
+          _modules = fetchedModules;
+          _tags = fetchedTags;
+          if (_modules.isNotEmpty) _selectedModuleId = _modules.first.id;
+          if (_tags.isNotEmpty) _selectedTagId = _tags.first.id;
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingData = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error loading server data')));
+      }
+    }
+  }
+
+  void _showSubmissionForm({bool isEditing = false, String? defaultTitle, String? defaultAbstract}) {
     final titleController = TextEditingController(text: isEditing ? _proposal?.title : (defaultTitle ?? ''));
     final abstractController = TextEditingController(text: isEditing ? _proposal?.abstractText : (defaultAbstract ?? ''));
-    final techStackController = TextEditingController(text: isEditing ? _proposal?.techStack : (defaultTechStack ?? ''));
-    String researchArea = isEditing ? (_proposal?.researchArea ?? 'Artificial Intelligence') : 'Artificial Intelligence';
+    final groupNameController = TextEditingController();
+
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -95,66 +131,110 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
-                    _buildTextField(titleController, 'Title'),
-                    const SizedBox(height: 16),
-                    _buildTextField(abstractController, 'Abstract', maxLines: 3),
-                    const SizedBox(height: 16),
-                    _buildTextField(techStackController, 'Tech Stack (comma separated)'),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: researchArea,
-                      dropdownColor: bgColor,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Research Area',
-                        labelStyle: TextStyle(color: mutedTextColor),
-                        filled: true,
-                        fillColor: bgColor,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      ),
-                      items: ['Artificial Intelligence', 'Web & Mobile', 'Internet of Things', 'Cybersecurity']
-                          .map((area) => DropdownMenuItem(value: area, child: Text(area)))
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => researchArea = val);
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2B364E),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    if (_isLoadingData)
+                      const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald))
+                    else ...[
+                      _buildTextField(titleController, 'Project Title'),
+                      const SizedBox(height: 16),
+                      _buildTextField(abstractController, 'Abstract', maxLines: 3),
+                      const SizedBox(height: 16),
+                      _buildTextField(groupNameController, 'Group Name (Optional)'),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedModuleId,
+                        dropdownColor: bgColor,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Academic Module',
+                          labelStyle: TextStyle(color: mutedTextColor),
+                          filled: true,
+                          fillColor: bgColor,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                         ),
-                        onPressed: () {
-                          if (titleController.text.trim().isEmpty || abstractController.text.trim().isEmpty) return;
-                          setState(() {
-                            _proposal = _ProposalData(
-                              title: titleController.text,
-                              abstractText: abstractController.text,
-                              techStack: techStackController.text,
-                              researchArea: researchArea,
-                              status: isEditing ? _proposal!.status : ProposalStatus.pending,
-                              supervisorName: _proposal?.supervisorName,
-                              supervisorContact: _proposal?.supervisorContact,
-                              submittedDate: isEditing ? _proposal!.submittedDate : DateTime.now(),
-                              expectedDecisionDate: isEditing ? _proposal!.expectedDecisionDate : DateTime.now().add(const Duration(days: 14)),
-                              impactBadges: ['UN SDG 13: Climate Action', 'Tech for Good'],
-                              activityLog: isEditing ? _proposal!.activityLog : [
-                                _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, const Color(0xFFFACC15)),
-                              ],
-                            );
-                          });
-                          Navigator.pop(context);
+                        items: _modules
+                            .map((mod) => DropdownMenuItem(value: mod.id, child: Text('${mod.moduleCode} - ${mod.moduleName}')))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => _selectedModuleId = val);
                         },
-                        child: Text(
-                          isEditing ? 'Save Changes' : 'Submit Document',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedTagId,
+                        dropdownColor: bgColor,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Research Area / Tech Stack',
+                          labelStyle: TextStyle(color: mutedTextColor),
+                          filled: true,
+                          fillColor: bgColor,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                        items: _tags
+                            .map((tag) => DropdownMenuItem(value: tag.id, child: Text(tag.name)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => _selectedTagId = val);
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2B364E),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: isSubmitting ? null : () async {
+                            if (titleController.text.trim().isEmpty || abstractController.text.trim().isEmpty || _selectedModuleId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields.')));
+                              return;
+                            }
+                            setModalState(() => isSubmitting = true);
+                            try {
+                              await StudentService().submitProposal(
+                                title: titleController.text.trim(),
+                                abstractText: abstractController.text.trim(),
+                                moduleId: _selectedModuleId!,
+                                groupName: groupNameController.text.trim().isEmpty ? null : groupNameController.text.trim(),
+                                tagIds: _selectedTagId != null ? [_selectedTagId!] : null,
+                              );
+                              if (mounted) {
+                                setState(() {
+                                  _proposal = _ProposalData(
+                                    title: titleController.text,
+                                    abstractText: abstractController.text,
+                                    techStack: 'Tech Stack Added',
+                                    researchArea: 'Pending tags',
+                                    status: ProposalStatus.pending,
+                                    submittedDate: DateTime.now(),
+                                    expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
+                                    impactBadges: [],
+                                    activityLog: [
+                                      _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, const Color(0xFFFACC15)),
+                                    ],
+                                  );
+                                });
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Proposal Submitted Successfully!')));
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                setModalState(() => isSubmitting = false);
+                              }
+                            }
+                          },
+                          child: isSubmitting 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text(
+                                isEditing ? 'Save Changes' : 'Submit Document',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
                         ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 24),
                   ],
                 ),

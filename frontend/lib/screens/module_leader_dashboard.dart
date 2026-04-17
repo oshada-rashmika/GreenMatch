@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'module_leader_profile_screen.dart' as module_leader_profile;
 
 import '../theme/app_theme.dart';
 import '../theme/login_design.dart';
@@ -61,16 +62,37 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
           return Scaffold(
             backgroundColor: LoginColors.background,
             extendBodyBehindAppBar: true,
-            appBar: isWideLayout
-                ? null
-                : AppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    title: Text(
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              automaticallyImplyLeading: !isWideLayout,
+              title: isWideLayout 
+                  ? null
+                  : Text(
                       'Module Leader',
                       style: LoginTypography.label.copyWith(fontSize: 16),
                     ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: Center(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const module_leader_profile.ModuleLeaderProfileScreen()),
+                        );
+                      },
+                      child: CircleAvatar(
+                        backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
+                        child: const Icon(Icons.person, color: AppTheme.forestEmerald),
+                      ),
+                    ),
                   ),
+                ),
+              ],
+            ),
             drawer: isWideLayout
                 ? null
                 : Drawer(
@@ -205,66 +227,6 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
               section: _ModuleLeaderSection.academicModules,
             ),
             const Spacer(),
-            const Divider(color: Colors.white10),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
-                  child: const Icon(Icons.person, color: AppTheme.forestEmerald),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Module Leader',
-                        style: LoginTypography.label.copyWith(fontSize: 14),
-                      ),
-                      Text(
-                        'leader@university.edu',
-                        style: LoginTypography.body.copyWith(fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () async {
-                await context.read<AuthProvider>().logout();
-                if (context.mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Log Out',
-                      style: TextStyle(
-                        color: Color(0xFFEF4444),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),

@@ -127,7 +127,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingData = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error loading server data')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }

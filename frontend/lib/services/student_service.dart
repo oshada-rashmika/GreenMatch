@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -98,13 +99,25 @@ class MeetingData {
 }
 
 class StudentService {
-  final String baseUrl;
+  static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  String get baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) return _configuredBaseUrl;
+    if (kIsWeb) return 'http://localhost:3000';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://10.0.2.2:3000';
+      default:
+        return 'http://localhost:3000';
+    }
+  }
+
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  StudentService({this.baseUrl = 'http://127.0.0.1:3000'}); // Match AuthProvider baseUrl
+  StudentService();
 
   Future<String?> _getToken() async {
-    return await _storage.read(key: 'jwt');
+    return await _storage.read(key: 'auth_token');
   }
 
   Future<List<ModuleData>> fetchModules() async {

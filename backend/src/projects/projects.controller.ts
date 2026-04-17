@@ -25,6 +25,12 @@ export class ProjectsController {
     });
   }
 
+  @Get('my-proposal')
+  @Roles(Role.STUDENT)
+  async getMyProposal(@Request() req) {
+    return this.projectsService.getMyProposal(req.user.id);
+  }
+
   @Get('anonymous')
   @Roles(Role.SUPERVISOR)
   async getAnonymousFeed() {

@@ -272,44 +272,60 @@ class _StudentDashboardState extends State<StudentDashboard> {
           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
         ),
         actions: [
-          if (_proposal != null)
-            Center(
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  canvasColor: cardColor,
-                ),
-                child: DropdownButton<ProposalStatus>(
-                  value: _proposal!.status,
-                  icon: const Icon(Icons.bug_report, color: Colors.white, size: 16),
-                  underline: const SizedBox(),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  items: const [
-                    DropdownMenuItem(value: ProposalStatus.pending, child: Text('Demo: Pending')),
-                    DropdownMenuItem(value: ProposalStatus.underReview, child: Text('Demo: Review')),
-                    DropdownMenuItem(value: ProposalStatus.matched, child: Text('Demo: Matched')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
+          Center(
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                canvasColor: cardColor,
+              ),
+              child: DropdownButton<ProposalStatus>(
+                value: _proposal?.status ?? ProposalStatus.pending,
+                icon: const Icon(Icons.bug_report, color: Colors.white, size: 16),
+                underline: const SizedBox(),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                items: const [
+                  DropdownMenuItem(value: ProposalStatus.pending, child: Text('Demo: Pending')),
+                  DropdownMenuItem(value: ProposalStatus.underReview, child: Text('Demo: Review')),
+                  DropdownMenuItem(value: ProposalStatus.matched, child: Text('Demo: Matched')),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      if (_proposal == null) {
+                         _proposal = _ProposalData(
+                          title: 'Demo Project',
+                          abstractText: 'Automatically generated abstract.',
+                          techStack: 'Flutter, Python',
+                          researchArea: 'Artificial Intelligence',
+                          status: val,
+                          submittedDate: DateTime.now(),
+                          expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
+                          impactBadges: ['Tech for Good'],
+                          activityLog: [
+                            _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, const Color(0xFFFACC15)),
+                          ],
+                        );
+                      } else {
                         _proposal!.status = val;
-                        if (val == ProposalStatus.matched) {
-                          _proposal!.supervisorName = "Dr. Alan Turing";
-                          _proposal!.supervisorContact = "alan.turing@example.edu";
-                          _proposal!.activityLog.insert(0, _Activity('Today', 'Supervisor Dr. Alan Turing conditionally accepted the proposal.', Icons.check_circle, const Color(0xFF10B981)));
-                        } else if (val == ProposalStatus.underReview) {
-                          _proposal!.supervisorName = null;
-                          _proposal!.supervisorContact = null;
-                          _proposal!.activityLog.insert(0, _Activity('Yesterday', 'Proposal is now under review by the coordination committee.', Icons.remove_red_eye, const Color(0xFF3B82F6)));
-                        } else {
-                          _proposal!.supervisorName = null;
-                          _proposal!.supervisorContact = null;
-                        }
-                      });
-                    }
-                  },
-                ),
+                      }
+
+                      if (val == ProposalStatus.matched) {
+                        _proposal!.supervisorName = "Dr. Alan Turing";
+                        _proposal!.supervisorContact = "alan.turing@example.edu";
+                        _proposal!.activityLog.insert(0, _Activity('Today', 'Supervisor Dr. Alan Turing conditionally accepted the proposal.', Icons.check_circle, const Color(0xFF10B981)));
+                      } else if (val == ProposalStatus.underReview) {
+                        _proposal!.supervisorName = null;
+                        _proposal!.supervisorContact = null;
+                        _proposal!.activityLog.insert(0, _Activity('Yesterday', 'Proposal is now under review by the coordination committee.', Icons.remove_red_eye, const Color(0xFF3B82F6)));
+                      } else {
+                        _proposal!.supervisorName = null;
+                        _proposal!.supervisorContact = null;
+                      }
+                    });
+                  }
+                },
               ),
             ),
+          ),
           const SizedBox(width: 8),
           PopupMenuButton<String>(
             color: cardColor,
@@ -365,6 +381,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
               const SizedBox(height: 24),
               if (_proposal!.status == ProposalStatus.matched) ...[
                 _buildRevealCard(),
+                const SizedBox(height: 24),
+                _buildNextActionHighlight(),
+                const SizedBox(height: 24),
+                _buildDeliverablesChecklist(),
                 const SizedBox(height: 24),
                 _buildPostMatchMilestones(),
                 const SizedBox(height: 24),
@@ -1123,6 +1143,137 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextActionHighlight() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E3A8A).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+               Container(
+                 padding: const EdgeInsets.all(6),
+                 decoration: BoxDecoration(color: const Color(0xFF3B82F6).withOpacity(0.2), shape: BoxShape.circle),
+                 child: const Icon(Icons.bolt, color: Color(0xFF60A5FA), size: 18),
+               ),
+               const SizedBox(width: 12),
+               const Text('CURRENT NEXT STEP', style: TextStyle(color: Color(0xFF60A5FA), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text('Submit Initial Literature Review', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text('Your supervisor expects the first draft of your literature review covering at least 15 sources.', style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: Color(0xFFFACC15), size: 16),
+              const SizedBox(width: 8),
+              const Text('Due in 12 Days', style: TextStyle(color: Color(0xFFFACC15), fontSize: 13, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.upload_file, size: 18),
+              label: const Text('Upload Document', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeliverablesChecklist() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF2B364E)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('DELIVERABLES CHECKLIST', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3B82F6).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('1/4 Completed', style: TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold, fontSize: 11)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: 0.25,
+              backgroundColor: bgColor,
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _buildChecklistItem(title: 'Connect GitHub Repository', isDone: true),
+          _buildChecklistItem(title: 'Submit Literature Review Draft', isDone: false),
+          _buildChecklistItem(title: 'Achieve 80% Test Coverage', isDone: false),
+          _buildChecklistItem(title: 'Get Supervisor Final Signature', isDone: false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChecklistItem({required String title, required bool isDone}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: isDone ? const Color(0xFF10B981) : Colors.transparent,
+              border: Border.all(color: isDone ? const Color(0xFF10B981) : const Color(0xFF475569)),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: isDone ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: isDone ? Colors.white : mutedTextColor,
+                fontSize: 14,
+                decoration: isDone ? TextDecoration.lineThrough : null,
+                decorationColor: mutedTextColor,
               ),
             ),
           ),

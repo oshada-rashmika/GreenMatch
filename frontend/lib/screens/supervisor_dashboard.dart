@@ -13,7 +13,7 @@ import '../services/project_service.dart';
 import '../widgets/glass_container.dart';
 import 'login_screen.dart';
 import 'matches_screen.dart';
-import 'supervisor_profile_screen.dart';
+import 'profile_screen.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -369,7 +369,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const SupervisorProfileScreen(),
+                  builder: (_) => const ProfileScreen(),
                 ),
               ),
               child: _buildAppBarIcon(Icons.person),

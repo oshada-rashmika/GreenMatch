@@ -4,6 +4,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/auth_provider.dart';
+import 'services/shortlist_provider.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -16,7 +17,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ShortlistProvider()),
+      ],
       child: MaterialApp(
         title: 'GreenMatch',
         debugShowCheckedModeBanner: false,

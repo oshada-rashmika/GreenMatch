@@ -363,14 +363,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
               MaterialPageRoute(builder: (context) => const ProfileScreen()),
             );
           }),
-              ),
-            ),
-          ),
           const SizedBox(width: 16),
         ],
-      ))),
-      body: Stack(
-        children: [
+      ),
+    ),
+  ),
+  body: Stack(
+    children: [
           Positioned(
             top: -100,
             right: -100,
@@ -458,9 +457,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
               const SizedBox(height: 24),
               _buildActivityLog(),
             ],
-          ],
+          ),
         ),
-      ))),
+      ),
+    ],
+  ),
+),
     );
   }
 
@@ -553,6 +555,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
              style: TextButton.styleFrom(foregroundColor: mutedTextColor),
           )
         ],
+      ),
       ),
     );
   }

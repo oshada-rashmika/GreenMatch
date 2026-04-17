@@ -143,7 +143,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                     color: LoginColors.accent,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.admin_panel_settings_outlined,
                     color: LoginColors.surface,
                     size: 22,

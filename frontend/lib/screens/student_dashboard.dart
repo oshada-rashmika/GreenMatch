@@ -610,15 +610,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 onSelected: (value) {
                   if (value == 'capstone') {
-                    _showSubmissionForm(defaultTitle: '[Capstone Project] ', defaultAbstract: 'This capstone project aims to...', defaultTechStack: 'Flutter, Firebase');
+                    _showSubmissionForm(defaultTitle: '[Capstone Project] ', defaultAbstract: 'This capstone project aims to...');
                   } else if (value == 'grant') {
-                    _showSubmissionForm(defaultTitle: 'Grant Proposal: ', defaultAbstract: 'This research aims to investigate the impact of...', defaultTechStack: 'Python, TensorFlow');
+                    _showSubmissionForm(defaultTitle: 'Grant Proposal: ', defaultAbstract: 'This research aims to investigate the impact of...');
                   } else if (value == 'industry') {
-                    _showSubmissionForm(defaultTitle: 'Industry Partnership: ', defaultAbstract: 'In collaboration with [Company], we will develop...', defaultTechStack: 'React, Node.js');
+                    _showSubmissionForm(defaultTitle: 'Industry Partnership: ', defaultAbstract: 'In collaboration with [Company], we will develop...');
                   } else if (value == 'thesis') {
-                    _showSubmissionForm(defaultTitle: 'Master\'s Thesis: ', defaultAbstract: 'A comprehensive study to evaluate the performance of...', defaultTechStack: 'R, SQL');
+                    _showSubmissionForm(defaultTitle: 'Master\'s Thesis: ', defaultAbstract: 'A comprehensive study to evaluate the performance of...');
                   } else if (value == 'open_source') {
-                    _showSubmissionForm(defaultTitle: 'Open Source Initiative: ', defaultAbstract: 'This project focuses on enhancing the core libraries of...', defaultTechStack: 'Rust, WebAssembly');
+                    _showSubmissionForm(defaultTitle: 'Open Source Initiative: ', defaultAbstract: 'This project focuses on enhancing the core libraries of...');
                   } else {
                     _showSubmissionForm();
                   }

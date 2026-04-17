@@ -747,6 +747,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       index: index,
       isMatched: matchedProjectIds.contains(project.id),
       onMatch: () => _onMatchConfirmed(project.id),
+    );
   }
 
   Widget _buildSupervisedContent() {

@@ -37,6 +37,12 @@ export class ProjectsController {
     return this.projectsService.getPendingAnonymousProjects();
   }
 
+  @Get('my-supervised')
+  @Roles(Role.SUPERVISOR)
+  async getMySupervisedProjects(@Request() req) {
+    return this.projectsService.getMySupervisedProjects(req.user.id);
+  }
+
   @Get('module-leader/all')
   @Roles(Role.MODULE_LEADER)
   async getAllProjectsForModuleLeader() {

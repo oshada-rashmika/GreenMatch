@@ -14,6 +14,7 @@ import '../widgets/glass_container.dart';
 import 'login_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
+import '../services/shortlist_provider.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -146,7 +147,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       setState(() {
         projects = fetchedProjects;
         supervisedProjects = mySupervised;
-        _filters = ["All", ...uniqueTags];
+        _filters = ["All", "My Shortlist", ...uniqueTags];
         isLoading = false;
       });
     } on ProjectServiceException catch (e) {
@@ -165,12 +166,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     }
   }
 
-  List<AnonymousProject> get _filteredProjects {
-    if (_selectedFilter == "All") {
-      return projects;
-    }
-    return projects.where((p) => p.tags.contains(_selectedFilter)).toList();
-  }
 
   @override
   void dispose() {
@@ -549,8 +544,21 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildProjectContent() {
-    final filtered = _filteredProjects;
+    final shortlistProvider = context.watch<ShortlistProvider>();
+    List<AnonymousProject> filtered;
+    
+    if (_selectedFilter == "All") {
+      filtered = projects;
+    } else if (_selectedFilter == "My Shortlist") {
+      filtered = projects.where((p) => shortlistProvider.isShortlisted(p.id)).toList();
+    } else {
+      filtered = projects.where((p) => p.tags.contains(_selectedFilter)).toList();
+    }
+
     if (filtered.isEmpty) {
+      if (_selectedFilter == "My Shortlist") {
+        return _buildEmptyShortlistState();
+      }
       return _buildEmptyState();
     }
     return _buildBentoGrid(filtered);
@@ -641,6 +649,50 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 ),
               ),
             ).animate().fadeIn(delay: 400.ms).scale(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyShortlistState() {
+    return SizedBox.expand(
+      child: Container(
+        key: const ValueKey('empty_shortlist'),
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+                  Icons.bookmark_outline_rounded,
+                  size: 100,
+                  color: const Color(0xFFFBBF24).withValues(alpha: 0.15),
+                )
+                .animate()
+                .fadeIn(duration: 1.seconds)
+                .scale(begin: const Offset(0.8, 0.8)),
+            const SizedBox(height: 24),
+            Text(
+              "Your Shortlist is Empty",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
+            const SizedBox(height: 12),
+            Text(
+              "BOOKMARK PROJECTS TO REVIEW THEM LATER",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2.0,
+                color: AppTheme.forestEmerald,
+              ),
+            ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
           ],
         ),
       ),
@@ -1144,6 +1196,49 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
     );
   }
 
+  Widget _buildBookmarkButton() {
+    return Consumer<ShortlistProvider>(
+      builder: (context, shortlistProvider, child) {
+        final isShortlisted = shortlistProvider.isShortlisted(widget.project.id);
+        
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            shortlistProvider.toggleShortlist(widget.project.id);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isShortlisted 
+                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15) 
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isShortlisted 
+                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3) 
+                    : Colors.white.withValues(alpha: 0.1),
+              ),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Icon(
+                isShortlisted ? Icons.bookmark : Icons.bookmark_border,
+                key: ValueKey<bool>(isShortlisted),
+                color: isShortlisted ? const Color(0xFFFBBF24) : Colors.white54,
+                size: 20,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -1178,7 +1273,14 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          _buildMatchScoreIndicator(),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildBookmarkButton(),
+                              const SizedBox(width: 10),
+                              _buildMatchScoreIndicator(),
+                            ],
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),

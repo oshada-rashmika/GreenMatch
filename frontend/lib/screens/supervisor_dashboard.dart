@@ -25,6 +25,8 @@ class SupervisorDashboard extends StatefulWidget {
 class _SupervisorDashboardState extends State<SupervisorDashboard> {
   late final ProjectService projectService;
   List<AnonymousProject> projects = [];
+  List<SupervisedProject> supervisedProjects = [];
+  int _currentTab = 0; // 0 = Available Projects, 1 = My Supervised Projects
   bool isLoading = true;
   String? errorMessage;
   final Set<String> matchedProjectIds = {};
@@ -127,6 +129,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     });
     try {
       final fetchedProjects = await projectService.fetchAnonymousProjects();
+      final mySupervised = await projectService.fetchMySupervisedProjects();
 
       final uniqueTags = fetchedProjects
           .expand((p) => p.tags)
@@ -136,6 +139,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
 
       setState(() {
         projects = fetchedProjects;
+        supervisedProjects = mySupervised;
         _filters = ["All", ...uniqueTags];
         isLoading = false;
       });
@@ -289,7 +293,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 child: Column(
                   children: [
                     const SizedBox(height: 10),
-                    _buildFilterBar(),
+                    _buildTabToggle(),
+                    const SizedBox(height: 10),
+                    if (_currentTab == 0) _buildFilterBar(),
                     Expanded(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 600),
@@ -317,7 +323,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                               )
                             : errorMessage != null
                                 ? _buildErrorState(errorMessage!)
-                                : _buildProjectContent(),
+                                : (_currentTab == 0 ? _buildProjectContent() : _buildSupervisedContent()),
                       ),
                     ),
                   ],
@@ -434,6 +440,66 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           ],
         ),
         child: Icon(icon, size: 22, color: Colors.white.withValues(alpha: 0.9)),
+      ),
+    );
+  }
+
+  Widget _buildTabToggle() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(4),
+        borderRadius: 16,
+        opacity: 0.05,
+        borderColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _currentTab = 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _currentTab == 0 ? AppTheme.forestEmerald : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Available Projects', 
+                      style: GoogleFonts.montserrat(
+                        color: _currentTab == 0 ? Colors.white : Colors.white60,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      )
+                    )
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _currentTab = 1),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _currentTab == 1 ? AppTheme.forestEmerald : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'My Supervised', 
+                      style: GoogleFonts.montserrat(
+                        color: _currentTab == 1 ? Colors.white : Colors.white60,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      )
+                    )
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -681,6 +747,309 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       index: index,
       isMatched: matchedProjectIds.contains(project.id),
       onMatch: () => _onMatchConfirmed(project.id),
+  }
+
+  Widget _buildSupervisedContent() {
+    if (supervisedProjects.isEmpty) {
+      return _buildEmptyState();
+    }
+    return LayoutBuilder(
+      key: const ValueKey('supervised_projects_tab'),
+      builder: (context, constraints) {
+        int crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
+        return MasonryGridView.count(
+          padding: const EdgeInsets.all(16),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          itemCount: supervisedProjects.length,
+          itemBuilder: (context, index) {
+            return _SupervisedProjectCardHolder(
+              project: supervisedProjects[index],
+              index: index,
+              onSchedule: () => _showScheduleMeetingModal(supervisedProjects[index]),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showScheduleMeetingModal(SupervisedProject project) async {
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+    DateTime? expiryDate;
+    TimeOfDay? expiryTime;
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (bCtx, setModalState) {
+          final sDateStr = selectedDate != null
+              ? '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}'
+              : 'Select Date';
+          final sTimeStr = selectedTime != null ? selectedTime!.format(context) : 'Select Time';
+
+          final eDateStr = expiryDate != null
+              ? '${expiryDate!.year}-${expiryDate!.month.toString().padLeft(2, '0')}-${expiryDate!.day.toString().padLeft(2, '0')}'
+              : 'Select Date';
+          final eTimeStr = expiryTime != null ? expiryTime!.format(context) : 'Select Time';
+
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(bCtx).viewInsets.bottom,
+              left: 24,
+              right: 24,
+              top: 24,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F1F14),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SCHEDULE CHECK-IN',
+                    style: GoogleFonts.montserrat(
+                      color: AppTheme.forestEmerald,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Group: ${project.groupName}',
+                    style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDateTimePickerRow(
+                    label: 'Meeting Time',
+                    dateStr: sDateStr,
+                    timeStr: sTimeStr,
+                    onDatePick: () async {
+                      final val = await showDatePicker(context: bCtx, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                      if (val != null) setModalState(() => selectedDate = val);
+                    },
+                    onTimePick: () async {
+                      final val = await showTimePicker(context: bCtx, initialTime: TimeOfDay.now());
+                      if (val != null) setModalState(() => selectedTime = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDateTimePickerRow(
+                    label: 'Window Expiry (Anti-ghosting)',
+                    dateStr: eDateStr,
+                    timeStr: eTimeStr,
+                    onDatePick: () async {
+                      final val = await showDatePicker(context: bCtx, initialDate: selectedDate ?? DateTime.now(), firstDate: selectedDate ?? DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                      if (val != null) setModalState(() => expiryDate = val);
+                    },
+                    onTimePick: () async {
+                      final val = await showTimePicker(context: bCtx, initialTime: TimeOfDay.now());
+                      if (val != null) setModalState(() => expiryTime = val);
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.forestEmerald,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: isSubmitting ? null : () async {
+                        if (selectedDate == null || selectedTime == null || expiryDate == null || expiryTime == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select all dates and times.')));
+                          return;
+                        }
+
+                        final sched = DateTime(selectedDate!.year, selectedDate!.month, selectedDate!.day, selectedTime!.hour, selectedTime!.minute);
+                        final exp = DateTime(expiryDate!.year, expiryDate!.month, expiryDate!.day, expiryTime!.hour, expiryTime!.minute);
+
+                        if (exp.isBefore(sched)) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Expiry must be after meeting time!')));
+                          return;
+                        }
+                        if (sched.isBefore(DateTime.now())) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot schedule in the past.')));
+                          return;
+                        }
+
+                        setModalState(() => isSubmitting = true);
+                        try {
+                          await projectService.scheduleMeeting(project.groupId, sched, exp);
+                          Navigator.pop(bCtx);
+                          _showSuccessSnackBar('Meeting Scheduled! Anti-ghosting enabled.');
+                          _fetchProjects();
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                        } finally {
+                          if (mounted) setModalState(() => isSubmitting = false);
+                        }
+                      },
+                      child: isSubmitting
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Schedule Check-in', style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Widget _buildDateTimePickerRow({
+    required String label,
+    required String dateStr,
+    required String timeStr,
+    required VoidCallback onDatePick,
+    required VoidCallback onTimePick,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 12)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: onDatePick,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+                  child: Center(child: Text(dateStr, style: const TextStyle(color: Colors.white))),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: onTimePick,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+                  child: Center(child: Text(timeStr, style: const TextStyle(color: Colors.white))),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SupervisedProjectCardHolder extends StatefulWidget {
+  final SupervisedProject project;
+  final int index;
+  final VoidCallback onSchedule;
+
+  const _SupervisedProjectCardHolder({required this.project, required this.index, required this.onSchedule});
+
+  @override
+  State<_SupervisedProjectCardHolder> createState() => _SupervisedProjectCardHolderState();
+}
+
+class _SupervisedProjectCardHolderState extends State<_SupervisedProjectCardHolder> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.02 : 1.0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutQuart,
+        child: GlassContainer(
+          padding: const EdgeInsets.all(20),
+          borderRadius: 24,
+          opacity: _isHovered ? 0.08 : 0.04,
+          borderColor: _isHovered ? AppTheme.forestEmerald.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: widget.project.tags.map((tag) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: AppTheme.forestEmerald.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                  child: Text(tag.toUpperCase(), style: GoogleFonts.montserrat(color: AppTheme.forestEmerald, fontSize: 9, fontWeight: FontWeight.w800)),
+                )).toList(),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'GROUP: ${widget.project.groupName.toUpperCase()}',
+                style: GoogleFonts.montserrat(
+                  color: AppTheme.forestEmerald,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(widget.project.title, style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white, height: 1.2)),
+              const SizedBox(height: 12),
+              Text(widget.project.abstract, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.montserrat(color: Colors.white.withValues(alpha: 0.5), fontSize: 13, height: 1.5)),
+              const SizedBox(height: 16),
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.1)),
+              const SizedBox(height: 16),
+              Text('TEAM MEMBERS', style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.0)),
+              const SizedBox(height: 8),
+              ...widget.project.teamMembers.map((m) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, size: 14, color: AppTheme.forestEmerald),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m.fullName, style: GoogleFonts.montserrat(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(m.email, style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )).toList(),
+              const SizedBox(height: 24),
+              InkWell(
+                onTap: widget.onSchedule,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                    border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text('Schedule Check-in', style: GoogleFonts.montserrat(color: AppTheme.forestEmerald, fontWeight: FontWeight.w800, fontSize: 14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

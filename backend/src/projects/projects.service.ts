@@ -78,6 +78,37 @@ export class ProjectsService {
     });
   }
 
+  async getAllProjectsForModuleLeader() {
+    return this.prisma.project.findMany({
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        createdAt: true,
+        module: {
+          select: {
+            moduleCode: true,
+            moduleName: true,
+          },
+        },
+        supervisor: {
+          select: {
+            fullName: true,
+          },
+        },
+        group: {
+          select: {
+            id: true,
+            groupName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   async matchProject(
     projectId: string,
     supervisorId: string,

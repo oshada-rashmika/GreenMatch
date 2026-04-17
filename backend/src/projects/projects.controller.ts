@@ -31,6 +31,12 @@ export class ProjectsController {
     return this.projectsService.getPendingAnonymousProjects();
   }
 
+  @Get('module-leader/all')
+  @Roles(Role.MODULE_LEADER)
+  async getAllProjectsForModuleLeader() {
+    return this.projectsService.getAllProjectsForModuleLeader();
+  }
+
   @Post(':id/match')
   @Roles(Role.SUPERVISOR)
   async matchProject(

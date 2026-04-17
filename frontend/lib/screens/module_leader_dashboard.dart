@@ -769,135 +769,29 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 
   Future<void> _showCreateModuleSheet() async {
-    final codeController = TextEditingController();
-    final nameController = TextEditingController();
-    final yearController = TextEditingController();
-    final batchController = TextEditingController();
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: LoginColors.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              border: Border.all(color: LoginColors.border),
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Create New Module',
-                  style: LoginTypography.headline.copyWith(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Define a module and attach supervisors afterward.',
-                  style: LoginTypography.body.copyWith(fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: codeController,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(
-                    labelText: 'Module Code',
-                    hintText: 'PUSL2020',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Module Name',
-                    hintText: 'Software Development Tools',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: yearController,
-                  decoration: const InputDecoration(
-                    labelText: 'Academic Year',
-                    hintText: '2026/2027',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: batchController,
-                  decoration: const InputDecoration(
-                    labelText: 'Batch',
-                    hintText: 'Batch 24',
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: _isCreatingModule
-                          ? null
-                          : () async {
-                              final moduleCode = codeController.text.trim();
-                              final moduleName = nameController.text.trim();
-                              final academicYear = yearController.text.trim();
-                              final batch = batchController.text.trim();
-
-                              if (moduleCode.isEmpty ||
-                                  moduleName.isEmpty ||
-                                  academicYear.isEmpty ||
-                                  batch.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Please complete all module fields.',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              Navigator.of(sheetContext).pop();
-                              await _createAcademicModule(
-                                moduleCode: moduleCode,
-                                moduleName: moduleName,
-                                academicYear: academicYear,
-                                batch: batch,
-                              );
-                            },
-                      child: const Text('Create Module'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        return _CreateModuleSheetWidget(
+          onCreate: (code, name, year, batch, mDate, rDate, midDate, fDate, vDate) async {
+            Navigator.of(sheetContext).pop();
+            await _createAcademicModule(
+              moduleCode: code,
+              moduleName: name,
+              academicYear: year,
+              batch: batch,
+              milestoneMatchDate: mDate,
+              milestoneReviewDate: rDate,
+              milestoneMidtermDate: midDate,
+              milestoneFinalDate: fDate,
+              milestoneVivaDate: vDate,
+            );
+          },
         );
       },
     );
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      codeController.dispose();
-      nameController.dispose();
-      yearController.dispose();
-      batchController.dispose();
-    });
   }
 
   Future<void> _createAcademicModule({
@@ -905,6 +799,11 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     required String moduleName,
     required String academicYear,
     required String batch,
+    DateTime? milestoneMatchDate,
+    DateTime? milestoneReviewDate,
+    DateTime? milestoneMidtermDate,
+    DateTime? milestoneFinalDate,
+    DateTime? milestoneVivaDate,
   }) async {
     final token = await _authService.getToken();
     if (token == null || token.isEmpty) {
@@ -926,6 +825,11 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
         moduleName: moduleName,
         academicYear: academicYear,
         batch: batch,
+        milestoneMatchDate: milestoneMatchDate,
+        milestoneReviewDate: milestoneReviewDate,
+        milestoneMidtermDate: milestoneMidtermDate,
+        milestoneFinalDate: milestoneFinalDate,
+        milestoneVivaDate: milestoneVivaDate,
       );
 
       if (!mounted) return;
@@ -2274,6 +2178,163 @@ class _SectionPanel extends StatelessWidget {
           const SizedBox(height: 16),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class _CreateModuleSheetWidget extends StatefulWidget {
+  final Future<void> Function(
+      String code, String name, String year, String batch, DateTime? mDate, DateTime? rDate, DateTime? midDate, DateTime? fDate, DateTime? vDate) onCreate;
+
+  const _CreateModuleSheetWidget({required this.onCreate});
+
+  @override
+  State<_CreateModuleSheetWidget> createState() => _CreateModuleSheetWidgetState();
+}
+
+class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
+  final codeController = TextEditingController();
+  final nameController = TextEditingController();
+  final yearController = TextEditingController();
+  final batchController = TextEditingController();
+
+  DateTime? matchDate;
+  DateTime? reviewDate;
+  DateTime? midtermDate;
+  DateTime? finalDate;
+  DateTime? vivaDate;
+
+  @override
+  void dispose() {
+    codeController.dispose();
+    nameController.dispose();
+    yearController.dispose();
+    batchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate(String label, DateTime? current, Function(DateTime) onPicked) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 730)),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppTheme.forestEmerald,
+              onPrimary: Colors.white,
+              surface: AppTheme.premiumBlack,
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => onPicked(picked));
+    }
+  }
+
+  Widget _buildDatePickerField(String label, DateTime? date, Function(DateTime) onPicked) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: InkWell(
+        onTap: () => _pickDate(label, date, onPicked),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              Text(
+                date == null ? 'Select Date' : '${date.day}/${date.month}/${date.year}',
+                style: TextStyle(
+                  color: date == null ? Colors.white38 : AppTheme.forestEmerald,
+                  fontWeight: date == null ? FontWeight.normal : FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: LoginColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: LoginColors.border),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Create New Module', style: LoginTypography.headline.copyWith(fontSize: 22, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              Text('Define an academic module and its project milestones.', style: LoginTypography.body.copyWith(fontSize: 13)),
+              const SizedBox(height: 20),
+              TextField(controller: codeController, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Module Code', hintText: 'PUSL2020')),
+              const SizedBox(height: 12),
+              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Module Name', hintText: 'Software Development Tools')),
+              const SizedBox(height: 12),
+              TextField(controller: yearController, decoration: const InputDecoration(labelText: 'Academic Year', hintText: '2026/2027')),
+              const SizedBox(height: 12),
+              TextField(controller: batchController, decoration: const InputDecoration(labelText: 'Batch', hintText: 'Batch 24')),
+              
+              const SizedBox(height: 24),
+              Text('Project Milestones (Optional)', style: LoginTypography.label.copyWith(fontSize: 14)),
+              const SizedBox(height: 8),
+              _buildDatePickerField('Supervisor Match Deadline', matchDate, (d) => matchDate = d),
+              _buildDatePickerField('Literature Review Due', reviewDate, (d) => reviewDate = d),
+              _buildDatePickerField('Mid-term Defense', midtermDate, (d) => midtermDate = d),
+              _buildDatePickerField('Final Thesis Submission', finalDate, (d) => finalDate = d),
+              _buildDatePickerField('Final Viva Presentation', vivaDate, (d) => vivaDate = d),
+              
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      final moduleCode = codeController.text.trim();
+                      final moduleName = nameController.text.trim();
+                      final academicYear = yearController.text.trim();
+                      final batch = batchController.text.trim();
+                      if (moduleCode.isEmpty || moduleName.isEmpty || academicYear.isEmpty || batch.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete all text fields.')));
+                        return;
+                      }
+                      widget.onCreate(moduleCode, moduleName, academicYear, batch, matchDate, reviewDate, midtermDate, finalDate, vivaDate);
+                    },
+                    child: const Text('Create Module'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }

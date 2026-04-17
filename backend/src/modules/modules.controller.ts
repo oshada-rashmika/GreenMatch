@@ -37,6 +37,11 @@ export class ModulesController {
       moduleName: body.moduleName,
       academicYear: body.academicYear,
       batch: body.batch,
+      milestoneMatchDate: body.milestoneMatchDate,
+      milestoneReviewDate: body.milestoneReviewDate,
+      milestoneMidtermDate: body.milestoneMidtermDate,
+      milestoneFinalDate: body.milestoneFinalDate,
+      milestoneVivaDate: body.milestoneVivaDate,
     });
   }
 

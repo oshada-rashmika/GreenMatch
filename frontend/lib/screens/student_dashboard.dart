@@ -33,6 +33,12 @@ class _ProposalData {
   List<String> impactBadges;
   List<_Activity> activityLog;
 
+  DateTime? milestoneMatchDate;
+  DateTime? milestoneReviewDate;
+  DateTime? milestoneMidtermDate;
+  DateTime? milestoneFinalDate;
+  DateTime? milestoneVivaDate;
+
   _ProposalData({
     required this.title,
     required this.abstractText,
@@ -45,6 +51,11 @@ class _ProposalData {
     required this.expectedDecisionDate,
     required this.impactBadges,
     required this.activityLog,
+    this.milestoneMatchDate,
+    this.milestoneReviewDate,
+    this.milestoneMidtermDate,
+    this.milestoneFinalDate,
+    this.milestoneVivaDate,
   });
 }
 
@@ -118,6 +129,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
               expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
               impactBadges: [],
               activityLog: [],
+              milestoneMatchDate: myProposal.milestoneMatchDate,
+              milestoneReviewDate: myProposal.milestoneReviewDate,
+              milestoneMidtermDate: myProposal.milestoneMidtermDate,
+              milestoneFinalDate: myProposal.milestoneFinalDate,
+              milestoneVivaDate: myProposal.milestoneVivaDate,
             );
           }
 
@@ -1203,7 +1219,31 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
+  String _formatMilestoneDate(DateTime? d) {
+    if (d == null) return 'TBD';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[d.month - 1]} ${d.day.toString().padLeft(2, '0')}, ${d.year}';
+  }
+
   Widget _buildPostMatchMilestones() {
+    final p = _proposal;
+    if (p == null) return const SizedBox();
+
+    bool matchCompleted = p.status == ProposalStatus.matched;
+    bool reviewCompleted = p.milestoneReviewDate != null && p.milestoneReviewDate!.isBefore(DateTime.now());
+    bool midtermCompleted = p.milestoneMidtermDate != null && p.milestoneMidtermDate!.isBefore(DateTime.now());
+    bool finalCompleted = p.milestoneFinalDate != null && p.milestoneFinalDate!.isBefore(DateTime.now());
+    bool vivaCompleted = p.milestoneVivaDate != null && p.milestoneVivaDate!.isBefore(DateTime.now());
+
+    int completeCount = (matchCompleted ? 1 : 0) + (reviewCompleted ? 1 : 0) + (midtermCompleted ? 1 : 0) + (finalCompleted ? 1 : 0) + (vivaCompleted ? 1 : 0);
+    int percentage = (completeCount / 5 * 100).round();
+
+    bool matchActive = !matchCompleted;
+    bool reviewActive = matchCompleted && !reviewCompleted;
+    bool midtermActive = reviewCompleted && !midtermCompleted;
+    bool finalActive = midtermCompleted && !finalCompleted;
+    bool vivaActive = finalCompleted && !vivaCompleted;
+
     return GlassContainer(
       padding: const EdgeInsets.all(24),
       borderRadius: 24,
@@ -1222,16 +1262,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   color: const Color(0xFF10B981).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text('25% Complete', style: TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 11)),
+                child: Text('$percentage% Complete', style: const TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 11)),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          _buildMilestoneRow(title: 'Supervisor Matched', date: 'Oct 18, 2026', isCompleted: true, isLast: false),
-          _buildMilestoneRow(title: 'Literature Review Submitted', date: 'Due: Nov 15, 2026', isCompleted: false, isActive: true, isLast: false),
-          _buildMilestoneRow(title: 'Mid-term Defense', date: 'Dec 10, 2026', isCompleted: false, isLast: false),
-          _buildMilestoneRow(title: 'Final Thesis/Code Submission', date: 'Mar 15, 2027', isCompleted: false, isLast: false),
-          _buildMilestoneRow(title: 'Final Viva/Presentation', date: 'Apr 05, 2027', isCompleted: false, isLast: true),
+          _buildMilestoneRow(title: 'Supervisor Matched', date: _formatMilestoneDate(p.milestoneMatchDate), isCompleted: matchCompleted, isActive: matchActive, isLast: false),
+          _buildMilestoneRow(title: 'Literature Review Submitted', date: 'Due: ${_formatMilestoneDate(p.milestoneReviewDate)}', isCompleted: reviewCompleted, isActive: reviewActive, isLast: false),
+          _buildMilestoneRow(title: 'Mid-term Defense', date: _formatMilestoneDate(p.milestoneMidtermDate), isCompleted: midtermCompleted, isActive: midtermActive, isLast: false),
+          _buildMilestoneRow(title: 'Final Thesis/Code Submission', date: _formatMilestoneDate(p.milestoneFinalDate), isCompleted: finalCompleted, isActive: finalActive, isLast: false),
+          _buildMilestoneRow(title: 'Final Viva/Presentation', date: _formatMilestoneDate(p.milestoneVivaDate), isCompleted: vivaCompleted, isActive: vivaActive, isLast: true),
         ],
       ),
     );

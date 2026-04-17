@@ -90,6 +90,13 @@ model Module {
   supervisors ModuleSupervisor[]
   projects    Project[]
 
+  // Dynamic Project Milestones
+  milestoneMatchDate   DateTime?
+  milestoneReviewDate  DateTime?
+  milestoneMidtermDate DateTime?
+  milestoneFinalDate   DateTime?
+  milestoneVivaDate    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

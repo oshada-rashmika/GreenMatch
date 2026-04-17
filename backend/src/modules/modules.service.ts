@@ -71,6 +71,11 @@ export class ModulesService {
       moduleName: string;
       academicYear: string;
       batch: string;
+      milestoneMatchDate?: string;
+      milestoneReviewDate?: string;
+      milestoneMidtermDate?: string;
+      milestoneFinalDate?: string;
+      milestoneVivaDate?: string;
     },
   ) {
     const moduleCode = data.moduleCode.trim();
@@ -89,6 +94,11 @@ export class ModulesService {
         academicYear,
         batch,
         moduleLeaderId,
+        milestoneMatchDate: data.milestoneMatchDate ? new Date(data.milestoneMatchDate) : null,
+        milestoneReviewDate: data.milestoneReviewDate ? new Date(data.milestoneReviewDate) : null,
+        milestoneMidtermDate: data.milestoneMidtermDate ? new Date(data.milestoneMidtermDate) : null,
+        milestoneFinalDate: data.milestoneFinalDate ? new Date(data.milestoneFinalDate) : null,
+        milestoneVivaDate: data.milestoneVivaDate ? new Date(data.milestoneVivaDate) : null,
       },
       select: {
         id: true,
@@ -96,6 +106,11 @@ export class ModulesService {
         moduleName: true,
         academicYear: true,
         batch: true,
+        milestoneMatchDate: true,
+        milestoneReviewDate: true,
+        milestoneMidtermDate: true,
+        milestoneFinalDate: true,
+        milestoneVivaDate: true,
         createdAt: true,
       },
     });

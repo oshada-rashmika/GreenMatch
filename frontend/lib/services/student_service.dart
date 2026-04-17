@@ -42,6 +42,11 @@ class MyProposalData {
   final List<String> tags;
   final String? supervisorName;
   final String? supervisorEmail;
+  final DateTime? milestoneMatchDate;
+  final DateTime? milestoneReviewDate;
+  final DateTime? milestoneMidtermDate;
+  final DateTime? milestoneFinalDate;
+  final DateTime? milestoneVivaDate;
 
   MyProposalData({
     required this.id,
@@ -52,16 +57,27 @@ class MyProposalData {
     required this.tags,
     this.supervisorName,
     this.supervisorEmail,
+    this.milestoneMatchDate,
+    this.milestoneReviewDate,
+    this.milestoneMidtermDate,
+    this.milestoneFinalDate,
+    this.milestoneVivaDate,
   });
 
   factory MyProposalData.fromJson(Map<String, dynamic> json) {
     var rawTags = json['tags'] as List? ?? [];
+    final moduleMap = json['module'] ?? <String, dynamic>{};
     return MyProposalData(
       id: json['id'],
       title: json['title'],
       abstractText: json['abstract'],
       status: json['status'],
-      moduleName: json['module']['moduleName'],
+      moduleName: moduleMap['moduleName'],
+      milestoneMatchDate: moduleMap['milestoneMatchDate'] != null ? DateTime.tryParse(moduleMap['milestoneMatchDate'])?.toLocal() : null,
+      milestoneReviewDate: moduleMap['milestoneReviewDate'] != null ? DateTime.tryParse(moduleMap['milestoneReviewDate'])?.toLocal() : null,
+      milestoneMidtermDate: moduleMap['milestoneMidtermDate'] != null ? DateTime.tryParse(moduleMap['milestoneMidtermDate'])?.toLocal() : null,
+      milestoneFinalDate: moduleMap['milestoneFinalDate'] != null ? DateTime.tryParse(moduleMap['milestoneFinalDate'])?.toLocal() : null,
+      milestoneVivaDate: moduleMap['milestoneVivaDate'] != null ? DateTime.tryParse(moduleMap['milestoneVivaDate'])?.toLocal() : null,
       tags: rawTags.map((t) => t['tag']['name'] as String).toList(),
       supervisorName: json['supervisor']?['fullName'],
       supervisorEmail: json['supervisor']?['email'],

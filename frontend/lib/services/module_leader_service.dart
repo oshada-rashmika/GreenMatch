@@ -229,6 +229,11 @@ class ModuleLeaderService {
     required String moduleName,
     required String academicYear,
     required String batch,
+    DateTime? milestoneMatchDate,
+    DateTime? milestoneReviewDate,
+    DateTime? milestoneMidtermDate,
+    DateTime? milestoneFinalDate,
+    DateTime? milestoneVivaDate,
   }) async {
     try {
       final response = await http.post(
@@ -239,6 +244,11 @@ class ModuleLeaderService {
           'moduleName': moduleName,
           'academicYear': academicYear,
           'batch': batch,
+          if (milestoneMatchDate != null) 'milestoneMatchDate': milestoneMatchDate.toIso8601String(),
+          if (milestoneReviewDate != null) 'milestoneReviewDate': milestoneReviewDate.toIso8601String(),
+          if (milestoneMidtermDate != null) 'milestoneMidtermDate': milestoneMidtermDate.toIso8601String(),
+          if (milestoneFinalDate != null) 'milestoneFinalDate': milestoneFinalDate.toIso8601String(),
+          if (milestoneVivaDate != null) 'milestoneVivaDate': milestoneVivaDate.toIso8601String(),
         }),
       );
 

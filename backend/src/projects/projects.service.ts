@@ -68,7 +68,16 @@ export class ProjectsService {
         tags: {
           select: { tag: { select: { name: true } } },
         },
-        module: { select: { moduleName: true } },
+        module: { 
+          select: { 
+            moduleName: true,
+            milestoneMatchDate: true,
+            milestoneReviewDate: true,
+            milestoneMidtermDate: true,
+            milestoneFinalDate: true,
+            milestoneVivaDate: true,
+          } 
+        },
         supervisor: {
           select: { fullName: true, email: true },
         },

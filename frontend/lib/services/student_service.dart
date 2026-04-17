@@ -32,6 +32,71 @@ class TagData {
   }
 }
 
+class MyProposalData {
+  final String id;
+  final String title;
+  final String abstractText;
+  final String status;
+  final String moduleName;
+  final List<String> tags;
+  final String? supervisorName;
+  final String? supervisorEmail;
+
+  MyProposalData({
+    required this.id,
+    required this.title,
+    required this.abstractText,
+    required this.status,
+    required this.moduleName,
+    required this.tags,
+    this.supervisorName,
+    this.supervisorEmail,
+  });
+
+  factory MyProposalData.fromJson(Map<String, dynamic> json) {
+    var rawTags = json['tags'] as List? ?? [];
+    return MyProposalData(
+      id: json['id'],
+      title: json['title'],
+      abstractText: json['abstract'],
+      status: json['status'],
+      moduleName: json['module']['moduleName'],
+      tags: rawTags.map((t) => t['tag']['name'] as String).toList(),
+      supervisorName: json['supervisor']?['fullName'],
+      supervisorEmail: json['supervisor']?['email'],
+    );
+  }
+}
+
+class MeetingData {
+  final String id;
+  final DateTime scheduledDate;
+  final DateTime windowExpiry;
+  final String status;
+  final String? supervisorNotes;
+  final String supervisorName;
+
+  MeetingData({
+    required this.id,
+    required this.scheduledDate,
+    required this.windowExpiry,
+    required this.status,
+    this.supervisorNotes,
+    required this.supervisorName,
+  });
+
+  factory MeetingData.fromJson(Map<String, dynamic> json) {
+    return MeetingData(
+      id: json['id'],
+      scheduledDate: DateTime.parse(json['scheduledDate']).toLocal(),
+      windowExpiry: DateTime.parse(json['windowExpiry']).toLocal(),
+      status: json['status'],
+      supervisorNotes: json['supervisorNotes'],
+      supervisorName: json['supervisor']['fullName'],
+    );
+  }
+}
+
 class StudentService {
   final String baseUrl;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -105,6 +170,62 @@ class StudentService {
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception('Failed to submit proposal: ${response.body}');
+    }
+  }
+
+  Future<MyProposalData?> fetchMyProposal() async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/projects/my-proposal'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      if (response.body.isNotEmpty) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return MyProposalData.fromJson(data);
+      }
+      return null;
+    } else if (response.statusCode == 404) {
+      return null;
+    } else {
+      throw Exception('Failed to fetch proposal: ${response.body}');
+    }
+  }
+
+  Future<List<MeetingData>> fetchMyMeetings() async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/meetings/my-meetings'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => MeetingData.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to fetch meetings: ${response.body}');
+    }
+  }
+
+  Future<void> attendMeeting(String meetingId) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/meetings/$meetingId/attend'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to attend meeting: ${response.body}');
     }
   }
 }

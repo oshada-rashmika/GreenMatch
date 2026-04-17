@@ -19,7 +19,11 @@ class MyApp extends StatelessWidget {
         title: 'GreenMatch',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.monochromeTheme,
-        home: const LoginScreen(),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const LoginScreen(),
+          '/admin': (context) => const LoginScreen(adminOnly: true),
+        },
       ),
     );
   }

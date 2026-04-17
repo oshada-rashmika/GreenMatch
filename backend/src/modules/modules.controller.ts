@@ -24,6 +24,12 @@ export class ModulesController {
     return this.modulesService.getAcademicModules(req.user.id);
   }
 
+  @Get('all')
+  @Roles(Role.STUDENT, Role.SUPERVISOR, Role.MODULE_LEADER)
+  async getAllModules() {
+    return this.modulesService.getAllModules();
+  }
+
   @Post()
   async createAcademicModule(@Request() req, @Body() body: Record<string, any>) {
     return this.modulesService.createAcademicModule(req.user.id, {

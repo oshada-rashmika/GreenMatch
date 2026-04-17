@@ -33,6 +33,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   String? errorMessage;
   final Set<String> matchedProjectIds = {};
   bool _isFocusMode = false;
+  final CardSwiperController _swiperController = CardSwiperController();
 
   final List<String> activeSpecifications = [
     'Artificial Intelligence',
@@ -174,6 +175,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     _warningTimer?.cancel();
     _logoutTimer?.cancel();
     _countdownTick?.cancel();
+    _swiperController.dispose();
     super.dispose();
   }
 
@@ -664,62 +666,126 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                    ),
-                    child: const Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.forestEmerald),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    "You've reviewed\nall projects!",
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      height: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-              CardSwiper(
-                cardsCount: projects.length,
-                cardBuilder: (context, index, horizontalOffsetPercentage, verticalOffsetPercentage) {
-                  final project = projects[index];
-                  return FocusProjectCard(
-                    project: project,
-                    activeSpecifications: activeSpecifications,
-                    onMatch: () => _onMatchConfirmed(project.id),
-                    percentX: horizontalOffsetPercentage,
-                  );
-                },
-                allowedSwipeDirection: const AllowedSwipeDirection.symmetric(horizontal: true),
-                onSwipe: (previousIndex, currentIndex, direction) {
-                  final project = projects[previousIndex];
-                  if (direction == CardSwiperDirection.right) {
-                    final shortlistProvider = context.read<ShortlistProvider>();
-                    if (!shortlistProvider.isShortlisted(project.id)) {
-                      shortlistProvider.toggleShortlist(project.id);
-                      HapticFeedback.lightImpact();
+              Expanded(
+                child: Focus(
+                  autofocus: true,
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent) {
+                      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                        _swiperController.swipe(CardSwiperDirection.left);
+                        return KeyEventResult.handled;
+                      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                        _swiperController.swipe(CardSwiperDirection.right);
+                        return KeyEventResult.handled;
+                      }
                     }
-                  } else if (direction == CardSwiperDirection.left) {
-                      HapticFeedback.selectionClick();
-                  }
-                  return true;
-                },
-                onEnd: () {
-                  HapticFeedback.mediumImpact();
-                },
+                    return KeyEventResult.ignored;
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                            ),
+                            child: const Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.forestEmerald),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            "You've reviewed\nall projects!",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      CardSwiper(
+                        controller: _swiperController,
+                        cardsCount: projects.length,
+                        cardBuilder: (context, index, horizontalOffsetPercentage, verticalOffsetPercentage) {
+                          final project = projects[index];
+                          return FocusProjectCard(
+                            project: project,
+                            activeSpecifications: activeSpecifications,
+                            onMatch: () => _onMatchConfirmed(project.id),
+                            percentX: horizontalOffsetPercentage,
+                          );
+                        },
+                        allowedSwipeDirection: const AllowedSwipeDirection.symmetric(horizontal: true),
+                        onSwipe: (previousIndex, currentIndex, direction) {
+                          final project = projects[previousIndex];
+                          if (direction == CardSwiperDirection.right) {
+                            final shortlistProvider = context.read<ShortlistProvider>();
+                            if (!shortlistProvider.isShortlisted(project.id)) {
+                              shortlistProvider.toggleShortlist(project.id);
+                              HapticFeedback.lightImpact();
+                            }
+                          } else if (direction == CardSwiperDirection.left) {
+                              HapticFeedback.selectionClick();
+                          }
+                          return true;
+                        },
+                        onEnd: () {
+                          HapticFeedback.mediumImpact();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              _buildFocusActionBar(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFocusActionBar() {
+    return Container(
+      margin: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _swiperController.swipe(CardSwiperDirection.left);
+            },
+            icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 28),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              padding: const EdgeInsets.all(12),
+            ),
+          ),
+          const SizedBox(width: 48),
+          IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _swiperController.swipe(CardSwiperDirection.right);
+            },
+            icon: const Icon(Icons.bookmark, color: Color(0xFFFBBF24), size: 28),
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFFFBBF24).withValues(alpha: 0.15),
+              padding: const EdgeInsets.all(12),
+            ),
+          ),
+        ],
       ),
     );
   }

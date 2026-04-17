@@ -9,6 +9,17 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ModulesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getAllModules() {
+    return this.prisma.module.findMany({
+      select: {
+        id: true,
+        moduleCode: true,
+        moduleName: true,
+      },
+      orderBy: { moduleCode: 'asc' },
+    });
+  }
+
   async getAcademicModules(moduleLeaderId: string) {
     const [modules, supervisors] = await Promise.all([
       this.prisma.module.findMany({

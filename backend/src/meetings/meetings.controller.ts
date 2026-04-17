@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { MeetingsService } from './meetings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -21,6 +21,12 @@ export class MeetingsController {
       body.windowExpiry as Date,
       body.notes
     );
+  }
+
+  @Get('my-meetings')
+  @Roles(Role.STUDENT)
+  async getMyMeetings(@Request() req) {
+    return this.meetingsService.getMyMeetings(req.user.id);
   }
 
   @Post(':id/attend')

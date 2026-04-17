@@ -52,6 +52,77 @@ class AnonymousProject {
 
 }
 
+class StudentIdentity {
+  final String fullName;
+  final String email;
+
+  const StudentIdentity({required this.fullName, required this.email});
+
+  factory StudentIdentity.fromJson(Map<String, dynamic> json) {
+    return StudentIdentity(
+      fullName: json['fullName'] as String,
+      email: json['email'] as String,
+    );
+  }
+}
+
+class SupervisedProject {
+  final String id;
+  final String title;
+  final String abstract;
+  final String status;
+  final DateTime createdAt;
+  final String groupId;
+  final String groupName;
+  final List<StudentIdentity> teamMembers;
+  final List<String> tags;
+
+  const SupervisedProject({
+    required this.id,
+    required this.title,
+    required this.abstract,
+    required this.status,
+    required this.createdAt,
+    required this.groupId,
+    required this.groupName,
+    required this.teamMembers,
+    required this.tags,
+  });
+
+  factory SupervisedProject.fromJson(Map<String, dynamic> json) {
+    try {
+      final rawTags = json['tags'] as List<dynamic>? ?? [];
+      final tagNames = rawTags
+          .map((entry) => (entry['tag'] as Map<String, dynamic>?)?['name'] as String?)
+          .whereType<String>()
+          .toList();
+
+      final group = json['group'] as Map<String, dynamic>? ?? {};
+      final membersList = group['members'] as List<dynamic>? ?? [];
+      final parsedMembers = membersList
+          .map((m) => (m['student'] as Map<String, dynamic>?))
+          .whereType<Map<String, dynamic>>()
+          .map((s) => StudentIdentity.fromJson(s))
+          .toList();
+
+      return SupervisedProject(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        abstract: json['abstract'] as String,
+        status: json['status'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        groupId: json['groupId'] as String,
+        groupName: group['groupName'] as String? ?? 'Unknown Group',
+        teamMembers: parsedMembers,
+        tags: tagNames,
+      );
+    } catch (e) {
+      throw ProjectServiceException(
+        'Failed to parse supervised project data: $e'
+      );
+    }
+  }
+}
 
 class ProjectService {
   final AuthService _authService;
@@ -154,6 +225,63 @@ class ProjectService {
         serverMessage,
         statusCode: response.statusCode,
       );
+    } on ProjectServiceException {
+      rethrow;
+    } catch (e) {
+      throw ProjectServiceException(_mapNetworkError(e));
+    }
+  }
+
+  Future<List<SupervisedProject>> fetchMySupervisedProjects() async {
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/projects/my-supervised'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> raw = jsonDecode(response.body) as List<dynamic>;
+        return raw.map((item) => SupervisedProject.fromJson(item as Map<String, dynamic>)).toList();
+      }
+
+      if (response.statusCode == 401) {
+        throw ProjectServiceException('Session expired. Please log in again.', statusCode: 401);
+      }
+
+      final body = _tryDecodeBody(response.body);
+      final serverMessage = body?['message'] as String? ?? 'Unexpected error from server.';
+      throw ProjectServiceException(serverMessage, statusCode: response.statusCode);
+    } on ProjectServiceException {
+      rethrow;
+    } catch (e) {
+      throw ProjectServiceException(_mapNetworkError(e));
+    }
+  }
+
+  Future<void> scheduleMeeting(String groupId, DateTime scheduledDate, DateTime windowExpiry) async {
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final response = await http.post(
+        Uri.parse('$_baseUrl/meetings/schedule'),
+        headers: headers,
+        body: jsonEncode({
+          'groupId': groupId,
+          'scheduledDate': scheduledDate.toIso8601String(),
+          'windowExpiry': windowExpiry.toIso8601String(),
+          'notes': 'Scheduled via Supervisor Dashboard',
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) return;
+
+      if (response.statusCode == 401) {
+        throw ProjectServiceException('Session expired. Please log in again.', statusCode: 401);
+      }
+
+      final body = _tryDecodeBody(response.body);
+      final serverMessage = body?['message'] as String? ?? 'Failed to schedule meeting.';
+      throw ProjectServiceException(serverMessage, statusCode: response.statusCode);
     } on ProjectServiceException {
       rethrow;
     } catch (e) {

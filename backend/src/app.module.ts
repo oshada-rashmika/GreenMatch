@@ -8,6 +8,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { UsersModule } from './users/users.module';
 import { ModulesModule } from './modules/modules.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ModulesModule } from './modules/modules.module';
     MeetingsModule,
     UsersModule,
     ModulesModule,
+    TagsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

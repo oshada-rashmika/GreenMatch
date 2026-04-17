@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import '../services/student_service.dart';
 import 'login_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
@@ -61,12 +62,82 @@ class _StudentDashboardState extends State<StudentDashboard> {
   final Color mutedTextColor = Colors.white60;
 
   _ProposalData? _proposal;
+  List<MeetingData> _meetings = [];
 
-  void _showSubmissionForm({bool isEditing = false, String? defaultTitle, String? defaultAbstract, String? defaultTechStack}) {
+  bool _isLoadingData = true;
+  List<ModuleData> _modules = [];
+  List<TagData> _tags = [];
+  String? _selectedModuleId;
+  String? _selectedTagId;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInitialData();
+  }
+
+  Future<void> _fetchInitialData() async {
+    try {
+      final service = StudentService();
+      final fetchedModules = await service.fetchModules();
+      final fetchedTags = await service.fetchTags();
+      final myProposal = await service.fetchMyProposal();
+      final fetchedMeetings = await service.fetchMyMeetings();
+
+      if (mounted) {
+        setState(() {
+          _modules = fetchedModules;
+          _tags = fetchedTags;
+          _meetings = fetchedMeetings;
+
+          if (_modules.isNotEmpty) _selectedModuleId = _modules.first.id;
+          if (_tags.isNotEmpty) _selectedTagId = _tags.first.id;
+
+          if (myProposal != null) {
+            ProposalStatus mappedStatus;
+            switch (myProposal.status) {
+              case 'MATCHED':
+                mappedStatus = ProposalStatus.matched;
+                break;
+              case 'UNDER_REVIEW':
+                mappedStatus = ProposalStatus.underReview;
+                break;
+              default:
+                mappedStatus = ProposalStatus.pending;
+            }
+
+            _proposal = _ProposalData(
+              title: myProposal.title,
+              abstractText: myProposal.abstractText,
+              techStack: myProposal.tags.join(', '),
+              researchArea: (myProposal.tags.isNotEmpty) ? myProposal.tags.first : 'N/A',
+              status: mappedStatus,
+              supervisorName: myProposal.supervisorName,
+              supervisorContact: myProposal.supervisorEmail,
+              submittedDate: DateTime.now(), // Fallback
+              expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
+              impactBadges: [],
+              activityLog: [],
+            );
+          }
+
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingData = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  void _showSubmissionForm({bool isEditing = false, String? defaultTitle, String? defaultAbstract}) {
     final titleController = TextEditingController(text: isEditing ? _proposal?.title : (defaultTitle ?? ''));
     final abstractController = TextEditingController(text: isEditing ? _proposal?.abstractText : (defaultAbstract ?? ''));
-    final techStackController = TextEditingController(text: isEditing ? _proposal?.techStack : (defaultTechStack ?? ''));
-    String researchArea = isEditing ? (_proposal?.researchArea ?? 'Artificial Intelligence') : 'Artificial Intelligence';
+    final groupNameController = TextEditingController();
+
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -92,69 +163,119 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   children: [
                     Text(
                       isEditing ? 'Edit Proposal' : 'Submit Proposal',
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.montserrat(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
-                    _buildTextField(titleController, 'Title'),
-                    const SizedBox(height: 16),
-                    _buildTextField(abstractController, 'Abstract', maxLines: 3),
-                    const SizedBox(height: 16),
-                    _buildTextField(techStackController, 'Tech Stack (comma separated)'),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: researchArea,
-                      dropdownColor: bgColor,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        labelText: 'Research Area',
-                        labelStyle: TextStyle(color: mutedTextColor),
-                        filled: true,
-                        fillColor: bgColor,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      ),
-                      items: ['Artificial Intelligence', 'Web & Mobile', 'Internet of Things', 'Cybersecurity']
-                          .map((area) => DropdownMenuItem(value: area, child: Text(area)))
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => researchArea = val);
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2B364E),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    if (_isLoadingData)
+                      const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald))
+                    else ...[
+                      _buildTextField(titleController, 'Project Title'),
+                      const SizedBox(height: 16),
+                      _buildTextField(abstractController, 'Abstract', maxLines: 3),
+                      const SizedBox(height: 16),
+                      _buildTextField(groupNameController, 'Group Name (Optional)'),
+                      const SizedBox(height: 16),
+                      if (_modules.isEmpty)
+                        const Text("No Modules Available. Please wait or referesh.", style: TextStyle(color: Colors.redAccent))
+                      else
+                        DropdownButtonFormField<String>(
+                          value: _modules.any((m) => m.id == _selectedModuleId) ? _selectedModuleId : _modules.first.id,
+                          dropdownColor: AppTheme.premiumBlack,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Academic Module',
+                            labelStyle: TextStyle(color: mutedTextColor),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.05),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          items: _modules
+                              .map((mod) => DropdownMenuItem(value: mod.id, child: Text('${mod.moduleCode} - ${mod.moduleName}', overflow: TextOverflow.ellipsis)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => _selectedModuleId = val);
+                          },
                         ),
-                        onPressed: () {
-                          if (titleController.text.trim().isEmpty || abstractController.text.trim().isEmpty) return;
-                          setState(() {
-                            _proposal = _ProposalData(
-                              title: titleController.text,
-                              abstractText: abstractController.text,
-                              techStack: techStackController.text,
-                              researchArea: researchArea,
-                              status: isEditing ? _proposal!.status : ProposalStatus.pending,
-                              supervisorName: _proposal?.supervisorName,
-                              supervisorContact: _proposal?.supervisorContact,
-                              submittedDate: isEditing ? _proposal!.submittedDate : DateTime.now(),
-                              expectedDecisionDate: isEditing ? _proposal!.expectedDecisionDate : DateTime.now().add(const Duration(days: 14)),
-                              impactBadges: ['UN SDG 13: Climate Action', 'Tech for Good'],
-                              activityLog: isEditing ? _proposal!.activityLog : [
-                                _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, const Color(0xFFFACC15)),
-                              ],
-                            );
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: Text(
-                          isEditing ? 'Save Changes' : 'Submit Document',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 16),
+                      if (_tags.isEmpty)
+                        const Text("No Research Areas Available.", style: TextStyle(color: Colors.redAccent))
+                      else
+                        DropdownButtonFormField<String>(
+                          value: _tags.any((t) => t.id == _selectedTagId) ? _selectedTagId : _tags.first.id,
+                          dropdownColor: AppTheme.premiumBlack,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            labelText: 'Research Area / Tech Stack',
+                            labelStyle: TextStyle(color: mutedTextColor),
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.05),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          ),
+                          items: _tags
+                              .map((tag) => DropdownMenuItem(value: tag.id, child: Text(tag.name)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => _selectedTagId = val);
+                          },
+                        ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.forestEmerald,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: isSubmitting ? null : () async {
+                            if (titleController.text.trim().isEmpty || abstractController.text.trim().isEmpty || _selectedModuleId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields.')));
+                              return;
+                            }
+                            setModalState(() => isSubmitting = true);
+                            try {
+                              await StudentService().submitProposal(
+                                title: titleController.text.trim(),
+                                abstractText: abstractController.text.trim(),
+                                moduleId: _selectedModuleId!,
+                                groupName: groupNameController.text.trim().isEmpty ? null : groupNameController.text.trim(),
+                                tagIds: _selectedTagId != null ? [_selectedTagId!] : null,
+                              );
+                              if (mounted) {
+                                setState(() {
+                                  _proposal = _ProposalData(
+                                    title: titleController.text,
+                                    abstractText: abstractController.text,
+                                    techStack: 'Tech Stack Added',
+                                    researchArea: 'Pending tags',
+                                    status: ProposalStatus.pending,
+                                    submittedDate: DateTime.now(),
+                                    expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
+                                    impactBadges: [],
+                                    activityLog: [
+                                      _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, AppTheme.forestEmerald),
+                                    ],
+                                  );
+                                });
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Proposal Submitted Successfully!')));
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                setModalState(() => isSubmitting = false);
+                              }
+                            }
+                          },
+                          child: isSubmitting 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text(
+                                isEditing ? 'Save Changes' : 'Submit Document',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
                         ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -201,7 +322,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       case ProposalStatus.matched: return "MATCHED";
       case ProposalStatus.underReview: return "UNDER REVIEW";
       case ProposalStatus.pending:
-      default: return "PENDING";
+      default: return "WAITING FOR SUPERVISOR";
     }
   }
 
@@ -304,59 +425,26 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ),
         actions: [
           Center(
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                canvasColor: cardColor,
-              ),
-              child: DropdownButton<ProposalStatus>(
-                value: _proposal?.status ?? ProposalStatus.pending,
-                icon: const Icon(Icons.bug_report, color: Colors.white, size: 16),
-                underline: const SizedBox(),
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-                items: const [
-                  DropdownMenuItem(value: ProposalStatus.pending, child: Text('Demo: Pending')),
-                  DropdownMenuItem(value: ProposalStatus.underReview, child: Text('Demo: Review')),
-                  DropdownMenuItem(value: ProposalStatus.matched, child: Text('Demo: Matched')),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      if (_proposal == null) {
-                         _proposal = _ProposalData(
-                          title: 'Demo Project',
-                          abstractText: 'Automatically generated abstract.',
-                          techStack: 'Flutter, Python',
-                          researchArea: 'Artificial Intelligence',
-                          status: val,
-                          submittedDate: DateTime.now(),
-                          expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
-                          impactBadges: ['Tech for Good'],
-                          activityLog: [
-                            _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, const Color(0xFFFACC15)),
-                          ],
-                        );
-                      } else {
-                        _proposal!.status = val;
-                      }
-
-                      if (val == ProposalStatus.matched) {
-                        _proposal!.supervisorName = "Dr. Alan Turing";
-                        _proposal!.supervisorContact = "alan.turing@example.edu";
-                        _proposal!.activityLog.insert(0, _Activity('Today', 'Supervisor Dr. Alan Turing conditionally accepted the proposal.', Icons.check_circle, const Color(0xFF10B981)));
-                      } else if (val == ProposalStatus.underReview) {
-                        _proposal!.supervisorName = null;
-                        _proposal!.supervisorContact = null;
-                        _proposal!.activityLog.insert(0, _Activity('Yesterday', 'Proposal is now under review by the coordination committee.', Icons.remove_red_eye, const Color(0xFF3B82F6)));
-                      } else {
-                        _proposal!.supervisorName = null;
-                        _proposal!.supervisorContact = null;
-                      }
-                    });
-                  }
-                },
-              ),
-            ),
-          ),
+             child: Container(
+               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+               decoration: BoxDecoration(
+                 color: _getStatusColor().withOpacity(0.15),
+                 borderRadius: BorderRadius.circular(20),
+                 border: Border.all(color: _getStatusColor().withOpacity(0.5)),
+               ),
+               child: Row(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   Icon(Icons.radio_button_checked, color: _getStatusColor(), size: 12),
+                   const SizedBox(width: 6),
+                   Text(
+                     _getStatusText(),
+                     style: TextStyle(color: _getStatusColor(), fontSize: 12, fontWeight: FontWeight.w700),
+                   ),
+                 ],
+               ),
+             ),
+           ),
           const SizedBox(width: 8),
           PopupMenuButton<String>(
             color: cardColor,
@@ -407,9 +495,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.only(top: 100, left: 20.0, right: 20.0, bottom: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
               onTap: () {
@@ -471,6 +559,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ],
               _buildProposalCard(),
               const SizedBox(height: 24),
+              if (_proposal != null) ...[
+                _buildMeetingsSection(),
+                const SizedBox(height: 24),
+              ],
               _buildActivityLog(),
             ],
           ],
@@ -511,7 +603,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Start from Scratch', style: TextStyle(fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
+                  backgroundColor: AppTheme.forestEmerald,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -524,15 +616,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 onSelected: (value) {
                   if (value == 'capstone') {
-                    _showSubmissionForm(defaultTitle: '[Capstone Project] ', defaultAbstract: 'This capstone project aims to...', defaultTechStack: 'Flutter, Firebase');
+                    _showSubmissionForm(defaultTitle: '[Capstone Project] ', defaultAbstract: 'This capstone project aims to...');
                   } else if (value == 'grant') {
-                    _showSubmissionForm(defaultTitle: 'Grant Proposal: ', defaultAbstract: 'This research aims to investigate the impact of...', defaultTechStack: 'Python, TensorFlow');
+                    _showSubmissionForm(defaultTitle: 'Grant Proposal: ', defaultAbstract: 'This research aims to investigate the impact of...');
                   } else if (value == 'industry') {
-                    _showSubmissionForm(defaultTitle: 'Industry Partnership: ', defaultAbstract: 'In collaboration with [Company], we will develop...', defaultTechStack: 'React, Node.js');
+                    _showSubmissionForm(defaultTitle: 'Industry Partnership: ', defaultAbstract: 'In collaboration with [Company], we will develop...');
                   } else if (value == 'thesis') {
-                    _showSubmissionForm(defaultTitle: 'Master\'s Thesis: ', defaultAbstract: 'A comprehensive study to evaluate the performance of...', defaultTechStack: 'R, SQL');
+                    _showSubmissionForm(defaultTitle: 'Master\'s Thesis: ', defaultAbstract: 'A comprehensive study to evaluate the performance of...');
                   } else if (value == 'open_source') {
-                    _showSubmissionForm(defaultTitle: 'Open Source Initiative: ', defaultAbstract: 'This project focuses on enhancing the core libraries of...', defaultTechStack: 'Rust, WebAssembly');
+                    _showSubmissionForm(defaultTitle: 'Open Source Initiative: ', defaultAbstract: 'This project focuses on enhancing the core libraries of...');
                   } else {
                     _showSubmissionForm();
                   }
@@ -547,15 +639,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2B364E),
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: const [
-                      Icon(Icons.copy, size: 16, color: Colors.white),
+                      Icon(Icons.copy, size: 16, color: AppTheme.forestEmerald),
                       SizedBox(width: 8),
-                      Text('Use Template', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Icon(Icons.arrow_drop_down, color: Colors.white),
+                      Text('Use Template', style: TextStyle(color: AppTheme.forestEmerald, fontWeight: FontWeight.bold)),
+                      Icon(Icons.arrow_drop_down, color: AppTheme.forestEmerald),
                     ],
                   ),
                 ),
@@ -631,7 +724,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildTimelineNode(String label, bool isCompleted, bool isActive) {
-    Color nodeColor = isCompleted ? const Color(0xFF10B981) : const Color(0xFF334155);
+    Color nodeColor = isCompleted ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.1);
     Color textColor = isCompleted || isActive ? Colors.white : mutedTextColor;
     
     return Expanded(
@@ -660,7 +753,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Expanded(
       child: Container(
         height: 2,
-        color: isActive ? const Color(0xFF10B981) : const Color(0xFF334155),
+        color: isActive ? const Color(0xFF10B981) : Colors.white.withValues(alpha: 0.1),
         margin: const EdgeInsets.only(bottom: 24),
       ),
     );
@@ -1359,5 +1452,129 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ],
       ),
     );
+  }
+
+  Widget _buildMeetingsSection() {
+    return GlassContainer(
+      padding: const EdgeInsets.all(24),
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: const Color(0xFF2B364E),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('SCHEDULED MEETINGS', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: const Color(0xFF3B82F6).withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.video_camera_front_outlined, color: Color(0xFF60A5FA), size: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (_meetings.isEmpty)
+            Text('No upcoming meetings scheduled.', style: TextStyle(color: mutedTextColor, fontSize: 14))
+          else
+            ..._meetings.map((meeting) => _buildMeetingCard(meeting)).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMeetingCard(MeetingData meeting) {
+    bool isExpired = DateTime.now().isAfter(meeting.windowExpiry);
+    bool isScheduled = meeting.status == 'SCHEDULED';
+    bool canAttend = isScheduled && !isExpired;
+
+    Color statusColor;
+    String statusText;
+
+    if (meeting.status == 'ATTENDED') {
+      statusColor = const Color(0xFF10B981);
+      statusText = 'ATTENDED';
+    } else if (meeting.status == 'MISSED' || (isScheduled && isExpired)) {
+      statusColor = const Color(0xFFEF4444);
+      statusText = 'MISSED';
+    } else {
+      statusColor = const Color(0xFFFACC15);
+      statusText = 'SCHEDULED';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF2B364E)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(meeting.supervisorName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.calendar_month, size: 14, color: mutedTextColor),
+              const SizedBox(width: 4),
+              Text(
+                '${meeting.scheduledDate.year}-${meeting.scheduledDate.month}-${meeting.scheduledDate.day} at ${meeting.scheduledDate.hour}:${meeting.scheduledDate.minute.toString().padLeft(2, '0')}',
+                style: TextStyle(color: mutedTextColor, fontSize: 13),
+              ),
+            ],
+          ),
+          if (meeting.supervisorNotes != null && meeting.supervisorNotes!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('Notes: ${meeting.supervisorNotes}', style: TextStyle(color: mutedTextColor, fontSize: 13, fontStyle: FontStyle.italic)),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: canAttend ? () => _markAttendance(meeting.id) : null,
+              icon: Icon(canAttend ? Icons.how_to_reg : Icons.block, size: 16),
+              label: Text(canAttend ? 'Mark Attendance' : (meeting.status == 'ATTENDED' ? 'Attendance Recorded' : 'Window Expired'), style: const TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: canAttend ? const Color(0xFF3B82F6) : Colors.grey.withOpacity(0.2),
+                foregroundColor: canAttend ? Colors.white : Colors.white54,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Future<void> _markAttendance(String meetingId) async {
+    try {
+      await StudentService().attendMeeting(meetingId);
+      await _fetchInitialData(); // Refresh UI fully
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attendance Successfully Recorded!')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to record attendance: $e')));
+      }
+    }
   }
 }

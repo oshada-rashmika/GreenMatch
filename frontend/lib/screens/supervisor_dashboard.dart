@@ -15,6 +15,7 @@ import 'login_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
 import '../services/shortlist_provider.dart';
+import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -625,38 +626,53 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         );
       },
       child: _isFocusMode
-          ? _buildFocusModePlaceholder(filtered)
+          ? _buildFocusModeContent(filtered)
           : _buildBentoGrid(filtered),
     );
   }
 
-  Widget _buildFocusModePlaceholder(List<AnonymousProject> projects) {
-    return Container(
-      key: const ValueKey('focus_mode_placeholder'),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.view_carousel_rounded, size: 64, color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            Text(
-              "Focus Mode (Swipe View)",
-              style: GoogleFonts.montserrat(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+  Widget _buildFocusModeContent(List<AnonymousProject> projects) {
+    if (projects.isEmpty) {
+      return Container(
+        key: const ValueKey('focus_mode_empty'),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.view_carousel_rounded, size: 64, color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+              const SizedBox(height: 16),
+              Text(
+                "No projects to review.",
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "${projects.length} projects ready to review.",
-              style: GoogleFonts.montserrat(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
+      );
+    }
+
+    return Container(
+      key: const ValueKey('focus_mode_swiper'),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: CardSwiper(
+        cardsCount: projects.length,
+        cardBuilder: (context, index, percentThresholdX, percentThresholdY) {
+          final project = projects[index];
+          return FocusProjectCard(
+            project: project,
+            activeSpecifications: activeSpecifications,
+            onMatch: () => _onMatchConfirmed(project.id),
+          );
+        },
+        allowedSwipeDirection: const AllowedSwipeDirection.symmetric(horizontal: true),
+        onSwipe: (previousIndex, currentIndex, direction) {
+          // Additional swipe actions can be hooked here, e.g., auto-matching on right swipe.
+          return true;
+        },
       ),
     );
   }
@@ -1837,6 +1853,250 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class FocusProjectCard extends StatelessWidget {
+  final AnonymousProject project;
+  final List<String> activeSpecifications;
+  final Future<void> Function() onMatch;
+
+  const FocusProjectCard({
+    super.key,
+    required this.project,
+    required this.activeSpecifications,
+    required this.onMatch,
+  });
+
+  double get _fraction {
+    if (project.tags.isEmpty) return 0.0;
+    int matches = project.tags
+        .where((tag) => activeSpecifications
+            .map((s) => s.toLowerCase())
+            .contains(tag.toLowerCase()))
+        .length;
+    return matches / project.tags.length;
+  }
+
+  int get _score => (_fraction * 100).round();
+
+  Color get _scoreColor {
+    if (_score >= 80) return AppTheme.forestEmerald;
+    if (_score >= 50) return const Color(0xFFFBBF24);
+    return Colors.white.withValues(alpha: 0.15);
+  }
+
+  Widget _buildBookmarkButton() {
+    return Consumer<ShortlistProvider>(
+      builder: (context, shortlistProvider, child) {
+        final isShortlisted = shortlistProvider.isShortlisted(project.id);
+        
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            shortlistProvider.toggleShortlist(project.id);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isShortlisted 
+                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15) 
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isShortlisted 
+                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3) 
+                    : Colors.white.withValues(alpha: 0.1),
+              ),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Icon(
+                isShortlisted ? Icons.bookmark : Icons.bookmark_border,
+                key: ValueKey<bool>(isShortlisted),
+                color: isShortlisted ? const Color(0xFFFBBF24) : Colors.white54,
+                size: 28,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMatchScoreIndicator() {
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _scoreColor.withValues(alpha: 0.1),
+        boxShadow: [
+          BoxShadow(
+            color: _scoreColor.withValues(alpha: _score >= 50 ? 0.2 : 0.0),
+            blurRadius: 15,
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 70,
+            height: 70,
+            child: CircularProgressIndicator(
+              value: _fraction,
+              strokeWidth: 5.0,
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              valueColor: AlwaysStoppedAnimation<Color>(_scoreColor),
+            ),
+          ),
+          Text(
+            '$_score%',
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagBadge(String tag) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.forestEmerald.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.1)),
+      ),
+      child: Text(
+        tag.toUpperCase(),
+        style: GoogleFonts.montserrat(
+          color: AppTheme.forestEmerald,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      borderRadius: 32,
+      opacity: 0.08,
+      borderColor: AppTheme.forestEmerald.withValues(alpha: 0.4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: project.tags.map((tag) => _buildTagBadge(tag)).toList(),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildBookmarkButton(),
+                  const SizedBox(width: 16),
+                  _buildMatchScoreIndicator(),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'ANONYMOUS STUDENT GROUP',
+            style: GoogleFonts.montserrat(
+              color: AppTheme.forestEmerald,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            project.title,
+            style: GoogleFonts.montserrat(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Text(
+                project.abstract,
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 16,
+                  height: 1.8,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          InkWell(
+            onTap: onMatch,
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.forestEmerald,
+                    AppTheme.forestEmerald.withBlue(100),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Center(
+                child: Text(
+                  "Confirm Match",
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

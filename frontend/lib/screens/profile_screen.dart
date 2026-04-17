@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -668,8 +670,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () {
-          Navigator.of(context).popUntil((route) => route.isFirst);
+        onPressed: () async {
+          await context.read<AuthProvider>().logout();
+          if (mounted) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
         },
         icon: const Icon(Icons.logout, size: 20),
         label: const Text(

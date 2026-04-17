@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../theme/app_theme.dart';
 import '../theme/login_design.dart';
+import '../services/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../services/module_leader_service.dart';
 
@@ -203,27 +205,64 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
               section: _ModuleLeaderSection.academicModules,
             ),
             const Spacer(),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: LoginColors.panel,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: LoginColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Quick Context',
-                    style: LoginTypography.label.copyWith(fontSize: 13),
+            const Divider(color: Colors.white10),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
+                  child: const Icon(Icons.person, color: AppTheme.forestEmerald),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Module Leader',
+                        style: LoginTypography.label.copyWith(fontSize: 14),
+                      ),
+                      Text(
+                        'leader@university.edu',
+                        style: LoginTypography.body.copyWith(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Switch between oversight, tagging, and allocation tasks without losing your place.',
-                    style: LoginTypography.body.copyWith(fontSize: 12),
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: () async {
+                await context.read<AuthProvider>().logout();
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Log Out',
+                      style: TextStyle(
+                        color: Color(0xFFEF4444),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

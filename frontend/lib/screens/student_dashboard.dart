@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 import 'profile_screen.dart';
@@ -249,6 +251,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
             leading: Icon(Icons.settings_outlined, color: mutedTextColor),
             title: Text('Settings', style: TextStyle(color: mutedTextColor)),
             onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Color(0xFFEF4444)),
+            title: const Text('Log Out', style: TextStyle(color: Color(0xFFEF4444))),
+            onTap: () async {
+              await context.read<AuthProvider>().logout();
+              if (context.mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            },
           ),
         ],
       ),

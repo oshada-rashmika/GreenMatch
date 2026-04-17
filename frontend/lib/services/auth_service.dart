@@ -10,7 +10,6 @@ class AuthService {
     'API_BASE_URL',
   );
   static const String _tokenKey = 'auth_token';
-  static const String _userKey = 'auth_user';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
@@ -206,10 +205,11 @@ class AuthService {
     return token != null && token.isNotEmpty;
   }
 
-  /// Clear all stored authentication data (logout)
+  /// Clear ALL stored authentication data (logout).
+  /// Uses [deleteAll] to wipe every key in secure storage, leaving
+  /// zero trace of the session regardless of what was written.
   Future<void> logout() async {
-    await _secureStorage.delete(key: _tokenKey);
-    await _secureStorage.delete(key: _userKey);
+    await _secureStorage.deleteAll();
   }
 
   /// Get Authorization header with bearer token

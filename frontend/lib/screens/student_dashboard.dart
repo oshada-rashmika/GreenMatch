@@ -457,12 +457,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
               const SizedBox(height: 24),
               _buildActivityLog(),
             ],
-          ),
+          ],
         ),
       ),
-    ],
-  ),
+    ),
+  ],
 ),
+      ),
     );
   }
 

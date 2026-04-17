@@ -175,14 +175,48 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       await projectService.confirmMatch(projectId);
       if (mounted) {
         setState(() {
-          matchedProjectIds.add(projectId);
+          projects.removeWhere((p) => p.id == projectId);
         });
+        _showSuccessSnackBar('Match Successfully Confirmed!');
       }
     } on ProjectServiceException catch (e) {
-      _showErrorSnackBar('Failed to match project: ${e.message}');
+      if (e.statusCode == 400) {
+        _showErrorSnackBar('Project already claimed by another supervisor');
+        _fetchProjects(); 
+      } else {
+        _showErrorSnackBar('Failed to match project: ${e.message}');
+      }
     } catch (_) {
       _showErrorSnackBar('Failed to match project. Please try again.');
     }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   void _showErrorSnackBar(String message) {
@@ -670,6 +704,7 @@ class _ProjectCardHolder extends StatefulWidget {
 
 class _ProjectCardHolderState extends State<_ProjectCardHolder> {
   bool _isHovered = false;
+  bool _isMatching = false;
 
   @override
   Widget build(BuildContext context) {
@@ -711,6 +746,16 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      Text(
+                        'ANONYMOUS STUDENT GROUP',
+                        style: GoogleFonts.montserrat(
+                          color: AppTheme.forestEmerald,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
                       Text(
                         widget.project.title,
                         style: GoogleFonts.montserrat(
@@ -785,7 +830,11 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
   Widget _buildMatchAction(String projectId) {
     return InkWell(
       key: const ValueKey('button'),
-      onTap: widget.onMatch,
+      onTap: _isMatching ? null : () async {
+        setState(() => _isMatching = true);
+        await widget.onMatch();
+        if (mounted) setState(() => _isMatching = false);
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
@@ -815,15 +864,21 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
-          child: Text(
-            "Confirm Match",
-            style: GoogleFonts.montserrat(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 14,
-              letterSpacing: 0.5,
-            ),
-          ),
+          child: _isMatching 
+            ? const SizedBox(
+                width: 20, 
+                height: 20, 
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+              )
+            : Text(
+                "Confirm Match",
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  letterSpacing: 0.5,
+                ),
+              ),
         ),
       ),
     );

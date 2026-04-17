@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import 'login_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 import 'profile_screen.dart';
@@ -258,7 +259,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
             onTap: () async {
               await context.read<AuthProvider>().logout();
               if (context.mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
               }
             },
           ),

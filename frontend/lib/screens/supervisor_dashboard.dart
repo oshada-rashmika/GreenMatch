@@ -31,6 +31,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   bool isLoading = true;
   String? errorMessage;
   final Set<String> matchedProjectIds = {};
+  bool _isFocusMode = false;
 
   final List<String> activeSpecifications = [
     'Artificial Intelligence',
@@ -364,6 +365,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           ),
           actions: [
             if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
+            const SizedBox(width: 8),
+            _buildFocusToggle(),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
             GestureDetector(
@@ -441,6 +444,49 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           ],
         ),
         child: Icon(icon, size: 22, color: Colors.white.withValues(alpha: 0.9)),
+      ),
+    );
+  }
+
+  Widget _buildFocusToggle() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _isFocusMode = !_isFocusMode);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _isFocusMode 
+                    ? AppTheme.forestEmerald.withValues(alpha: 0.15) 
+                    : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _isFocusMode 
+                      ? AppTheme.forestEmerald.withValues(alpha: 0.3) 
+                      : Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                child: Icon(
+                  _isFocusMode ? Icons.view_carousel_rounded : Icons.view_agenda_rounded,
+                  key: ValueKey(_isFocusMode),
+                  size: 22,
+                  color: _isFocusMode ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.9),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -561,7 +607,58 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       }
       return _buildEmptyState();
     }
-    return _buildBentoGrid(filtered);
+    
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      switchInCurve: Curves.easeOutQuart,
+      switchOutCurve: Curves.easeInQuart,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.05),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: _isFocusMode
+          ? _buildFocusModePlaceholder(filtered)
+          : _buildBentoGrid(filtered),
+    );
+  }
+
+  Widget _buildFocusModePlaceholder(List<AnonymousProject> projects) {
+    return Container(
+      key: const ValueKey('focus_mode_placeholder'),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.view_carousel_rounded, size: 64, color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            Text(
+              "Focus Mode (Swipe View)",
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "${projects.length} projects ready to review.",
+              style: GoogleFonts.montserrat(
+                color: Colors.white54,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildErrorState(String message) {

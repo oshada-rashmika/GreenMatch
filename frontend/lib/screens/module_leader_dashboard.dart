@@ -51,17 +51,18 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: AppTheme.monochromeTheme,
+      data: AppTheme.darkTheme,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWideLayout = constraints.maxWidth >= _wideLayoutBreakpoint;
 
           return Scaffold(
             backgroundColor: LoginColors.background,
+            extendBodyBehindAppBar: true,
             appBar: isWideLayout
                 ? null
                 : AppBar(
-                    backgroundColor: LoginColors.surface,
+                    backgroundColor: Colors.transparent,
                     elevation: 0,
                     title: Text(
                       'Module Leader',
@@ -71,25 +72,48 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
             drawer: isWideLayout
                 ? null
                 : Drawer(
-                    backgroundColor: LoginColors.surface,
+                    backgroundColor: AppTheme.premiumBlack,
                     child: SafeArea(child: _buildSidebar(compact: true)),
                   ),
-            body: SafeArea(
-              child: isWideLayout
-                  ? Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          _buildSidebar(),
-                          const SizedBox(width: 20),
-                          Expanded(child: _buildMainContent()),
-                        ],
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: _buildMainContent(),
+            body: Stack(
+              children: [
+                Positioned(
+                  top: -100,
+                  right: -100,
+                  child: Container(
+                    width: 300,
+                    height: 300,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                          blurRadius: 100,
+                          spreadRadius: 50,
+                        ),
+                      ],
                     ),
+                  ),
+                ),
+                SafeArea(
+                  child: isWideLayout
+                      ? Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            children: [
+                              _buildSidebar(),
+                              const SizedBox(width: 20),
+                              Expanded(child: _buildMainContent()),
+                            ],
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: _buildMainContent(),
+                        ),
+                ),
+              ],
             ),
           );
         },

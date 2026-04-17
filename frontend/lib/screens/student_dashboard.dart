@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_theme.dart';
+import '../widgets/glass_container.dart';
 import 'profile_screen.dart';
 import 'my_proposals_screen.dart';
 import 'login_screen.dart';
@@ -49,10 +52,10 @@ class StudentDashboard extends StatefulWidget {
 }
 
 class _StudentDashboardState extends State<StudentDashboard> {
-  final Color bgColor = const Color(0xFF0F1522);
-  final Color cardColor = const Color(0xFF1A2235);
-  final Color accentColor = const Color(0xFFFACC15); // Yellow
-  final Color mutedTextColor = const Color(0xFF94A3B8); // Slate 400
+  final Color bgColor = AppTheme.premiumBlack;
+  final Color cardColor = Colors.white.withValues(alpha: 0.03); // Glass fallback
+  final Color accentColor = AppTheme.forestEmerald;
+  final Color mutedTextColor = Colors.white60;
 
   _ProposalData? _proposal;
 
@@ -254,24 +257,35 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgColor,
-      drawer: _buildDrawer(),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white),
-              onPressed: () => Scaffold.of(context).openDrawer(),
-            );
-          }
-        ),
-        title: const Text(
-          'Student Portal',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
-        ),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        backgroundColor: bgColor,
+        extendBodyBehindAppBar: true,
+        drawer: _buildDrawer(),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(70),
+          child: GlassContainer(
+            borderRadius: 0,
+            opacity: 0.02,
+            blur: 15,
+            borderColor: Colors.transparent,
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: true,
+              leading: Builder(
+                builder: (context) {
+                  return IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.white),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  );
+                }
+              ),
+              title: Text(
+                'Student Portal',
+                style: GoogleFonts.montserrat(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+              ),
         actions: [
           Center(
             child: Theme(
@@ -349,11 +363,36 @@ class _StudentDashboardState extends State<StudentDashboard> {
               MaterialPageRoute(builder: (context) => const ProfileScreen()),
             );
           }),
+              ),
+            ),
+          ),
           const SizedBox(width: 16),
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+      ))),
+      body: Stack(
+        children: [
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                    blurRadius: 100,
+                    spreadRadius: 50,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -421,19 +460,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ],
           ],
         ),
-      ),
+      ))),
     );
   }
 
   Widget _buildEmptyState() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(32),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: Colors.white.withValues(alpha: 0.05),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
         children: [
           const Icon(Icons.note_add_outlined, size: 64, color: Color(0xFF475569)),
           const SizedBox(height: 16),
@@ -519,12 +558,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildTimelineStatusCard() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: Colors.white.withValues(alpha: 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -668,12 +706,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final int wordCount = _proposal!.abstractText.split(RegExp(r'\s+')).length + _proposal!.title.split(RegExp(r'\s+')).length + 50; // Mock count
     final int percentage = _proposal!.status == ProposalStatus.pending ? 80 : 100;
 
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: Colors.white.withValues(alpha: 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -796,9 +833,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildActivityLog() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(24)),
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: Colors.white.withValues(alpha: 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -957,13 +996,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildProfileCompleteness() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF2B364E)),
-      ),
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: const Color(0xFF2B364E),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1078,13 +1115,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildPostMatchMilestones() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF2B364E)),
-      ),
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: const Color(0xFF2B364E),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1232,13 +1267,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildDeliverablesChecklist() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF2B364E)),
-      ),
+      borderRadius: 24,
+      opacity: 0.03,
+      borderColor: const Color(0xFF2B364E),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

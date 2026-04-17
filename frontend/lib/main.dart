@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/supervisor_dashboard.dart';
+import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -13,12 +13,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'GreenMatch',
-      // Phase 3: Brand Cleanup - Hide Debug Banner
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark, // Default to dark for the premium experience
-      home: const SupervisorDashboard(),
+      theme: AppTheme.monochromeTheme,
+      home: const LoginScreen(),
     );
   }
 }

@@ -262,6 +262,7 @@ class ModuleLeaderService {
       throw Exception('Failed to create module (${response.statusCode})');
     } catch (error) {
       throw Exception(_mapNetworkError(error));
+    }
   }
 
   Future<int> runAutoMatchAlgorithm({

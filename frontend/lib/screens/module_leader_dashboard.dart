@@ -698,6 +698,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     }
   }
 
+  Future<void> _refreshTags() async {
+    setState(() {
+      _tagsFuture = _loadTagsData();
+    });
+  }
+
   Future<void> _refreshOverviewData() async {
     setState(() {
       _loadOverviewData();

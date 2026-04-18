@@ -202,7 +202,7 @@ class StudentService {
     }
   }
 
-  Future<MyProposalData?> fetchMyProposal() async {
+  Future<List<MyProposalData>> fetchMyProposals() async {
     final token = await _getToken();
     final response = await http.get(
       Uri.parse('$baseUrl/projects/my-proposal'),
@@ -214,14 +214,14 @@ class StudentService {
 
     if (response.statusCode == 200) {
       if (response.body.isNotEmpty) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return MyProposalData.fromJson(data);
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => MyProposalData.fromJson(json)).toList();
       }
-      return null;
+      return [];
     } else if (response.statusCode == 404) {
-      return null;
+      return [];
     } else {
-      throw Exception('Failed to fetch proposal: ${response.body}');
+      throw Exception('Failed to fetch proposals: ${response.body}');
     }
   }
 

@@ -25,10 +25,10 @@ export class ProjectsController {
     });
   }
 
-  @Get('my-proposal')
+  @Get('my-proposal') // Kept endpoint path identical so we don't break legacy flutter caches instantly mapping to same route
   @Roles(Role.STUDENT)
-  async getMyProposal(@Request() req) {
-    return this.projectsService.getMyProposal(req.user.id);
+  async getMyProposals(@Request() req) {
+    return this.projectsService.getMyProposals(req.user.id);
   }
 
   @Get('anonymous')

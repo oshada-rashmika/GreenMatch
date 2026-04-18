@@ -72,7 +72,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   final Color accentColor = AppTheme.forestEmerald;
   final Color mutedTextColor = Colors.white60;
 
-  _ProposalData? _proposal;
+  List<_ProposalData> _proposals = [];
+  int _activeProjectIndex = 0;
+  _ProposalData? get _proposal => _proposals.isNotEmpty ? _proposals[_activeProjectIndex] : null;
   List<MeetingData> _meetings = [];
 
   bool _isLoadingData = true;
@@ -92,7 +94,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final service = StudentService();
       final fetchedModules = await service.fetchModules();
       final fetchedTags = await service.fetchTags();
-      final myProposal = await service.fetchMyProposal();
+      final myProposalsList = await service.fetchMyProposals();
       final fetchedMeetings = await service.fetchMyMeetings();
 
       if (mounted) {
@@ -104,37 +106,36 @@ class _StudentDashboardState extends State<StudentDashboard> {
           if (_modules.isNotEmpty) _selectedModuleId = _modules.first.id;
           if (_tags.isNotEmpty) _selectedTagId = _tags.first.id;
 
-          if (myProposal != null) {
-            ProposalStatus mappedStatus;
-            switch (myProposal.status) {
-              case 'MATCHED':
-                mappedStatus = ProposalStatus.matched;
-                break;
-              case 'UNDER_REVIEW':
-                mappedStatus = ProposalStatus.underReview;
-                break;
-              default:
-                mappedStatus = ProposalStatus.pending;
-            }
-
-            _proposal = _ProposalData(
-              title: myProposal.title,
-              abstractText: myProposal.abstractText,
-              techStack: myProposal.tags.join(', '),
-              researchArea: (myProposal.tags.isNotEmpty) ? myProposal.tags.first : 'N/A',
-              status: mappedStatus,
-              supervisorName: myProposal.supervisorName,
-              supervisorContact: myProposal.supervisorEmail,
-              submittedDate: DateTime.now(), // Fallback
-              expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
-              impactBadges: [],
-              activityLog: [],
-              milestoneMatchDate: myProposal.milestoneMatchDate,
-              milestoneReviewDate: myProposal.milestoneReviewDate,
-              milestoneMidtermDate: myProposal.milestoneMidtermDate,
-              milestoneFinalDate: myProposal.milestoneFinalDate,
-              milestoneVivaDate: myProposal.milestoneVivaDate,
-            );
+          if (myProposalsList.isNotEmpty) {
+            _proposals = myProposalsList.map((myP) {
+              ProposalStatus mappedStatus;
+              switch (myP.status) {
+                case 'MATCHED': mappedStatus = ProposalStatus.matched; break;
+                case 'UNDER_REVIEW': mappedStatus = ProposalStatus.underReview; break;
+                default: mappedStatus = ProposalStatus.pending;
+              }
+              return _ProposalData(
+                title: myP.title,
+                abstractText: myP.abstractText,
+                techStack: myP.tags.join(', '),
+                researchArea: (myP.tags.isNotEmpty) ? myP.tags.first : 'N/A',
+                status: mappedStatus,
+                supervisorName: myP.supervisorName,
+                supervisorContact: myP.supervisorEmail,
+                submittedDate: DateTime.now(), // Fallback
+                expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
+                impactBadges: [],
+                activityLog: [],
+                milestoneMatchDate: myP.milestoneMatchDate,
+                milestoneReviewDate: myP.milestoneReviewDate,
+                milestoneMidtermDate: myP.milestoneMidtermDate,
+                milestoneFinalDate: myP.milestoneFinalDate,
+                milestoneVivaDate: myP.milestoneVivaDate,
+              );
+            }).toList();
+            _activeProjectIndex = 0; // Default to most recently submitted
+          } else {
+            _proposals = [];
           }
 
           _isLoadingData = false;
@@ -258,23 +259,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 tagIds: _selectedTagId != null ? [_selectedTagId!] : null,
                               );
                               if (mounted) {
-                                setState(() {
-                                  _proposal = _ProposalData(
-                                    title: titleController.text,
-                                    abstractText: abstractController.text,
-                                    techStack: 'Tech Stack Added',
-                                    researchArea: 'Pending tags',
-                                    status: ProposalStatus.pending,
-                                    submittedDate: DateTime.now(),
-                                    expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
-                                    impactBadges: [],
-                                    activityLog: [
-                                      _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, AppTheme.forestEmerald),
-                                    ],
-                                  );
-                                });
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Proposal Submitted Successfully!')));
+                                _fetchInitialData(); // Re-fetch entire environment to populate the new project safely
                               }
                             } catch (e) {
                               if (mounted) {
@@ -532,7 +519,66 @@ class _StudentDashboardState extends State<StudentDashboard> {
               'Dashboard Overview',
               style: TextStyle(color: mutedTextColor, fontSize: 14),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+
+            if (_proposals.length > 1) ...[
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: List.generate(_proposals.length, (index) {
+                    final curr = _proposals[index];
+                    final isSelected = index == _activeProjectIndex;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12.0),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _activeProjectIndex = index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.fastOutSlowIn,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.forestEmerald : cardColor,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.05),
+                            ),
+                            boxShadow: isSelected
+                                ? [BoxShadow(color: AppTheme.forestEmerald.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                                : [],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isSelected ? Icons.rocket_launch : Icons.folder_outlined,
+                                color: isSelected ? Colors.white : mutedTextColor,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                curr.title.length > 18 ? '${curr.title.substring(0, 18)}...' : curr.title,
+                                style: GoogleFonts.montserrat(
+                                  color: isSelected ? Colors.white : mutedTextColor,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ] else if (_proposals.length == 1) ...[
+              const SizedBox(height: 32),
+            ] else ...[
+              const SizedBox(height: 32),
+            ],
+
 
             if (_proposal == null) ...[
               _buildEmptyState(),

@@ -11,6 +11,11 @@ export class SupervisorsController {
     return this.supervisorsService.getSupervisorProfile(id);
   }
 
+  @Get(':id/evaluated-projects')
+  async getEvaluatedProjects(@Param('id') id: string) {
+    return this.supervisorsService.getEvaluatedProjects(id);
+  }
+
   @Patch(':id/onboarding')
   async completeOnboarding(
     @Param('id') id: string,

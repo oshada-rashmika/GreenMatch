@@ -65,4 +65,25 @@ export class SupervisorsService {
       },
     });
   }
+
+  async getEvaluatedProjects(supervisorId: string) {
+    return this.prisma.project.findMany({
+      where: {
+        supervisorId: supervisorId,
+        status: 'MATCHED',
+      },
+      include: {
+        evaluation: true,
+        group: {
+          include: {
+            members: {
+              include: {
+                student: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 }

@@ -33,6 +33,10 @@ class AuthService {
     }
   }
 
+  Future<String> getBaseUrl() async {
+    return _baseUrl;
+  }
+
   String _mapNetworkError(Object error) {
     if (error is SocketException) {
       return 'Cannot reach backend at $_baseUrl. '
@@ -89,11 +93,14 @@ class AuthService {
         final data = jsonDecode(response.body);
         await _storeToken(data['access_token']);
         
-        final bool isFirstLogin = data['user']?['isFirstLogin'] ?? false;
+        final user = data['user'] as Map<String, dynamic>?;
+        final String userId = user?['id'] ?? '';
+        final bool isFirstLogin = user?['isFirstLogin'] ?? false;
 
         return {
           'success': true,
           'accessToken': data['access_token'],
+          'userId': userId,
           'isFirstLogin': isFirstLogin,
           'message': 'Supervisor login successful',
         };

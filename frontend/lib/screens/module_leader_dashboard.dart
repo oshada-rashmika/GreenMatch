@@ -2262,6 +2262,34 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
     );
   }
 
+  Widget _buildTextField(TextEditingController controller, String label, String hint, {bool isAllCaps = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: TextField(
+        controller: controller,
+        textCapitalization: isAllCaps ? TextCapitalization.characters : TextCapitalization.none,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+          hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+          ),
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.03),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -2283,15 +2311,12 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
               const SizedBox(height: 12),
               Text('Define an academic module and its project milestones.', style: LoginTypography.body.copyWith(fontSize: 13)),
               const SizedBox(height: 20),
-              TextField(controller: codeController, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Module Code', hintText: 'PUSL2020')),
-              const SizedBox(height: 12),
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Module Name', hintText: 'Software Development Tools')),
-              const SizedBox(height: 12),
-              TextField(controller: yearController, decoration: const InputDecoration(labelText: 'Academic Year', hintText: '2026/2027')),
-              const SizedBox(height: 12),
-              TextField(controller: batchController, decoration: const InputDecoration(labelText: 'Batch', hintText: 'Batch 24')),
+              _buildTextField(codeController, 'Module Code', 'PUSL2020', isAllCaps: true),
+              _buildTextField(nameController, 'Module Name', 'Software Development Tools'),
+              _buildTextField(yearController, 'Academic Year', '2026/2027'),
+              _buildTextField(batchController, 'Batch', 'Batch 24'),
               
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               Text('Project Milestones (Optional)', style: LoginTypography.label.copyWith(fontSize: 14)),
               const SizedBox(height: 8),
               _buildDatePickerField('Supervisor Match Deadline', matchDate, (d) => matchDate = d),
@@ -2307,6 +2332,12 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
                   TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
                   const SizedBox(width: 12),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.forestEmerald,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
                     onPressed: () {
                       final moduleCode = codeController.text.trim();
                       final moduleName = nameController.text.trim();
@@ -2318,7 +2349,7 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
                       }
                       widget.onCreate(moduleCode, moduleName, academicYear, batch, matchDate, reviewDate, midtermDate, finalDate, vivaDate);
                     },
-                    child: const Text('Create Module'),
+                    child: const Text('Create Module', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ],
               ),

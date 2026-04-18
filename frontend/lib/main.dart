@@ -5,6 +5,7 @@ import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/auth_provider.dart';
 import 'services/shortlist_provider.dart';
+import 'screens/not_found_screen.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -26,10 +27,19 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.monochromeTheme,
         initialRoute: '/',
-        routes: {
-          '/': (context) => const LoginScreen(),
-          '/admin': (context) => const LoginScreen(adminOnly: true),
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/':
+              return MaterialPageRoute(builder: (_) => const LoginScreen());
+            case '/admin':
+              return MaterialPageRoute(builder: (_) => const LoginScreen(adminOnly: true));
+            default:
+              return MaterialPageRoute(builder: (_) => const NotFoundScreen());
+          }
         },
+        onUnknownRoute: (settings) => MaterialPageRoute(
+          builder: (context) => const NotFoundScreen(),
+        ),
       ),
     );
   }

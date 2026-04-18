@@ -30,6 +30,7 @@ function SupervisorDashboard({
 }: SupervisorDashboardProps) {
   const [activeTab, setActiveTab] = useState<'available' | 'supervised' | 'evaluated'>('available');
   const [activeCategory, setActiveCategory] = useState<'All' | ProjectCategory>('All');
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
   const [projects, setProjects] = useState<Project[]>([]);
   const [matchingProjectId, setMatchingProjectId] = useState<string | null>(null);
   const [matchedProjectId, setMatchedProjectId] = useState<string | null>(null);
@@ -139,7 +140,35 @@ function SupervisorDashboard({
         ))}
       </div>
 
-      <div aria-label="project-cards" style={{ marginTop: '16px' }}>
+      <div
+        role="group"
+        aria-label="layout-toggle-controls"
+        style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '12px' }}
+      >
+        <button
+          type="button"
+          aria-label="Grid View"
+          className={layoutMode === 'grid' ? 'layout-toggle btn-active bg-sky-100' : 'layout-toggle btn-inactive bg-gray-100'}
+          onClick={() => setLayoutMode('grid')}
+        >
+          square-grid
+        </button>
+        <button
+          type="button"
+          aria-label="List View"
+          className={layoutMode === 'list' ? 'layout-toggle btn-active bg-sky-100' : 'layout-toggle btn-inactive bg-gray-100'}
+          onClick={() => setLayoutMode('list')}
+        >
+          list-line
+        </button>
+      </div>
+
+      <div
+        aria-label="project-cards"
+        data-layout={layoutMode}
+        className={layoutMode === 'grid' ? 'layout-grid' : 'layout-list'}
+        style={{ marginTop: '16px' }}
+      >
         {visibleProjects.length === 0 ? (
           <p role="note">No projects available</p>
         ) : (
@@ -598,5 +627,69 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
     );
 
     expect(updatedBookmarkButton).toHaveClass('text-yellow-500');
+  });
+
+  test('Verify that clicking the layout toggle switches the component between grid and list view.', async () => {
+    const layoutProjects: Project[] = [
+      {
+        id: 'proj_123',
+        title: 'GreenMatch',
+        status: 'AVAILABLE',
+        category: 'Algorithms',
+        description: 'OOP',
+        isBookmarked: false,
+      },
+      {
+        id: 'proj_777',
+        title: 'CeylonDash Mobile App',
+        status: 'AVAILABLE',
+        category: 'Cloud Computing',
+        description: 'Flutter, iOS',
+        isBookmarked: false,
+      },
+    ];
+
+    mockFetchProjects.mockImplementation(async () => layoutProjects);
+
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
+      />,
+    );
+
+    const layoutToggleGroup = screen.getByRole('group', {
+      name: /layout-toggle-controls/i,
+    });
+    const gridViewButton = within(layoutToggleGroup).getByRole('button', {
+      name: /grid view/i,
+    });
+    const listViewButton = within(layoutToggleGroup).getByRole('button', {
+      name: /list view/i,
+    });
+
+    const projectCardsContainer = screen.getByLabelText('project-cards');
+
+    await screen.findByText('GreenMatch');
+
+    expect(projectCardsContainer).toHaveClass('layout-grid');
+    expect(projectCardsContainer).toHaveAttribute('data-layout', 'grid');
+    expect(gridViewButton).toHaveClass('btn-active');
+    expect(listViewButton).toHaveClass('btn-inactive');
+
+    fireEvent.click(listViewButton);
+
+    expect(projectCardsContainer).toHaveClass('layout-list');
+    expect(projectCardsContainer).toHaveAttribute('data-layout', 'list');
+    expect(listViewButton).toHaveClass('btn-active');
+    expect(gridViewButton).toHaveClass('btn-inactive');
+
+    fireEvent.click(gridViewButton);
+
+    expect(projectCardsContainer).toHaveClass('layout-grid');
+    expect(projectCardsContainer).toHaveAttribute('data-layout', 'grid');
+    expect(gridViewButton).toHaveClass('btn-active');
+    expect(listViewButton).toHaveClass('btn-inactive');
   });
 });

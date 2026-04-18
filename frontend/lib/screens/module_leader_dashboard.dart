@@ -518,7 +518,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
             ),
             const SizedBox(height: 24),
             _SectionPanel(
-              title: 'Global Taxonomy',
+              title: 'AVAILABLE RESEARCH TOPICS',
               child: _TagsMasonryGrid(tags: tags),
             ),
           ],
@@ -560,7 +560,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: LoginColors.surface,
+              color: AppTheme.premiumBlack,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
@@ -587,9 +587,23 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  decoration: const InputDecoration(
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
                     labelText: 'Tag name',
                     hintText: 'Machine Learning',
+                    labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                    hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.03),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -602,6 +616,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.forestEmerald,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
                       onPressed: _isCreatingTag
                           ? null
                           : () async {
@@ -618,7 +638,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                               Navigator.of(sheetContext).pop();
                               await _createTag(name);
                             },
-                      child: const Text('Create'),
+                      child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                   ],
                 ),

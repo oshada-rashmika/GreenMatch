@@ -14,19 +14,26 @@ type Project = {
   status: ProjectStatus;
   category: ProjectCategory;
   description: string;
+  isBookmarked: boolean;
 };
 
 type SupervisorDashboardProps = {
   fetchProjects: () => Promise<Project[]>;
   onConfirmMatch: (projectId: string) => Promise<void>;
+  onToggleBookmark: (projectId: string) => Promise<void>;
 };
 
-function SupervisorDashboard({ fetchProjects, onConfirmMatch }: SupervisorDashboardProps) {
+function SupervisorDashboard({
+  fetchProjects,
+  onConfirmMatch,
+  onToggleBookmark,
+}: SupervisorDashboardProps) {
   const [activeTab, setActiveTab] = useState<'available' | 'supervised' | 'evaluated'>('available');
   const [activeCategory, setActiveCategory] = useState<'All' | ProjectCategory>('All');
   const [projects, setProjects] = useState<Project[]>([]);
   const [matchingProjectId, setMatchingProjectId] = useState<string | null>(null);
   const [matchedProjectId, setMatchedProjectId] = useState<string | null>(null);
+  const [bookmarkingProjectId, setBookmarkingProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -63,6 +70,19 @@ function SupervisorDashboard({ fetchProjects, onConfirmMatch }: SupervisorDashbo
     await onConfirmMatch(projectId);
     setMatchedProjectId(projectId);
     setMatchingProjectId(null);
+  };
+
+  const handleBookmarkToggle = async (projectId: string) => {
+    setBookmarkingProjectId(projectId);
+    await onToggleBookmark(projectId);
+    setProjects((prevProjects) =>
+      prevProjects.map((project) =>
+        project.id === projectId
+          ? { ...project, isBookmarked: !project.isBookmarked }
+          : project,
+      ),
+    );
+    setBookmarkingProjectId(null);
   };
 
   return (
@@ -135,7 +155,15 @@ function SupervisorDashboard({ fetchProjects, onConfirmMatch }: SupervisorDashbo
               <span className="project-tag-chip">{project.category}</span>
               <p>{project.description}</p>
               <span aria-label="progress-indicator">0%</span>
-              <button type="button" aria-label={`Bookmark ${project.title}`}>
+              <button
+                type="button"
+                aria-label={project.isBookmarked ? 'Unbookmark project' : 'Bookmark project'}
+                className={project.isBookmarked ? 'bookmark-icon text-yellow-500' : 'bookmark-icon text-gray-400'}
+                disabled={bookmarkingProjectId === project.id}
+                onClick={() => {
+                  void handleBookmarkToggle(project.id);
+                }}
+              >
                 Bookmark
               </button>
               <button
@@ -166,6 +194,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       status: 'AVAILABLE',
       category: 'Algorithms',
       description: 'Vision-based attendance with model tracking.',
+      isBookmarked: false,
     },
     {
       id: 'p2',
@@ -173,6 +202,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       status: 'AVAILABLE',
       category: 'Cloud Computing',
       description: 'Path optimization for campus wayfinding.',
+      isBookmarked: false,
     },
     {
       id: 'p3',
@@ -180,6 +210,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       status: 'SUPERVISED',
       category: 'Cloud Computing',
       description: 'Resource-aware schedule optimization.',
+      isBookmarked: false,
     },
     {
       id: 'p4',
@@ -187,15 +218,18 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       status: 'EVALUATED',
       category: 'Algorithms',
       description: 'Auto-grading and rubric scoring engine.',
+      isBookmarked: false,
     },
   ];
 
   let mockFetchProjects: jest.MockedFunction<() => Promise<Project[]>>;
   let mockOnConfirmMatch: jest.MockedFunction<(projectId: string) => Promise<void>>;
+  let mockOnToggleBookmark: jest.MockedFunction<(projectId: string) => Promise<void>>;
 
   beforeEach(() => {
     mockFetchProjects = jest.fn(async () => mockProjects);
     mockOnConfirmMatch = jest.fn(async () => {});
+    mockOnToggleBookmark = jest.fn(async () => {});
   });
 
   afterEach(() => {
@@ -209,6 +243,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       <SupervisorDashboard
         fetchProjects={mockFetchProjects}
         onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
       />,
     );
 
@@ -251,6 +286,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       <SupervisorDashboard
         fetchProjects={mockFetchProjects}
         onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
       />,
     );
 
@@ -299,6 +335,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
         status: 'AVAILABLE',
         category: 'Algorithms',
         description: 'Algorithm-first rubric assistant.',
+        isBookmarked: false,
       },
       {
         id: 'c1',
@@ -306,6 +343,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
         status: 'AVAILABLE',
         category: 'Cloud Computing',
         description: 'Cloud-native student dashboard app.',
+        isBookmarked: false,
       },
       {
         id: 's1',
@@ -313,6 +351,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
         status: 'SUPERVISED',
         category: 'Algorithms',
         description: 'Attendance anomaly detection pipeline.',
+        isBookmarked: false,
       },
     ];
 
@@ -322,6 +361,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       <SupervisorDashboard
         fetchProjects={mockFetchProjects}
         onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
       />,
     );
 
@@ -371,6 +411,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
         status: 'AVAILABLE',
         category: 'Algorithms',
         description: 'OOP',
+        isBookmarked: false,
       },
       {
         id: 'proj_777',
@@ -378,6 +419,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
         status: 'AVAILABLE',
         category: 'Cloud Computing',
         description: 'Flutter, iOS',
+        isBookmarked: false,
       },
     ];
 
@@ -387,6 +429,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       <SupervisorDashboard
         fetchProjects={mockFetchProjects}
         onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
       />,
     );
 
@@ -419,6 +462,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
         status: 'AVAILABLE',
         category: 'Algorithms',
         description: 'OOP',
+        isBookmarked: false,
       },
       {
         id: 'proj_777',
@@ -426,6 +470,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
         status: 'AVAILABLE',
         category: 'Cloud Computing',
         description: 'Flutter, iOS',
+        isBookmarked: false,
       },
     ];
 
@@ -435,6 +480,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       <SupervisorDashboard
         fetchProjects={mockFetchProjects}
         onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
       />,
     );
 
@@ -476,6 +522,7 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       <SupervisorDashboard
         fetchProjects={mockFetchProjects}
         onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
       />,
     );
 
@@ -494,5 +541,62 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
     expect(screen.queryByTestId('project-card')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /confirm match/i })).not.toBeInTheDocument();
     expect(screen.queryByText('0%')).not.toBeInTheDocument();
+  });
+
+  test('Verify that clicking the bookmark icon on a project card toggles its state and calls the API.', async () => {
+    const bookmarkProjects: Project[] = [
+      {
+        id: 'proj_123',
+        title: 'GreenMatch',
+        status: 'AVAILABLE',
+        category: 'Algorithms',
+        description: 'OOP',
+        isBookmarked: false,
+      },
+      {
+        id: 'proj_777',
+        title: 'CeylonDash Mobile App',
+        status: 'AVAILABLE',
+        category: 'Cloud Computing',
+        description: 'Flutter, iOS',
+        isBookmarked: false,
+      },
+    ];
+
+    mockFetchProjects.mockImplementation(async () => bookmarkProjects);
+
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+        onToggleBookmark={mockOnToggleBookmark}
+      />,
+    );
+
+    const greenMatchTitle = await screen.findByRole('heading', {
+      name: 'GreenMatch',
+    });
+    const greenMatchCard = greenMatchTitle.closest('[data-testid="project-card"]');
+
+    expect(greenMatchCard).not.toBeNull();
+
+    const bookmarkButton = within(greenMatchCard as HTMLElement).getByRole('button', {
+      name: /bookmark project/i,
+    });
+
+    fireEvent.click(bookmarkButton);
+
+    await waitFor(() => {
+      expect(mockOnToggleBookmark).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockOnToggleBookmark).toHaveBeenCalledWith('proj_123');
+
+    const updatedBookmarkButton = await within(greenMatchCard as HTMLElement).findByRole(
+      'button',
+      { name: /unbookmark project/i },
+    );
+
+    expect(updatedBookmarkButton).toHaveClass('text-yellow-500');
   });
 });

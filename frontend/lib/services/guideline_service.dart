@@ -80,6 +80,47 @@ class GuidelineService {
     }
   }
 
+  Future<List<Guideline>> fetchGuidelinesForStudent() async {
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/students/guidelines'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final raw = jsonDecode(response.body);
+        if (raw is! List) {
+          throw const GuidelineServiceException(
+            'Unexpected server response while loading guidelines.',
+          );
+        }
+
+        return raw
+            .whereType<Map<String, dynamic>>()
+            .map(Guideline.fromJson)
+            .toList();
+      }
+
+      throw GuidelineServiceException(
+        _messageFromHttp(
+          response,
+          fallback: 'Unable to load guidelines at the moment.',
+        ),
+        statusCode: response.statusCode,
+      );
+    } on GuidelineServiceException {
+      rethrow;
+    } on FormatException {
+      throw const GuidelineServiceException(
+        'Received invalid data from the server. Please try again shortly.',
+      );
+    } catch (error) {
+      throw GuidelineServiceException(_mapNetworkError(error));
+    }
+  }
+
+
   Future<Guideline> createGuideline(Map<String, dynamic> data) async {
     try {
       final headers = await _authService.getAuthHeaders();

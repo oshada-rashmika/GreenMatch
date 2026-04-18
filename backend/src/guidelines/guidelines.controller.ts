@@ -17,7 +17,7 @@ import { CreateGuidelineDto } from './dto/create-guideline.dto';
 
 @Controller('api')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.MODULE_LEADER)
+@Roles(Role.MODULE_LEADER, Role.STUDENT, Role.SUPERVISOR)
 export class GuidelinesController {
   constructor(private readonly guidelinesService: GuidelinesService) {}
 
@@ -33,7 +33,14 @@ export class GuidelinesController {
   }
 
   @Get('module-leaders/:leaderId/guidelines')
+  @Roles(Role.MODULE_LEADER)
   async getGuidelinesByModuleLeader(@Param('leaderId') leaderId: string) {
     return this.guidelinesService.getGuidelinesByModuleLeader(leaderId);
+  }
+
+  @Get('students/guidelines')
+  @Roles(Role.STUDENT, Role.SUPERVISOR)
+  async getGuidelinesForStudents() {
+    return this.guidelinesService.getAllGuidelines();
   }
 }

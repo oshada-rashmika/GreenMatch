@@ -265,7 +265,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         onPointerMove: _handlePointerEvent,
         child: Scaffold(
           extendBodyBehindAppBar: true,
-          drawer: const _DashboardDrawer(),
+          drawer: !_isMobile(context) ? null : const _DashboardDrawer(),
           appBar: _buildAppBar(),
           body: Stack(
             children: [
@@ -367,6 +367,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               ),
             ),
           ),
+          automaticallyImplyLeading: !_isMobile(context),
           leading: _isMobile(context)
               ? Builder(
                   builder: (context) => IconButton(
@@ -383,9 +384,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               const SizedBox(width: 8),
               _buildActionsRow(),
             ] else if (matchedProjectIds.isNotEmpty) ...[
-              _buildMatchesButton(),
-              const SizedBox(width: 16),
-            ],
+               _buildMatchesButton(),
+               const SizedBox(width: 16),
+            ]
           ],
         ),
       ),

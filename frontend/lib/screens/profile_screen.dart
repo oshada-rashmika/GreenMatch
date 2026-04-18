@@ -29,6 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _supervisorRevealed = false;
   bool _isPersonalInfoExpanded = false;
   Map<String, dynamic>? _userProfile;
+  List<MyProposalData> _proposals = [];
   bool _isLoadingProfile = true;
 
   late ScrollController _scrollController;
@@ -54,9 +55,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       final service = StudentService();
       final profile = await service.fetchUserProfile();
+      final proposals = await service.fetchMyProposals();
       if (mounted) {
         setState(() {
           _userProfile = profile;
+          _proposals = proposals;
+          if (_proposals.isNotEmpty) {
+            _isMatched = _proposals.first.status == 'MATCHED';
+          } else {
+            _isMatched = false;
+          }
           _isLoadingProfile = false;
         });
       }
@@ -279,8 +287,44 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildProjectStatusCard() {
-    final String statusLabel = _isMatched ? 'MATCHED' : 'PENDING';
-    final Color statusColor = _isMatched ? const Color(0xFF10B981) : accentColor;
+    if (_proposals.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'PROJECT STATUS',
+              style: GoogleFonts.montserrat(
+                color: mutedTextColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Projects Available',
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final proposal = _proposals.first;
+    final String statusLabel = proposal.status;
+    final Color statusColor = _isMatched ? const Color(0xFF10B981) : (statusLabel == 'UNDER_REVIEW' ? Colors.blue : accentColor);
     final Color statusBgColor = _isMatched
         ? const Color(0xFF10B981).withOpacity(0.1)
         : accentColor.withOpacity(0.1);
@@ -335,7 +379,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Urban Climate Modeling Using AI',
+            proposal.title,
             style: GoogleFonts.montserrat(
               color: Colors.white,
               fontSize: 17,
@@ -345,40 +389,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           const SizedBox(height: 14),
           // Research Tags
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildResearchTag('Artificial Intelligence', const Color(0xFF8B5CF6)),
-              _buildResearchTag('Python', const Color(0xFF3B82F6)),
-              _buildResearchTag('TensorFlow', const Color(0xFF10B981)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Demo toggle
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _isMatched = !_isMatched;
-                  if (!_isMatched) {
-                    _supervisorRevealed = false;
-                    _revealController.reverse();
-                  }
-                });
-              },
-              icon: Icon(Icons.swap_horiz, size: 14, color: mutedTextColor),
-              label: Text(
-                _isMatched ? 'Demo: Set Pending' : 'Demo: Set Matched',
-                style: GoogleFonts.montserrat(fontSize: 11, color: mutedTextColor),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(0, 28),
-              ),
+          if (proposal.tags.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: proposal.tags.map((tag) => _buildResearchTag(tag, const Color(0xFF10B981))).toList(),
             ),
-          ),
+          const SizedBox(height: 6),
         ],
       ),
     );
@@ -495,7 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Dr. Alan Turing',
+                          _proposals.isNotEmpty ? (_proposals.first.supervisorName ?? 'Unknown Supervisor') : 'Unknown Supervisor',
                           style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontSize: 22,
@@ -503,7 +520,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                         const SizedBox(height: 14),
-                        _buildSupervisorDetail(Icons.email_outlined, 'alan.turing@example.edu'),
+                        _buildSupervisorDetail(Icons.email_outlined, _proposals.isNotEmpty ? (_proposals.first.supervisorEmail ?? 'N/A') : 'N/A'),
                         const SizedBox(height: 8),
                         _buildSupervisorDetail(Icons.location_on_outlined, 'Room 4.12, Computing Building'),
                         const SizedBox(height: 16),

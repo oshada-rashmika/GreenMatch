@@ -427,26 +427,31 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   );
                 }
               ),
-              title: Row(
+               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                   Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                     decoration: BoxDecoration(
-                       color: _getStatusColor().withOpacity(0.15),
-                       borderRadius: BorderRadius.circular(20),
-                       border: Border.all(color: _getStatusColor().withOpacity(0.5)),
-                     ),
-                     child: Row(
-                       mainAxisSize: MainAxisSize.min,
-                       children: [
-                         Icon(Icons.radio_button_checked, color: _getStatusColor(), size: 12),
-                         const SizedBox(width: 6),
-                         Text(
-                           _getStatusText(),
-                           style: TextStyle(color: _getStatusColor(), fontSize: 12, fontWeight: FontWeight.w700),
-                         ),
-                       ],
+                   Flexible(
+                     child: Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                       decoration: BoxDecoration(
+                         color: _getStatusColor().withOpacity(0.15),
+                         borderRadius: BorderRadius.circular(20),
+                         border: Border.all(color: _getStatusColor().withOpacity(0.5)),
+                       ),
+                       child: Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           Icon(Icons.radio_button_checked, color: _getStatusColor(), size: 12),
+                           const SizedBox(width: 6),
+                           Flexible(
+                             child: Text(
+                               _getStatusText(),
+                               style: TextStyle(color: _getStatusColor(), fontSize: 12, fontWeight: FontWeight.w700),
+                               overflow: TextOverflow.ellipsis,
+                             ),
+                           ),
+                         ],
+                       ),
                      ),
                    ),
                 ],
@@ -507,7 +512,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 100, left: 20.0, right: 20.0, bottom: 20.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1067,34 +1072,42 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildDeadlineBanner() {
+    final unmissed = _meetings.where((m) => m.status != 'MISSED' && m.status != 'COMPLETED').toList();
+    if (unmissed.isEmpty) return const SizedBox.shrink();
+    
+    unmissed.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
+    final upcoming = unmissed.first;
+
+    final dateStr = '${upcoming.scheduledDate.year}-${upcoming.scheduledDate.month.toString().padLeft(2, '0')}-${upcoming.scheduledDate.day.toString().padLeft(2, '0')}';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF3B82F6).withOpacity(0.1),
+        color: const Color(0xFF10B981).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.timer_outlined, color: Color(0xFF60A5FA), size: 20),
+          const Icon(Icons.event_available, color: Color(0xFF34D399), size: 20),
           const SizedBox(width: 12),
           const Expanded(
             child: Text(
-              'Upcoming Deadline: Fall 2026 Proposal Submissions close in 14 days.',
-              style: TextStyle(color: Color(0xFFDBEAFE), fontSize: 13),
+              'Upcoming Meeting with Supervisor.',
+              style: TextStyle(color: Color(0xFFD1FAE5), fontSize: 13),
             ),
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withOpacity(0.2),
+              color: const Color(0xFF10B981).withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'Nov 1, 2026',
-              style: TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold, fontSize: 12),
+            child: Text(
+              dateStr,
+              style: const TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
         ],

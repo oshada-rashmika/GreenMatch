@@ -2,7 +2,7 @@
 /// <reference types="react-dom" />
 
 import { useEffect, useState } from 'react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 type ProjectStatus = 'AVAILABLE' | 'SUPERVISED' | 'EVALUATED';
@@ -37,7 +37,7 @@ function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
     return () => {
       isMounted = false;
     };
-  }, [fetchProjects]);
+  }, [activeTab, fetchProjects]);
 
   const statusByTab: Record<'available' | 'supervised' | 'evaluated', ProjectStatus> = {
     available: 'AVAILABLE',
@@ -153,5 +153,45 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
 
     expect(screen.queryByText('Cloud Timetable Optimizer')).not.toBeInTheDocument();
     expect(screen.queryByText('Automated Marking Assistant')).not.toBeInTheDocument();
+  });
+
+  test("Verify clicking the 'Supervised' tab updates the UI and filters projects correctly.", async () => {
+    render(<SupervisorDashboard fetchProjects={mockFetchProjects} />);
+
+    const availableTab = screen.getByRole('tab', { name: /available projects/i });
+    const supervisedTab = screen.getByRole('tab', { name: /supervised/i });
+    const evaluatedTab = screen.getByRole('tab', { name: /evaluated/i });
+
+    await waitFor(() => {
+      expect(mockFetchProjects).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(supervisedTab);
+
+    await waitFor(() => {
+      expect(supervisedTab).toHaveAttribute('aria-selected', 'true');
+    });
+
+    expect(supervisedTab).toHaveClass('tab-active');
+    expect(availableTab).toHaveAttribute('aria-selected', 'false');
+    expect(availableTab).toHaveClass('tab-inactive');
+    expect(evaluatedTab).toHaveAttribute('aria-selected', 'false');
+    expect(evaluatedTab).toHaveClass('tab-inactive');
+
+    await waitFor(() => {
+      expect(mockFetchProjects).toHaveBeenCalledTimes(2);
+    });
+
+    const visibleCards = await screen.findAllByTestId('project-card');
+
+    expect(visibleCards).toHaveLength(1);
+    expect(screen.getByText('Cloud Timetable Optimizer')).toBeInTheDocument();
+
+    visibleCards.forEach((card) => {
+      expect(card).toHaveAttribute('data-status', 'SUPERVISED');
+    });
+
+    expect(screen.queryByText('AI Attendance System')).not.toBeInTheDocument();
+    expect(screen.queryByText('Smart Campus Navigator')).not.toBeInTheDocument();
   });
 });

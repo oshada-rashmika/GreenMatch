@@ -21,6 +21,7 @@ class _Activity {
 }
 
 class _ProposalData {
+  String id;
   String title;
   String abstractText;
   String techStack;
@@ -40,6 +41,7 @@ class _ProposalData {
   DateTime? milestoneVivaDate;
 
   _ProposalData({
+    required this.id,
     required this.title,
     required this.abstractText,
     required this.techStack,
@@ -115,6 +117,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 default: mappedStatus = ProposalStatus.pending;
               }
               return _ProposalData(
+                id: myP.id,
                 title: myP.title,
                 abstractText: myP.abstractText,
                 techStack: myP.tags.join(', '),
@@ -1072,7 +1075,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildDeadlineBanner() {
-    final unmissed = _meetings.where((m) => m.status != 'MISSED' && m.status != 'COMPLETED').toList();
+    if (_proposal == null) return const SizedBox.shrink();
+
+    final projectMeetings = _meetings.where((m) => m.projectId == _proposal!.id).toList();
+    final unmissed = projectMeetings.where((m) => m.status != 'MISSED' && m.status != 'COMPLETED').toList();
     if (unmissed.isEmpty) return const SizedBox.shrink();
     
     unmissed.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
@@ -1539,6 +1545,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildMeetingsSection() {
+    if (_proposal == null) return const SizedBox.shrink();
+    final projectMeetings = _meetings.where((m) => m.projectId == _proposal!.id).toList();
+
     return GlassContainer(
       padding: const EdgeInsets.all(24),
       borderRadius: 24,
@@ -1559,10 +1568,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ],
           ),
           const SizedBox(height: 20),
-          if (_meetings.isEmpty)
+          if (projectMeetings.isEmpty)
             Text('No upcoming meetings scheduled.', style: TextStyle(color: mutedTextColor, fontSize: 14))
           else
-            ..._meetings.map((meeting) => _buildMeetingCard(meeting)).toList(),
+            ...projectMeetings.map((meeting) => _buildMeetingCard(meeting)),
         ],
       ),
     );

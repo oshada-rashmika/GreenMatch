@@ -32,6 +32,7 @@ export class MeetingsService {
       },
       select: {
         id: true,
+        groupId: true,
         scheduledDate: true,
         windowExpiry: true,
         status: true,

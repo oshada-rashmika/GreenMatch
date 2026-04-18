@@ -90,6 +90,7 @@ class MyProposalData {
 
 class MeetingData {
   final String id;
+  final String projectId;
   final DateTime scheduledDate;
   final DateTime windowExpiry;
   final String status;
@@ -98,6 +99,7 @@ class MeetingData {
 
   MeetingData({
     required this.id,
+    required this.projectId,
     required this.scheduledDate,
     required this.windowExpiry,
     required this.status,
@@ -108,11 +110,12 @@ class MeetingData {
   factory MeetingData.fromJson(Map<String, dynamic> json) {
     return MeetingData(
       id: json['id'],
+      projectId: json['groupId'],
       scheduledDate: DateTime.parse(json['scheduledDate']).toLocal(),
       windowExpiry: DateTime.parse(json['windowExpiry']).toLocal(),
       status: json['status'],
       supervisorNotes: json['supervisorNotes'],
-      supervisorName: json['supervisor']['fullName'],
+      supervisorName: json['supervisor']?['fullName'] ?? 'Unknown Supervisor',
     );
   }
 }

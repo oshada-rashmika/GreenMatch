@@ -1567,69 +1567,107 @@ class _MetricCardState extends State<_MetricCard> with SingleTickerProviderState
             builder: (context, child) {
               return Transform.scale(
                 scale: _scaleAnimation.value,
-                child: GlassContainer(
-                  opacity: _isHovered ? 0.05 : 0.03,
-                  blur: 20,
-                  borderRadius: 24,
-                  borderColor: effectiveColor.withValues(alpha: _glowAnimation.value),
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            widget.title,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: effectiveColor.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                              boxShadow: _isHovered 
-                                ? [BoxShadow(color: effectiveColor.withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 2)]
-                                : [],
-                            ),
-                            child: Icon(widget.iconData, color: effectiveColor, size: 16),
-                          ),
-                        ],
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        effectiveColor.withValues(alpha: _isHovered ? 0.2 : 0.12),
+                        const Color(0xFF0F172A),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: effectiveColor.withValues(alpha: _glowAnimation.value + 0.1)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: effectiveColor.withValues(alpha: _isHovered ? 0.15 : 0.05),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        widget.value,
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontSize: MediaQuery.of(context).size.width < 600 ? 32 : 42,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.0,
-                          shadows: [
-                            Shadow(
-                              color: effectiveColor.withValues(alpha: _glowAnimation.value * 2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -15,
+                        bottom: -15,
+                        child: Transform.rotate(
+                          angle: -0.2,
+                          child: Icon(
+                            widget.iconData,
+                            size: 110,
+                            color: effectiveColor.withValues(alpha: 0.08),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: effectiveColor.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(widget.iconData, color: effectiveColor, size: 18),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    widget.title.toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  widget.value,
+                                  style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: MediaQuery.of(context).size.width < 600 ? 40 : 48,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1.0,
+                                    shadows: [
+                                      Shadow(
+                                        color: effectiveColor.withValues(alpha: _glowAnimation.value * 2),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: LoginColors.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                              ),
+                              child: Text(
+                                widget.detail,
+                                style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500),
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: effectiveColor.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: effectiveColor.withValues(alpha: _isHovered ? 0.3 : 0.1)),
-                        ),
-                        child: Text(
-                          widget.detail,
-                          style: TextStyle(color: effectiveColor, fontSize: 11, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],

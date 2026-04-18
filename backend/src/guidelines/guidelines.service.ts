@@ -67,4 +67,20 @@ export class GuidelinesService {
       },
     });
   }
+
+  async getAllGuidelines() {
+    return this.prisma.guideline.findMany({
+      include: {
+        module: {
+          select: {
+            moduleCode: true,
+            moduleName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 }

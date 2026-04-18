@@ -22,6 +22,7 @@ import '../services/supervisor_service.dart';
 import '../models/supervisor_profile.dart' as supervisor_model;
 import './project_selection_screen.dart';
 import './mark_meetings.dart';
+import './guidelines_screen.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -434,6 +435,14 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           },
         ),
         _buildAppBarIcon(Icons.notifications_none_rounded),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GuidelinesScreen()),
+          ),
+          child: _buildAppBarIcon(Icons.menu_book_rounded),
+        ),
         const SizedBox(width: 8),
         GestureDetector(
           onTap: () async {
@@ -1593,6 +1602,15 @@ class _DashboardDrawer extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => const EvaluationHubScreen(),
                     ),
+                  ),
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.menu_book_rounded,
+                  title: 'Guidelines',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const GuidelinesScreen()),
                   ),
                 ),
                 _buildDrawerItem(

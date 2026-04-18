@@ -82,6 +82,10 @@ function ModuleLeaderLogin({
       {status === 'success' ? (
         <p role="status">Module Leader login successful</p>
       ) : null}
+
+      {status === 'error' ? (
+        <p role="alert">Invalid credentials</p>
+      ) : null}
     </form>
   );
 }
@@ -90,6 +94,10 @@ describe('ModuleLeaderLogin - Verify successful Module Leader login with valid c
   const validCredentials: Credentials = {
     email: 'leader@test.com',
     password: 'TestPass123!',
+  };
+  const invalidCredentials: Credentials = {
+    email: 'leader@test.com',
+    password: 'WrongPass123!',
   };
   const moduleLeaderSuccessResponse: ModuleLeaderAuthResponse = {
     token: 'mock-module-leader-token',
@@ -165,6 +173,52 @@ describe('ModuleLeaderLogin - Verify successful Module Leader login with valid c
 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Module Leader login successful',
+    );
+  });
+
+  test('Verify Module Leader login fails and rejects access when an invalid password is provided', async () => {
+    mockAuthenticateModuleLeader.mockImplementation(async (credentials: Credentials) => {
+      if (
+        credentials.email === invalidCredentials.email &&
+        credentials.password === invalidCredentials.password
+      ) {
+        throw new Error('Invalid credentials');
+      }
+
+      return moduleLeaderSuccessResponse;
+    });
+
+    render(
+      <ModuleLeaderLogin
+        authenticateModuleLeader={mockAuthenticateModuleLeader}
+        onRouteToDashboard={mockOnRouteToDashboard}
+      />,
+    );
+
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement;
+    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement;
+    const submitButton = screen.getByRole('button', { name: /log in/i });
+
+    fireEvent.change(emailInput, { target: { value: invalidCredentials.email } });
+    fireEvent.change(passwordInput, {
+      target: { value: invalidCredentials.password },
+    });
+
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockAuthenticateModuleLeader).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockAuthenticateModuleLeader).toHaveBeenCalledWith({
+      email: 'leader@test.com',
+      password: 'WrongPass123!',
+    });
+
+    expect(mockOnRouteToDashboard).not.toHaveBeenCalled();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Invalid credentials',
     );
   });
 });

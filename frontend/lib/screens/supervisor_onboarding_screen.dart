@@ -128,6 +128,7 @@ class _SupervisorOnboardingScreenState extends State<SupervisorOnboardingScreen>
                       filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
                       child: Container(
                         color: Colors.white.withValues(alpha: 0.03),
+                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
                         child: Column(
                           children: [
                             Expanded(
@@ -145,7 +146,6 @@ class _SupervisorOnboardingScreenState extends State<SupervisorOnboardingScreen>
                             ),
                             
                             _buildNavigationControls(),
-                            const SizedBox(height: 32),
                           ],
                         ),
                       ),
@@ -161,238 +161,223 @@ class _SupervisorOnboardingScreenState extends State<SupervisorOnboardingScreen>
   }
 
   Widget _buildWelcomeStep() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [AppTheme.forestEmerald.withValues(alpha: 0.2), AppTheme.forestEmerald.withValues(alpha: 0.0)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.4)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                )
-              ],
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [AppTheme.forestEmerald.withValues(alpha: 0.2), AppTheme.forestEmerald.withValues(alpha: 0.0)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: const Icon(Icons.verified_user_rounded, size: 72, color: AppTheme.forestEmerald),
-          ).animate().scale(duration: 800.ms, curve: Curves.easeOutBack),
-          const SizedBox(height: 48),
-          Text(
-            'Account Provisioned',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1.0,
-            ),
-          ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2),
-          const SizedBox(height: 20),
-          Text(
-            "Let's configure your blind-review preferences for a premium matching experience.",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              color: Colors.white60,
-              height: 1.6,
-              fontWeight: FontWeight.w400,
-            ),
-          ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2),
-        ],
-      ),
+            border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                blurRadius: 30,
+                spreadRadius: 5,
+              )
+            ],
+          ),
+          child: const Icon(Icons.verified_user_rounded, size: 72, color: AppTheme.forestEmerald),
+        ).animate().scale(duration: 800.ms, curve: Curves.easeOutBack),
+        const SizedBox(height: 48),
+        Text(
+          'Account Provisioned',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: -1.0,
+          ),
+        ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2),
+        const SizedBox(height: 20),
+        Text(
+          "Let's configure your blind-review preferences for a premium matching experience.",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            color: Colors.white60,
+            height: 1.6,
+            fontWeight: FontWeight.w400,
+          ),
+        ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2),
+      ],
     );
   }
 
   Widget _buildSpecsStep() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Your Research Areas',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Your Research Areas',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ).animate().fadeIn().slideY(begin: -0.1),
+        const SizedBox(height: 12),
+        Text(
+          'Select the tags that define your academic expertise.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(fontSize: 14, color: Colors.white54, fontWeight: FontWeight.w500),
+        ).animate().fadeIn(delay: 200.ms),
+        const SizedBox(height: 40),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 14,
+              children: _availableTags.map((tag) {
+                final isSelected = _selectedTags.contains(tag);
+                return _PremiumTagChip(
+                  label: tag,
+                  isSelected: isSelected,
+                  onTap: () => _toggleTag(tag),
+                );
+              }).toList(),
             ),
-          ).animate().fadeIn().slideY(begin: -0.1),
-          const SizedBox(height: 12),
-          Text(
-            'Select the tags that define your academic expertise.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(fontSize: 14, color: Colors.white54, fontWeight: FontWeight.w500),
-          ).animate().fadeIn(delay: 200.ms),
-          const SizedBox(height: 40),
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 12,
-                runSpacing: 14,
-                children: _availableTags.map((tag) {
-                  final isSelected = _selectedTags.contains(tag);
-                  return _PremiumTagChip(
-                    label: tag,
-                    isSelected: isSelected,
-                    onTap: () => _toggleTag(tag),
-                  );
-                }).toList(),
-              ),
-            ),
-          ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.98, 0.98)),
-        ],
-      ),
+          ),
+        ).animate().fadeIn(delay: 400.ms).scale(begin: const Offset(0.98, 0.98)),
+      ],
     );
   }
 
   Widget _buildCapacityStep() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Supervision Capacity',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Supervision Capacity',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Maximum number of simultaneous groups.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(fontSize: 14, color: Colors.white54),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Maximum number of simultaneous groups.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(fontSize: 14, color: Colors.white54),
+        ),
+        const SizedBox(height: 60),
+        _CapacityDisplay(value: _capacityLimit.toInt()),
+        const SizedBox(height: 60),
+        SliderTheme(
+          data: SliderThemeData(
+            activeTrackColor: AppTheme.forestEmerald,
+            inactiveTrackColor: Colors.white.withValues(alpha: 0.05),
+            thumbColor: Colors.white,
+            overlayColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
+            trackHeight: 4,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 10),
           ),
-          const SizedBox(height: 60),
-          _CapacityDisplay(value: _capacityLimit.toInt()),
-          const SizedBox(height: 60),
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: AppTheme.forestEmerald,
-              inactiveTrackColor: Colors.white.withValues(alpha: 0.05),
-              thumbColor: Colors.white,
-              overlayColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 10),
-            ),
-            child: Slider(
-              value: _capacityLimit,
-              min: 1,
-              max: 5,
-              divisions: 4,
-              onChanged: (val) => setState(() => _capacityLimit = val),
-            ),
-          ).animate().fadeIn(delay: 500.ms),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Minimal', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white38, fontWeight: FontWeight.w600)),
-              Text('Maximum', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white38, fontWeight: FontWeight.w600)),
-            ],
+          child: Slider(
+            value: _capacityLimit,
+            min: 1,
+            max: 5,
+            divisions: 4,
+            onChanged: (val) => setState(() => _capacityLimit = val),
           ),
-        ],
-      ),
+        ).animate().fadeIn(delay: 500.ms),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Minimal', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white38, fontWeight: FontWeight.w600)),
+            Text('Maximum', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.white38, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _buildFinalStep() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _AnimatedStatusIcon(isSubmitting: _isSubmitting),
-          const SizedBox(height: 48),
-          Text(
-            _isSubmitting ? 'Syncing...' : 'Ready to Match',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ).animate().fadeIn(delay: 200.ms),
-          const SizedBox(height: 20),
-          Text(
-            'Your profile settings will now be applied to the dashboard.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
-              fontSize: 15, 
-              color: Colors.white60, 
-              height: 1.6,
-              fontWeight: FontWeight.w400,
-            ),
-          ).animate().fadeIn(delay: 400.ms),
-        ],
-      ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _AnimatedStatusIcon(isSubmitting: _isSubmitting),
+        const SizedBox(height: 48),
+        Text(
+          _isSubmitting ? 'Syncing...' : 'Ready to Match',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ).animate().fadeIn(delay: 200.ms),
+        const SizedBox(height: 20),
+        Text(
+          'Your profile settings will now be applied to the dashboard.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.montserrat(
+            fontSize: 15, 
+            color: Colors.white60, 
+            height: 1.6,
+            fontWeight: FontWeight.w400,
+          ),
+        ).animate().fadeIn(delay: 400.ms),
+      ],
     );
   }
 
   Widget _buildNavigationControls() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (_currentPage > 0 && _currentPage < 3)
-            _TransparentButton(
-              onPressed: () => _pageController.previousPage(
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeInOutQuart,
-              ),
-              label: 'Back',
-            )
-          else
-            const SizedBox(width: 80),
-
-          Row(
-            children: List.generate(4, (index) {
-              final active = _currentPage == index;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: active ? 28 : 8,
-                height: 4,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: active ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.1),
-                ),
-              );
-            }),
-          ),
-
-          if (_currentPage < 3)
-            _ActionButton(
-              onPressed: _nextPage,
-              label: 'Next',
-              width: 100,
-            )
-          else
-            _ActionButton(
-              onPressed: _isSubmitting ? null : _completeOnboarding,
-              label: 'Finish',
-              width: 120,
-              isLoading: _isSubmitting,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (_currentPage > 0 && _currentPage < 3)
+          _TransparentButton(
+            onPressed: () => _pageController.previousPage(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOutQuart,
             ),
-        ],
-      ),
+            label: 'Back',
+          )
+        else
+          const SizedBox(width: 80),
+
+        Row(
+          children: List.generate(4, (index) {
+            final active = _currentPage == index;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: active ? 28 : 8,
+              height: 4,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                color: active ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.1),
+              ),
+            );
+          }),
+        ),
+
+        if (_currentPage < 3)
+          _ActionButton(
+            onPressed: _nextPage,
+            label: 'Next',
+            width: 100,
+          )
+        else
+          _ActionButton(
+            onPressed: _isSubmitting ? null : _completeOnboarding,
+            label: 'Finish',
+            width: 120,
+            isLoading: _isSubmitting,
+          ),
+      ],
     );
   }
 }

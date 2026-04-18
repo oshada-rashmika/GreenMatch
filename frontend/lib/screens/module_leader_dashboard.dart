@@ -15,6 +15,7 @@ import '../widgets/glass_container.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'create_guideline_sheet.dart';
 
 enum _ModuleLeaderSection {
   overview,
@@ -1616,8 +1617,18 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
 
   Widget _buildCreateGuidelineButton() {
     return InkWell(
-      onTap: () {
-        _showGlassSnackBar(context, '✨ Guideline creation portal coming soon!');
+      onTap: () async {
+        final result = await showModalBottomSheet<bool>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => const CreateGuidelineSheet(),
+        );
+
+        if (result == true && mounted) {
+          _showGlassSnackBar(context, '🚀 Guideline published & workspace synchronized!');
+          _refreshGuidelines();
+        }
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(

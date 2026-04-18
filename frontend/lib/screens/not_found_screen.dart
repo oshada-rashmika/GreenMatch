@@ -48,34 +48,38 @@ class NotFoundScreen extends StatelessWidget {
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40.0),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 40.0),
+                physics: const BouncingScrollPhysics(),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      binary404,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.spaceMono(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                        letterSpacing: 2.0,
-                        color: AppTheme.forestEmerald,
-                        shadows: [
-                          Shadow(
-                            color: AppTheme.forestEmerald.withValues(alpha: 0.8),
-                            blurRadius: 10,
-                          ),
-                          Shadow(
-                            color: AppTheme.forestEmerald.withValues(alpha: 0.6),
-                            blurRadius: 20,
-                          ),
-                          Shadow(
-                            color: AppTheme.forestEmerald.withValues(alpha: 0.4),
-                            blurRadius: 30,
-                          ),
-                        ],
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        binary404,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.spaceMono(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w900,
+                          height: 1.1,
+                          letterSpacing: 2.0,
+                          color: AppTheme.forestEmerald,
+                          shadows: [
+                            Shadow(
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.8),
+                              blurRadius: 10,
+                            ),
+                            Shadow(
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.6),
+                              blurRadius: 20,
+                            ),
+                            Shadow(
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.4),
+                              blurRadius: 30,
+                            ),
+                          ],
+                        ),
                       ),
                     ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.9, 0.9)),
 

@@ -2,17 +2,15 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import '../models/supervisor_profile.dart';
 
 class SupervisorService {
   final AuthService _authService = AuthService();
 
-  Future<Map<String, dynamic>> getSupervisorProfile(String supervisorId) async {
+  Future<SupervisorProfile> getSupervisorProfile(String supervisorId) async {
     try {
       if (supervisorId.isEmpty) {
-        return {
-          'success': false,
-          'message': 'Supervisor ID is empty. Please log in again.',
-        };
+        throw Exception('Supervisor ID is empty. Please log in again.');
       }
 
       final headers = await _authService.getAuthHeaders();
@@ -27,39 +25,22 @@ class SupervisorService {
           );
 
       if (response.statusCode == 200) {
-        try {
-          final data = jsonDecode(response.body);
-          print('✅ Supervisor profile loaded: ${data.keys}');
-          return {'success': true, 'data': data};
-        } catch (e) {
-          print('❌ JSON parse error: $e');
-          print('❌ Response body: ${response.body}');
-          return {
-            'success': false,
-            'message':
-                'Failed to parse response: $e. Response: ${response.body}',
-          };
-        }
+        final responseData = jsonDecode(response.body);
+        print('✅ Supervisor profile loaded');
+        // If the API wraps response in { success: true, data: { ... } }
+        final profileData = responseData.containsKey('data') ? responseData['data'] : responseData;
+        return SupervisorProfile.fromJson(profileData);
       } else if (response.statusCode == 401) {
-        return {
-          'success': false,
-          'message': 'Unauthorized. Please log in again.',
-        };
+        throw Exception('Unauthorized. Please log in again.');
       } else if (response.statusCode == 404) {
-        return {'success': false, 'message': 'Supervisor profile not found.'};
+        throw Exception('Supervisor profile not found.');
       } else {
-        return {
-          'success': false,
-          'message': 'Server error (${response.statusCode}): ${response.body}',
-        };
+        throw Exception('Server error (${response.statusCode}): ${response.body}');
       }
     } on TimeoutException {
-      return {
-        'success': false,
-        'message': 'Connection timeout. Please check your internet connection.',
-      };
+      throw Exception('Connection timeout. Please check your internet connection.');
     } catch (e) {
-      return {'success': false, 'message': 'An error occurred: $e'};
+      throw Exception('An error occurred: $e');
     }
   }
 

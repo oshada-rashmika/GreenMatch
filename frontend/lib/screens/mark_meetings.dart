@@ -1,12 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
-import '../services/auth_provider.dart';
 import '../services/project_service.dart';
 import '../services/meeting_service.dart';
 import '../widgets/glass_container.dart';

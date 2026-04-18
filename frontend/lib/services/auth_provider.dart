@@ -92,6 +92,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (result['success']) {
         _accessToken = result['accessToken'];
+        _userId = result['userId'];
         _isAuthenticated = true;
         _setLoading(false);
         notifyListeners();

@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'profile_screen.dart';
 
@@ -7,7 +9,12 @@ import '../theme/login_design.dart';
 import '../services/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../services/module_leader_service.dart';
+import '../services/guideline_service.dart';
+import '../models/guideline.dart';
 import '../widgets/glass_container.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 enum _ModuleLeaderSection {
   overview,
@@ -30,10 +37,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   _ModuleLeaderSection _selectedSection = _ModuleLeaderSection.overview;
   late final AuthService _authService;
   late final ModuleLeaderService _moduleLeaderService;
+  late final GuidelineService _guidelineService;
   late Future<_OverviewViewModel> _overviewFuture;
   late Future<List<ModuleLeaderTag>> _tagsFuture;
   late Future<List<ModuleLeaderProject>> _projectsFuture;
   late Future<ModuleLeaderAcademicModulesPayload> _academicModulesFuture;
+  late Future<List<Guideline>> _guidelinesFuture;
   bool _isCreatingTag = false;
   bool _isCreatingModule = false;
   bool _isAssigningSupervisors = false;
@@ -47,10 +56,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     super.initState();
     _authService = AuthService();
     _moduleLeaderService = ModuleLeaderService();
+    _guidelineService = GuidelineService();
     _overviewFuture = _loadOverviewData();
     _tagsFuture = _loadTagsData();
     _projectsFuture = _loadProjectsData();
     _academicModulesFuture = _loadAcademicModulesData();
+    _guidelinesFuture = _loadGuidelines();
   }
 
   @override
@@ -251,29 +262,35 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppTheme.forestEmerald.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.admin_panel_settings, color: AppTheme.forestEmerald, size: 16),
-              SizedBox(width: 8),
-              Text(
-                'Live Administrative View',
-                style: TextStyle(
-                  color: AppTheme.forestEmerald,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+        if (_selectedSection == _ModuleLeaderSection.guidelines)
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: _buildCreateGuidelineButton(),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.admin_panel_settings, color: AppTheme.forestEmerald, size: 16),
+                SizedBox(width: 8),
+                Text(
+                  'Live Administrative View',
+                  style: TextStyle(
+                    color: AppTheme.forestEmerald,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -290,26 +307,39 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 
   Widget _buildGuidelinesContent() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          children: [
-            Icon(Icons.menu_book, size: 64, color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            const Text(
-              'Guidelines Module',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Here you can manage university templates and formatting guidelines.',
-              style: TextStyle(color: Colors.white60, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return FutureBuilder<List<Guideline>>(
+      future: _guidelinesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald));
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent)));
+        }
+
+        final guidelines = snapshot.data ?? [];
+        if (guidelines.isEmpty) {
+          return _buildGuidelinesEmptyState();
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth > 850;
+            return MasonryGridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: isDesktop ? 3 : 1,
+              mainAxisSpacing: 20,
+              crossAxisSpacing: 20,
+              itemCount: guidelines.length,
+              itemBuilder: (context, index) {
+                return _GuidelineCard(guideline: guidelines[index]);
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -340,7 +370,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                             value: viewModel.statistics.totalProjects.toString(),
                             detail: 'All active and pending records',
                             width: _metricWidth(constraints.maxWidth, columns),
-                            accentColor: const Color(0xFF6366F1), // Indigo
+                            accentColor: const Color(0xFF6366F1),
                             iconData: Icons.folder_open_rounded,
                             onTap: () {
                               showModalBottomSheet(
@@ -740,6 +770,30 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
       _loadOverviewData();
     });
   }
+
+  Future<List<Guideline>> _loadGuidelines() async {
+    final authProvider = context.read<AuthProvider>();
+    final token = await _authService.getToken();
+    final leaderId = authProvider.userId;
+
+    if (token == null || token.isEmpty || leaderId == null || leaderId.isEmpty) {
+      return [];
+    }
+
+    try {
+      return await _guidelineService.fetchGuidelinesForLeader(leaderId);
+    } catch (e) {
+      debugPrint('Error loading guidelines: $e');
+      return [];
+    }
+  }
+
+  Future<void> _refreshGuidelines() async {
+    setState(() {
+      _guidelinesFuture = _loadGuidelines();
+    });
+  }
+
 
   Future<void> _executeGodModeMatcher() async {
     final token = await _authService.getToken();
@@ -1559,7 +1613,139 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     final totalSpacing = (columns - 1) * 16;
     return (availableWidth - totalSpacing) / columns;
   }
+
+  Widget _buildCreateGuidelineButton() {
+    return InkWell(
+      onTap: () {
+        _showGlassSnackBar(context, '✨ Guideline creation portal coming soon!');
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.forestEmerald,
+              AppTheme.forestEmerald.withValues(alpha: 0.8),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+              blurRadius: 15,
+              spreadRadius: 2,
+            ),
+          ],
+          border: Border.all(color: Colors.white24),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.add_circle_outline, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Create New Guideline',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).animate().shimmer(duration: 2.seconds, color: Colors.white24);
+  }
+
+  Widget _buildGuidelinesEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.menu_book, size: 80, color: AppTheme.forestEmerald.withValues(alpha: 0.2)),
+          const SizedBox(height: 24),
+          const Text(
+            'No Guidelines Yet',
+            style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Your academic guidelines will appear here.',
+            style: TextStyle(color: Colors.white54, fontSize: 15),
+          ),
+        ],
+      ),
+    );
+  }
+  void _showGlassSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(milliseconds: 2500),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 120,
+          left: 20,
+          right: 20,
+        ),
+        content: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppTheme.forestEmerald.withValues(alpha: 0.4),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  )
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: AppTheme.forestEmerald,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+
 
 class _MetricCard extends StatefulWidget {
   const _MetricCard({
@@ -3072,3 +3258,134 @@ class _SmartProjectsPopupState extends State<_SmartProjectsPopup> {
     );
   }
 }
+
+class _GuidelineCard extends StatelessWidget {
+  final Guideline guideline;
+
+  const _GuidelineCard({required this.guideline});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _GuidelineBadge(label: guideline.module?.moduleCode ?? 'N/A'),
+                    const Icon(Icons.more_horiz, color: Colors.white38),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  guideline.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today_outlined, size: 14, color: AppTheme.forestEmerald.withValues(alpha: 0.8)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Due: ${DateFormat('MMM dd, yyyy').format(guideline.deadline)}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (guideline.deliverables.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: guideline.deliverables.map((d) => _FrostedChip(label: d)).toList(),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+  }
+}
+
+class _GuidelineBadge extends StatelessWidget {
+  final String label;
+
+  const _GuidelineBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.forestEmerald.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.forestEmerald.withValues(alpha: 0.2),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppTheme.forestEmerald,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _FrostedChip extends StatelessWidget {
+  final String label;
+
+  const _FrostedChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white70,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+

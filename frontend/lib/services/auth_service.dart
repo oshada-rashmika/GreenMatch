@@ -130,9 +130,14 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await _storeToken(data['access_token']);
+
+        final user = data['user'] as Map<String, dynamic>?;
+        final String userId = user?['id'] ?? '';
+
         return {
           'success': true,
           'accessToken': data['access_token'],
+          'userId': userId,
           'message': 'Module Leader login successful',
         };
       } else {

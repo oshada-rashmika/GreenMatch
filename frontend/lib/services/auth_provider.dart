@@ -8,12 +8,14 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
   String? _accessToken;
   bool _isAuthenticated = false;
+  bool _isFirstLogin = false;
 
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get accessToken => _accessToken;
   bool get isAuthenticated => _isAuthenticated;
+  bool get isFirstLogin => _isFirstLogin;
 
   /// Student login
   Future<bool> studentLogin(String email, String password) async {
@@ -59,6 +61,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (result['success']) {
         _accessToken = result['accessToken'];
+        _isFirstLogin = result['isFirstLogin'] ?? false;
         _isAuthenticated = true;
         _setLoading(false);
         notifyListeners();

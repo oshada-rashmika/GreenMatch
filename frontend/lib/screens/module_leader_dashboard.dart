@@ -16,6 +16,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'create_guideline_sheet.dart';
+import 'module_leader_profile.dart';
 
 enum _ModuleLeaderSection {
   overview,
@@ -89,7 +90,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      MaterialPageRoute(builder: (context) => const ModuleLeaderProfileScreen()),
                     );
                   },
                   child: CircleAvatar(

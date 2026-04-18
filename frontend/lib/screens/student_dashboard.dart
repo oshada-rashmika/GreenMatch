@@ -477,6 +477,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ],
           ),
           const SizedBox(width: 8),
+          _buildCircleButtonWidget(
+            Icons.add, 
+            cardColor, 
+            onPressed: () => _showSubmissionForm(),
+          ),
+          const SizedBox(width: 8),
           _buildCircleButtonWidget(Icons.person_outline, cardColor, onPressed: () {
             Navigator.push(
               context,

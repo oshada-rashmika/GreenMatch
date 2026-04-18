@@ -1264,6 +1264,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.forestEmerald,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
                           onPressed: _isAssigningSupervisors
                               ? null
                               : () async {
@@ -1273,7 +1279,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                     selectedSupervisorIds.toList(),
                                   );
                                 },
-                          child: const Text('Save Assignment'),
+                          child: const Text('Save Assignment', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ],
                     ),

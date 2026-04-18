@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../services/supervisor_service.dart';
 import '../../services/auth_provider.dart';
 import '../../models/supervisor_profile.dart';
+import 'login_screen.dart';
 
 class SupervisorProfileScreen extends StatefulWidget {
   const SupervisorProfileScreen({super.key});
@@ -766,16 +767,35 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
   }
 
   Widget _buildLogoutButton() {
-    return TextButton.icon(
-      onPressed: () => Navigator.pop(context),
-      icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
-      label: Text(
-        'Go Back',
-        style: GoogleFonts.montserrat(
-          color: Colors.redAccent,
-          fontWeight: FontWeight.bold,
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          await context.read<AuthProvider>().logout();
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        },
+        icon: const Icon(Icons.logout, size: 20),
+        label: Text(
+          'Log Out',
+          style: GoogleFonts.montserrat(fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.redAccent.withOpacity(0.1),
+          foregroundColor: Colors.redAccent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+            side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+          ),
+          elevation: 0,
         ),
       ),
     );
   }
+
 }

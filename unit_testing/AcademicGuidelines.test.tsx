@@ -2,8 +2,14 @@
 /// <reference types="react-dom" />
 
 import { useEffect, useState } from 'react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
+
+const mockNavigate = jest.fn();
+
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+}), { virtual: true });
 
 type Guideline = {
   id: string;
@@ -17,6 +23,10 @@ type AcademicGuidelinesProps = {
 };
 
 function AcademicGuidelinesPage({ fetchGuidelines }: AcademicGuidelinesProps) {
+  const { useNavigate } = require('react-router-dom') as {
+    useNavigate: () => (to: string | number) => void;
+  };
+  const navigate = useNavigate();
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
 
   useEffect(() => {
@@ -43,6 +53,7 @@ function AcademicGuidelinesPage({ fetchGuidelines }: AcademicGuidelinesProps) {
       className="dark-theme bg-slate-900 text-slate-100 min-h-screen"
     >
       <header
+        aria-label="guidelines-header"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -51,7 +62,12 @@ function AcademicGuidelinesPage({ fetchGuidelines }: AcademicGuidelinesProps) {
           borderBottom: '1px solid #1f2937',
         }}
       >
-        <button type="button" aria-label="Back" className="icon-button">
+        <button
+          type="button"
+          aria-label="Back"
+          className="icon-button"
+          onClick={() => navigate(-1)}
+        >
           <span aria-hidden="true">←</span>
         </button>
         <h1>Academic Guidelines</h1>
@@ -103,6 +119,7 @@ describe('AcademicGuidelines - Verify the Academic Guidelines page renders the h
 
   beforeEach(() => {
     mockFetchGuidelines = jest.fn(async () => mockedGuidelines);
+    mockNavigate.mockReset();
   });
 
   afterEach(() => {
@@ -149,5 +166,23 @@ describe('AcademicGuidelines - Verify the Academic Guidelines page renders the h
     expect(
       within(guidelineCard).getByRole('button', { name: /github repo/i }),
     ).toBeInTheDocument();
+  });
+
+  test('Verify clicking the back arrow triggers navigation', async () => {
+    render(<AcademicGuidelinesPage fetchGuidelines={mockFetchGuidelines} />);
+
+    await waitFor(() => {
+      expect(mockFetchGuidelines).toHaveBeenCalledTimes(1);
+    });
+
+    const headerContainer = screen.getByLabelText('guidelines-header');
+    const backButton = within(headerContainer).getByRole('button', {
+      name: /back/i,
+    });
+
+    fireEvent.click(backButton);
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
   });
 });

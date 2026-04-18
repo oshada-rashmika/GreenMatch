@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -152,24 +153,29 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
             const _CanvasBackground(),
 
             SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildTopNav(),
-                    const SizedBox(height: 30),
-                    _buildFinalMarkGauge(),
-                    const SizedBox(height: 40),
-                    _buildProjectInfo(),
-                    const SizedBox(height: 32),
-                    _buildGradingSection(),
-                    const SizedBox(height: 24),
-                    _buildFeedbackSection(),
-                    const SizedBox(height: 40),
-                    _buildSubmitButton(),
-                    const SizedBox(height: 40),
-                  ],
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 850),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        _buildTopNav(),
+                        const SizedBox(height: 30),
+                        _buildFinalMarkGauge(),
+                        const SizedBox(height: 40),
+                        _buildProjectInfo(),
+                        const SizedBox(height: 32),
+                        _buildGradingSection(),
+                        const SizedBox(height: 24),
+                        _buildFeedbackSection(),
+                        const SizedBox(height: 40),
+                        _buildSubmitButton(),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -361,7 +367,7 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
               Text(
                 '${value.round()}/100',
                 style: GoogleFonts.plusJakartaSans(
-                  color: AppTheme.forestEmerald,
+                  color: Color.lerp(Colors.amber, AppTheme.forestEmerald, value / 100),
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
@@ -371,17 +377,24 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
           const SizedBox(height: 12),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: AppTheme.forestEmerald,
-              inactiveTrackColor: Colors.white.withValues(alpha: 0.05),
+              activeTrackColor: Color.lerp(Colors.amber, AppTheme.forestEmerald, value / 100),
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
+              trackHeight: 6,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 10),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
               thumbColor: Colors.white,
-              overlayColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
-              trackHeight: 4,
+              overlayColor: AppTheme.forestEmerald.withValues(alpha: 0.1),
             ),
             child: Slider(
               value: value,
               min: 0,
               max: 100,
-              onChanged: onChanged,
+              onChanged: (val) {
+                if (val.round() != value.round()) {
+                  HapticFeedback.selectionClick();
+                }
+                onChanged(val);
+              },
             ),
           ),
         ],

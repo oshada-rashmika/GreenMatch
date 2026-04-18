@@ -17,12 +17,15 @@ type Project = {
 
 type SupervisorDashboardProps = {
   fetchProjects: () => Promise<Project[]>;
+  onConfirmMatch: (projectId: string) => Promise<void>;
 };
 
-function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
+function SupervisorDashboard({ fetchProjects, onConfirmMatch }: SupervisorDashboardProps) {
   const [activeTab, setActiveTab] = useState<'available' | 'supervised' | 'evaluated'>('available');
   const [activeCategory, setActiveCategory] = useState<'All' | ProjectCategory>('All');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [matchingProjectId, setMatchingProjectId] = useState<string | null>(null);
+  const [matchedProjectId, setMatchedProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,6 +56,13 @@ function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
       project.status === statusByTab[activeTab] &&
       (activeCategory === 'All' || project.category === activeCategory),
   );
+
+  const handleConfirmMatch = async (projectId: string) => {
+    setMatchingProjectId(projectId);
+    await onConfirmMatch(projectId);
+    setMatchedProjectId(projectId);
+    setMatchingProjectId(null);
+  };
 
   return (
     <section aria-label="supervisor-dashboard-blind-review">
@@ -119,6 +129,18 @@ function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
             <h3>{project.title}</h3>
             <p>Status: {project.status}</p>
             <p>Category: {project.category}</p>
+            <button
+              type="button"
+              onClick={() => {
+                void handleConfirmMatch(project.id);
+              }}
+              disabled={matchingProjectId === project.id}
+            >
+              {matchingProjectId === project.id ? 'Matching...' : 'Confirm Match'}
+            </button>
+            {matchedProjectId === project.id ? (
+              <p role="status">Match confirmed</p>
+            ) : null}
           </article>
         ))}
       </div>
@@ -135,9 +157,11 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
   ];
 
   let mockFetchProjects: jest.MockedFunction<() => Promise<Project[]>>;
+  let mockOnConfirmMatch: jest.MockedFunction<(projectId: string) => Promise<void>>;
 
   beforeEach(() => {
     mockFetchProjects = jest.fn(async () => mockProjects);
+    mockOnConfirmMatch = jest.fn(async () => {});
   });
 
   afterEach(() => {
@@ -147,7 +171,12 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
   });
 
   test("Verify the component renders the 'Available Projects' tab by default", async () => {
-    render(<SupervisorDashboard fetchProjects={mockFetchProjects} />);
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+      />,
+    );
 
     const availableTab = screen.getByRole('tab', { name: /available projects/i });
     const supervisedTab = screen.getByRole('tab', { name: /supervised/i });
@@ -184,7 +213,12 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
   });
 
   test("Verify clicking the 'Supervised' tab updates the UI and filters projects correctly.", async () => {
-    render(<SupervisorDashboard fetchProjects={mockFetchProjects} />);
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+      />,
+    );
 
     const availableTab = screen.getByRole('tab', { name: /available projects/i });
     const supervisedTab = screen.getByRole('tab', { name: /supervised/i });
@@ -232,7 +266,12 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
 
     mockFetchProjects.mockImplementation(async () => categoryFilterProjects);
 
-    render(<SupervisorDashboard fetchProjects={mockFetchProjects} />);
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+      />,
+    );
 
     const filterGroup = screen.getByRole('group', {
       name: /project-category-filters/i,
@@ -270,5 +309,41 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
 
     expect(await screen.findByText('Evalora | Edu')).toBeInTheDocument();
     expect(await screen.findByText('CeylonDash Mobile App')).toBeInTheDocument();
+  });
+
+  test("Verify that clicking 'Confirm Match' triggers the correct action with the specific project ID.", async () => {
+    const confirmMatchProjects: Project[] = [
+      { id: 'proj_123', title: 'GreenMatch', status: 'AVAILABLE', category: 'Algorithms' },
+      { id: 'proj_777', title: 'CeylonDash Mobile App', status: 'AVAILABLE', category: 'Cloud Computing' },
+    ];
+
+    mockFetchProjects.mockImplementation(async () => confirmMatchProjects);
+
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+      />,
+    );
+
+    const greenMatchHeading = await screen.findByText('GreenMatch');
+    const greenMatchCard = greenMatchHeading.closest('[data-testid="project-card"]');
+
+    expect(greenMatchCard).not.toBeNull();
+
+    const confirmButton = within(greenMatchCard as HTMLElement).getByRole('button', {
+      name: /confirm match/i,
+    });
+
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mockOnConfirmMatch).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockOnConfirmMatch).toHaveBeenCalledWith('proj_123');
+    expect(await within(greenMatchCard as HTMLElement).findByRole('status')).toHaveTextContent(
+      'Match confirmed',
+    );
   });
 });

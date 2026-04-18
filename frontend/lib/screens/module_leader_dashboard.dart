@@ -318,9 +318,20 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          builder: (_) => _SmartProjectsPopup(
-                            projects: context.read<ModuleLeaderOverviewViewModel>().projectAllocations,
-                            title: 'Total Projects',
+                          builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                            future: _projectsFuture,
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return SizedBox(
+                                  height: MediaQuery.of(context).size.height * 0.85,
+                                  child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                );
+                              }
+                              return _SmartProjectsPopup(
+                                projects: snapshot.data!,
+                                title: 'Total Projects',
+                              );
+                            },
                           ),
                         );
                       },
@@ -333,14 +344,24 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                       accentColor: AppTheme.forestEmerald,
                       iconData: Icons.shield_outlined,
                       onTap: () {
-                        final pendingProjects = context.read<ModuleLeaderOverviewViewModel>().projectAllocations
-                          .where((p) => p.status.toUpperCase() == 'PENDING').toList();
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
-                          builder: (_) => _SmartProjectsPopup(
-                            projects: pendingProjects,
-                            title: 'Pending Matches',
+                          builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                            future: _projectsFuture,
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return SizedBox(
+                                  height: MediaQuery.of(context).size.height * 0.85,
+                                  child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                );
+                              }
+                              final pendingProjects = snapshot.data!.where((p) => p.status.toUpperCase() == 'PENDING').toList();
+                              return _SmartProjectsPopup(
+                                projects: pendingProjects,
+                                title: 'Pending Matches',
+                              );
+                            },
                           ),
                         );
                       },

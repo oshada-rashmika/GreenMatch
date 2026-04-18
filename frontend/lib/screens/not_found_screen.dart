@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
+import 'login_screen.dart';
 
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({super.key});
@@ -11,11 +12,16 @@ class NotFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const String binary404 = '''
-1 0 0 1   0 0 0 0   1 0 0 1
-1    1   0    0   1    1
-1 0 0 1   0    0   1 0 0 1
-     1   0    0        1
-     1   0 0 0 0        1
+                              
+     mmm     mmmm        mmm  
+    m###    ##""##      m###  
+   #" ##   ##    ##    #" ##  
+ m#"  ##   ## ## ##  m#"  ##  
+ ########  ##    ##  ######## 
+      ##    ##mm##        ##  
+      ""     """"         ""  
+                              
+                              
 ''';
 
     return Scaffold(

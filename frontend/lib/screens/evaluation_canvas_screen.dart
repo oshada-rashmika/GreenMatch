@@ -190,57 +190,57 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
   }
 
   Widget _buildBentoGrid() {
-    return StaggeredGrid.count(
-      crossAxisCount: 3,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
+    return Column(
       children: [
-        StaggeredGridTile.fit(
-          crossAxisCellCount: 1,
-          child: GlassContainer(
-            padding: const EdgeInsets.all(24),
-            borderRadius: 24,
-            child: Column(
-              children: [
-                _buildFinalMarkGauge(),
-                const SizedBox(height: 30),
-                _buildSubmitButton(),
-              ],
-            ),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 1,
+                child: GlassContainer(
+                  padding: const EdgeInsets.all(24),
+                  borderRadius: 24,
+                  height: double.infinity,
+                  child: Column(
+                    children: [
+                      _buildFinalMarkGauge(),
+                      const Spacer(),
+                      _buildSubmitButton(),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    _buildCriterionSlider(
+                      label: 'Technical Feasibility',
+                      value: _feasibilityScale,
+                      onChanged: (val) => setState(() => _feasibilityScale = val),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCriterionSlider(
+                      label: 'Innovation & Research',
+                      value: _innovationScale,
+                      onChanged: (val) => setState(() => _innovationScale = val),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCriterionSlider(
+                      label: 'Project Scope & Execution',
+                      value: _scopeScale,
+                      onChanged: (val) => setState(() => _scopeScale = val),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        
-        StaggeredGridTile.fit(
-          crossAxisCellCount: 2,
-          child: _buildCriterionSlider(
-            label: 'Technical Feasibility',
-            value: _feasibilityScale,
-            onChanged: (val) => setState(() => _feasibilityScale = val),
-          ),
-        ),
-        
-        StaggeredGridTile.fit(
-          crossAxisCellCount: 2,
-          child: _buildCriterionSlider(
-            label: 'Innovation & Research',
-            value: _innovationScale,
-            onChanged: (val) => setState(() => _innovationScale = val),
-          ),
-        ),
-        
-        StaggeredGridTile.fit(
-          crossAxisCellCount: 2,
-          child: _buildCriterionSlider(
-            label: 'Project Scope & Execution',
-            value: _scopeScale,
-            onChanged: (val) => setState(() => _scopeScale = val),
-          ),
-        ),
-        
-        StaggeredGridTile.fit(
-          crossAxisCellCount: 3,
-          child: _buildFeedbackSection(),
-        ),
+        const SizedBox(height: 16),
+        _buildFeedbackSection(),
       ],
     );
   }
@@ -535,20 +535,23 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
         ),
         child: _isSubmitting
             ? const CircularProgressIndicator(color: Colors.white)
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Submit Final Grade',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Submit Final Grade',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.send_rounded, size: 20),
-                ],
+                    const SizedBox(width: 12),
+                    const Icon(Icons.send_rounded, size: 20),
+                  ],
+                ),
               ),
       ),
     ).animate().fadeIn(delay: 1.seconds);

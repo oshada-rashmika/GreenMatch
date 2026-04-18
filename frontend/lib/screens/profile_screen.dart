@@ -28,12 +28,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _supervisorRevealed = false;
   bool _isPersonalInfoExpanded = false;
 
+  late ScrollController _scrollController;
   late AnimationController _revealController;
   late Animation<double> _revealAnimation;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _revealController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -46,6 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _revealController.dispose();
     super.dispose();
   }
@@ -78,7 +81,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           actions: [
             IconButton(
               icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
-              onPressed: () {},
+              onPressed: () {
+                if (_scrollController.hasClients) {
+                  _scrollController.animateTo(
+                    _scrollController.position.maxScrollExtent,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              },
             ),
           ],
           title: Text(
@@ -116,6 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             SafeArea(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Column(

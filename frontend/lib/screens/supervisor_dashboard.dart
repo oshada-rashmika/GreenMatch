@@ -330,7 +330,11 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                               )
                             : errorMessage != null
                                 ? _buildErrorState(errorMessage!)
-                                : (_currentTab == 0 ? _buildProjectContent() : _buildSupervisedContent()),
+                                : (_currentTab == 0
+                                    ? _buildProjectContent()
+                                    : _currentTab == 1
+                                        ? _buildSupervisedContent()
+                                        : _buildEvaluatedContent()),
                       ),
                     ),
                   ],
@@ -599,11 +603,33 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                   ),
                   child: Center(
                     child: Text(
-                      'My Supervised', 
+                      'Supervised', 
                       style: GoogleFonts.montserrat(
                         color: _currentTab == 1 ? Colors.white : Colors.white60,
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: 12,
+                      )
+                    )
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _currentTab = 2),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _currentTab == 2 ? AppTheme.forestEmerald : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Evaluated', 
+                      style: GoogleFonts.montserrat(
+                        color: _currentTab == 2 ? Colors.white : Colors.white60,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
                       )
                     )
                   ),
@@ -1048,10 +1074,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       isMatched: matchedProjectIds.contains(project.id),
       onMatch: () => _onMatchConfirmed(project.id),
     );
-  }
-
   Widget _buildSupervisedContent() {
-    if (supervisedProjects.isEmpty) {
+    final pending = supervisedProjects.where((p) => !p.isEvaluated).toList();
+    if (pending.isEmpty) {
       return _buildEmptyState();
     }
     return LayoutBuilder(
@@ -1063,12 +1088,39 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           crossAxisCount: crossAxisCount,
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          itemCount: supervisedProjects.length,
+          itemCount: pending.length,
           itemBuilder: (context, index) {
             return _SupervisedProjectCardHolder(
-              project: supervisedProjects[index],
+              project: pending[index],
               index: index,
-              onSchedule: () => _showScheduleMeetingModal(supervisedProjects[index]),
+              onSchedule: () => _showScheduleMeetingModal(pending[index]),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEvaluatedContent() {
+    final evaluated = supervisedProjects.where((p) => p.isEvaluated).toList();
+    if (evaluated.isEmpty) {
+      return _buildEmptyState();
+    }
+    return LayoutBuilder(
+      key: const ValueKey('evaluated_projects_tab'),
+      builder: (context, constraints) {
+        int crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
+        return MasonryGridView.count(
+          padding: const EdgeInsets.all(16),
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          itemCount: evaluated.length,
+          itemBuilder: (context, index) {
+            return _SupervisedProjectCardHolder(
+              project: evaluated[index],
+              index: index,
+              onSchedule: () => _showScheduleMeetingModal(evaluated[index]),
             );
           },
         );

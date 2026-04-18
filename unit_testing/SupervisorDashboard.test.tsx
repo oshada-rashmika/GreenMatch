@@ -120,35 +120,39 @@ function SupervisorDashboard({ fetchProjects, onConfirmMatch }: SupervisorDashbo
       </div>
 
       <div aria-label="project-cards" style={{ marginTop: '16px' }}>
-        {visibleProjects.map((project) => (
-          <article
-            key={project.id}
-            data-testid="project-card"
-            data-status={project.status}
-            style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}
-          >
-            <h3>{project.title}</h3>
-            <p>Status: {project.status}</p>
-            <span className="project-tag-chip">{project.category}</span>
-            <p>{project.description}</p>
-            <span aria-label="progress-indicator">0%</span>
-            <button type="button" aria-label={`Bookmark ${project.title}`}>
-              Bookmark
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void handleConfirmMatch(project.id);
-              }}
-              disabled={matchingProjectId === project.id}
+        {visibleProjects.length === 0 ? (
+          <p role="note">No projects available</p>
+        ) : (
+          visibleProjects.map((project) => (
+            <article
+              key={project.id}
+              data-testid="project-card"
+              data-status={project.status}
+              style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}
             >
-              {matchingProjectId === project.id ? 'Matching...' : 'Confirm Match'}
-            </button>
-            {matchedProjectId === project.id ? (
-              <p role="status">Match confirmed</p>
-            ) : null}
-          </article>
-        ))}
+              <h3>{project.title}</h3>
+              <p>Status: {project.status}</p>
+              <span className="project-tag-chip">{project.category}</span>
+              <p>{project.description}</p>
+              <span aria-label="progress-indicator">0%</span>
+              <button type="button" aria-label={`Bookmark ${project.title}`}>
+                Bookmark
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleConfirmMatch(project.id);
+                }}
+                disabled={matchingProjectId === project.id}
+              >
+                {matchingProjectId === project.id ? 'Matching...' : 'Confirm Match'}
+              </button>
+              {matchedProjectId === project.id ? (
+                <p role="status">Match confirmed</p>
+              ) : null}
+            </article>
+          ))
+        )}
       </div>
     </section>
   );
@@ -463,5 +467,32 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
       within(ceylonDashCard as HTMLElement).getByText('Cloud Computing'),
     ).toBeInTheDocument();
     expect(within(ceylonDashCard as HTMLElement).getByText('Flutter, iOS')).toBeInTheDocument();
+  });
+
+  test("Verify that a 'No projects available' message appears if the project array is empty.", async () => {
+    mockFetchProjects.mockImplementation(async () => []);
+
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockFetchProjects).toHaveBeenCalledTimes(1);
+    });
+
+    expect(
+      screen.getByRole('tab', { name: /available projects/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /supervised/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /evaluated/i })).toBeInTheDocument();
+
+    expect(await screen.findByRole('note')).toHaveTextContent('No projects available');
+
+    expect(screen.queryByTestId('project-card')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /confirm match/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
   });
 });

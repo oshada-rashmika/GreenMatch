@@ -66,6 +66,20 @@ class StudentIdentity {
   }
 }
 
+class ProjectEvaluation {
+  final int finalMark;
+  final DateTime gradedAt;
+
+  const ProjectEvaluation({required this.finalMark, required this.gradedAt});
+
+  factory ProjectEvaluation.fromJson(Map<String, dynamic> json) {
+    return ProjectEvaluation(
+      finalMark: json['finalMark'] as int,
+      gradedAt: DateTime.parse(json['gradedAt'] as String),
+    );
+  }
+}
+
 class SupervisedProject {
   final String id;
   final String title;
@@ -76,6 +90,9 @@ class SupervisedProject {
   final String groupName;
   final List<StudentIdentity> teamMembers;
   final List<String> tags;
+  final ProjectEvaluation? evaluation;
+
+  bool get isEvaluated => evaluation != null;
 
   const SupervisedProject({
     required this.id,
@@ -87,6 +104,7 @@ class SupervisedProject {
     required this.groupName,
     required this.teamMembers,
     required this.tags,
+    this.evaluation,
   });
 
   factory SupervisedProject.fromJson(Map<String, dynamic> json) {
@@ -115,6 +133,9 @@ class SupervisedProject {
         groupName: group['groupName'] as String? ?? 'Unknown Group',
         teamMembers: parsedMembers,
         tags: tagNames,
+        evaluation: json['evaluation'] != null 
+            ? ProjectEvaluation.fromJson(json['evaluation'] as Map<String, dynamic>) 
+            : null,
       );
     } catch (e) {
       throw ProjectServiceException(

@@ -42,11 +42,14 @@ model Student {
 }
 
 model Supervisor {
-  id           String @id @default(uuid())
-  staffId      String @unique
-  email        String @unique
-  passwordHash String
-  fullName     String
+  id             String   @id @default(uuid())
+  staffId        String   @unique
+  email          String   @unique
+  passwordHash   String
+  fullName       String
+  specifications String[]
+  capacityLimit  Int?
+  isFirstLogin   Boolean  @default(true)
 
   // Relationships
   moduleSupervisions ModuleSupervisor[]
@@ -54,8 +57,9 @@ model Supervisor {
   meetings           Meeting[]
   expertiseTags      SupervisorTag[] // The Tech Stack Match
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  evaluations Evaluation[]
 }
 
 model ModuleLeader {
@@ -160,8 +164,9 @@ model Project {
   // Categorization
   tags ProjectTag[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  evaluation Evaluation?
 }
 
 // ---------------------------------------------------------
@@ -209,4 +214,23 @@ model Meeting {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// 5. EVALUATION
+// ---------------------------------------------------------
+
+model Evaluation {
+  id             String   @id @default(uuid())
+  finalMark      Int
+  feedbackText   String?  @db.Text
+  criteriaScores Json?
+  gradedAt       DateTime @default(now())
+
+  // Relationships
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id])
+
+  supervisorId String
+  supervisor   Supervisor @relation(fields: [supervisorId], references: [id])
 }

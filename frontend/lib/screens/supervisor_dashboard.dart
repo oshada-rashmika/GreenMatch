@@ -14,6 +14,7 @@ import '../widgets/glass_container.dart';
 import 'bookmarks_screen.dart';
 import 'login_screen.dart';
 import 'matches_screen.dart';
+import 'evaluation_hub_screen.dart';
 import './supervisor_profile.dart';
 import '../services/shortlist_provider.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
@@ -422,6 +423,16 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               },
             ),
             _buildAppBarIcon(Icons.notifications_none_rounded),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EvaluationHubScreen(),
+                ),
+              ),
+              child: _buildAppBarIcon(Icons.assessment_outlined),
+            ),
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () => Navigator.push(

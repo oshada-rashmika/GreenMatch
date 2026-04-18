@@ -47,6 +47,7 @@ class MyProposalData {
   final DateTime? milestoneMidtermDate;
   final DateTime? milestoneFinalDate;
   final DateTime? milestoneVivaDate;
+  final DateTime? createdAt;
 
   MyProposalData({
     required this.id,
@@ -62,6 +63,7 @@ class MyProposalData {
     this.milestoneMidtermDate,
     this.milestoneFinalDate,
     this.milestoneVivaDate,
+    this.createdAt,
   });
 
   factory MyProposalData.fromJson(Map<String, dynamic> json) {
@@ -81,6 +83,7 @@ class MyProposalData {
       tags: rawTags.map((t) => t['tag']['name'] as String).toList(),
       supervisorName: json['supervisor']?['fullName'],
       supervisorEmail: json['supervisor']?['email'],
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'])?.toLocal() : null,
     );
   }
 }

@@ -1615,49 +1615,49 @@ class _AcademicModulesGrid extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.school_rounded, color: AppTheme.forestEmerald, size: 18),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                module.moduleCode,
-                                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, fontFamily: 'Montserrat'),
-                              ),
-                            ],
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            module.moduleName,
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          child: const Icon(Icons.school_rounded, color: AppTheme.forestEmerald, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            module.moduleCode,
+                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, fontFamily: 'Montserrat'),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.15),
-                        foregroundColor: AppTheme.forestEmerald,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        side: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+                    const SizedBox(height: 8),
+                    Text(
+                      module.moduleName,
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                          foregroundColor: AppTheme.forestEmerald,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          side: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+                        ),
+                        onPressed: () => onAssignSupervisors(module, availableSupervisors),
+                        icon: const Icon(Icons.group_add_rounded, size: 16),
+                        label: const Text('Manage Faculty Allocation'),
                       ),
-                      onPressed: () => onAssignSupervisors(module, availableSupervisors),
-                      icon: const Icon(Icons.group_add_rounded, size: 16),
-                      label: const Text('Faculty Allocation'),
                     ),
                   ],
                 ),

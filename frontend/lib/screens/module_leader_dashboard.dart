@@ -432,10 +432,10 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                               child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
                                             );
                                           }
-                                          final filtered = projSnap.data!.where((p) => p.moduleCode == module.code).toList();
+                                          final filtered = projSnap.data!.where((p) => p.moduleCode == module.moduleCode).toList();
                                           return _SmartProjectsPopup(
                                             projects: filtered,
-                                            title: module.name,
+                                            title: module.moduleName,
                                           );
                                         },
                                       ),
@@ -458,10 +458,10 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                             color: AppTheme.forestEmerald.withValues(alpha: 0.15),
                                             borderRadius: BorderRadius.circular(8),
                                           ),
-                                          child: Text(module.code, style: const TextStyle(color: AppTheme.forestEmerald, fontWeight: FontWeight.bold, fontSize: 11)),
+                                          child: Text(module.moduleCode, style: const TextStyle(color: AppTheme.forestEmerald, fontWeight: FontWeight.bold, fontSize: 11)),
                                         ),
                                         const SizedBox(height: 12),
-                                        Text(module.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                        Text(module.moduleName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
                                         const Spacer(),
                                         Text('${module.batch} • ${module.academicYear}', style: const TextStyle(color: Colors.white54, fontSize: 13)),
                                       ],
@@ -479,10 +479,10 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                           height: 110,
                           child: ListView.separated(
                              scrollDirection: Axis.horizontal,
-                             itemCount: payload.availableSupervisors.length,
+                             itemCount: payload.supervisors.length,
                              separatorBuilder: (_, __) => const SizedBox(width: 16),
                              itemBuilder: (context, index) {
-                               final supervisor = payload.availableSupervisors[index];
+                               final supervisor = payload.supervisors[index];
                                return Container(
                                  width: 250,
                                  padding: const EdgeInsets.all(16),

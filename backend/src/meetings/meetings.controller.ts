@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { MeetingsService } from './meetings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -9,6 +9,10 @@ import { Role } from '../auth/enums/role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MeetingsController {
   constructor(private readonly meetingsService: MeetingsService) {}
+
+  // ───────────────────────────────────────────────
+  // STATIC / SPECIFIC ROUTES FIRST (before :id params)
+  // ───────────────────────────────────────────────
 
   @Post('schedule')
   @Roles(Role.SUPERVISOR)
@@ -29,15 +33,10 @@ export class MeetingsController {
     return this.meetingsService.getMyMeetings(req.user.id);
   }
 
-  @Post(':id/attend')
-  @Roles(Role.STUDENT)
-  async markAttendance(@Request() req, @Param('id') meetingId: string) {
-    const studentId = req.user.id;
-    return this.meetingsService.markAttendance(studentId, meetingId);
-  }
-
   // ───────────────────────────────────────────────
   // MARK-MEETINGS FEATURE (Meeting Days 1-21)
+  // Must be BEFORE the :id/attend route to avoid
+  // "marks" being captured as :id
   // ───────────────────────────────────────────────
 
   @Get('marks/:groupId')
@@ -47,6 +46,7 @@ export class MeetingsController {
     @Param('groupId') groupId: string,
   ) {
     const supervisorId = req.user.id;
+    console.log(`[MarkMeetings] GET marks for group=${groupId}, supervisor=${supervisorId}`);
     return this.meetingsService.getProjectMeetingMarks(groupId, supervisorId);
   }
 
@@ -58,6 +58,7 @@ export class MeetingsController {
     @Body() body: { meetingNumber: number; meetingDate: string; notes?: string },
   ) {
     const supervisorId = req.user.id;
+    console.log(`[MarkMeetings] POST mark day=${body.meetingNumber} for group=${groupId}, supervisor=${supervisorId}, date=${body.meetingDate}`);
     return this.meetingsService.markMeetingDay(
       supervisorId,
       groupId,
@@ -75,10 +76,22 @@ export class MeetingsController {
     @Param('meetingNumber') meetingNumber: string,
   ) {
     const supervisorId = req.user.id;
+    console.log(`[MarkMeetings] DELETE unmark day=${meetingNumber} for group=${groupId}`);
     return this.meetingsService.unmarkMeetingDay(
       supervisorId,
       groupId,
       parseInt(meetingNumber, 10),
     );
+  }
+
+  // ───────────────────────────────────────────────
+  // PARAMETERIZED ROUTES (must come AFTER static routes)
+  // ───────────────────────────────────────────────
+
+  @Post(':id/attend')
+  @Roles(Role.STUDENT)
+  async markAttendance(@Request() req, @Param('id') meetingId: string) {
+    const studentId = req.user.id;
+    return this.meetingsService.markAttendance(studentId, meetingId);
   }
 }

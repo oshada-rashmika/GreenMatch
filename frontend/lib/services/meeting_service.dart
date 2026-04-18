@@ -57,20 +57,37 @@ class MeetingService {
 
   /// Fetch all marked meeting days for a project group
   Future<List<MeetingMark>> getProjectMeetingMarks(String groupId) async {
-    final headers = await _authService.getAuthHeaders();
-    final response = await http.get(
-      Uri.parse('$_baseUrl/meetings/marks/$groupId'),
-      headers: headers,
-    );
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final url = '$_baseUrl/meetings/marks/$groupId';
+      print('📋 [MeetingService] GET $url');
 
-    if (response.statusCode == 200) {
-      final List<dynamic> raw = jsonDecode(response.body) as List<dynamic>;
-      return raw
-          .map((item) => MeetingMark.fromJson(item as Map<String, dynamic>))
-          .toList();
+      final response = await http
+          .get(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 10));
+
+      print('📋 [MeetingService] GET response: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> raw = jsonDecode(response.body) as List<dynamic>;
+        print('📋 [MeetingService] Got ${raw.length} meeting marks');
+        return raw
+            .map(
+                (item) => MeetingMark.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+
+      if (response.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
+      }
+
+      print('❌ [MeetingService] GET failed: ${response.body}');
+      throw Exception(
+          'Failed to fetch meeting marks (${response.statusCode}): ${response.body}');
+    } catch (e) {
+      print('❌ [MeetingService] getProjectMeetingMarks error: $e');
+      rethrow;
     }
-
-    throw Exception('Failed to fetch meeting marks: ${response.statusCode}');
   }
 
   /// Mark a meeting day number for a project group
@@ -80,24 +97,43 @@ class MeetingService {
     required DateTime meetingDate,
     String? notes,
   }) async {
-    final headers = await _authService.getAuthHeaders();
-    final response = await http.post(
-      Uri.parse('$_baseUrl/meetings/marks/$groupId'),
-      headers: headers,
-      body: jsonEncode({
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final url = '$_baseUrl/meetings/marks/$groupId';
+      final bodyData = jsonEncode({
         'meetingNumber': meetingNumber,
         'meetingDate': meetingDate.toIso8601String(),
-        'notes': notes,
-      }),
-    );
+        if (notes != null) 'notes': notes,
+      });
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return MeetingMark.fromJson(
-        jsonDecode(response.body) as Map<String, dynamic>,
-      );
+      print('✏️ [MeetingService] POST $url body=$bodyData');
+
+      final response = await http
+          .post(Uri.parse(url), headers: headers, body: bodyData)
+          .timeout(const Duration(seconds: 10));
+
+      print('✏️ [MeetingService] POST response: ${response.statusCode}');
+      print('✏️ [MeetingService] POST body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return MeetingMark.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+        );
+      }
+
+      if (response.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
+      }
+      if (response.statusCode == 403) {
+        throw Exception('You do not have permission to mark meetings.');
+      }
+
+      throw Exception(
+          'Failed to mark meeting day (${response.statusCode}): ${response.body}');
+    } catch (e) {
+      print('❌ [MeetingService] markMeetingDay error: $e');
+      rethrow;
     }
-
-    throw Exception('Failed to mark meeting day: ${response.statusCode}');
   }
 
   /// Unmark a meeting day
@@ -105,14 +141,28 @@ class MeetingService {
     required String groupId,
     required int meetingNumber,
   }) async {
-    final headers = await _authService.getAuthHeaders();
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/meetings/marks/$groupId/$meetingNumber'),
-      headers: headers,
-    );
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final url = '$_baseUrl/meetings/marks/$groupId/$meetingNumber';
+      print('🗑️ [MeetingService] DELETE $url');
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to unmark meeting day: ${response.statusCode}');
+      final response = await http
+          .delete(Uri.parse(url), headers: headers)
+          .timeout(const Duration(seconds: 10));
+
+      print('🗑️ [MeetingService] DELETE response: ${response.statusCode}');
+
+      if (response.statusCode == 200) return;
+
+      if (response.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
+      }
+
+      throw Exception(
+          'Failed to unmark meeting day (${response.statusCode}): ${response.body}');
+    } catch (e) {
+      print('❌ [MeetingService] unmarkMeetingDay error: $e');
+      rethrow;
     }
   }
 }

@@ -87,4 +87,23 @@ export class UsersService {
       select: { id: true, email: true, staffId: true, fullName: true, createdAt: true }
     });
   }
+  async getProfile(userId: string, role: string) {
+    if (role === 'STUDENT') {
+      return this.prisma.student.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, studentId: true, fullName: true, degree: true, createdAt: true }
+      });
+    } else if (role === 'SUPERVISOR') {
+      return this.prisma.supervisor.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, staffId: true, fullName: true, createdAt: true }
+      });
+    } else if (role === 'MODULE_LEADER') {
+      return this.prisma.moduleLeader.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, staffId: true, fullName: true, createdAt: true }
+      });
+    }
+    throw new Error('Invalid role');
+  }
 }

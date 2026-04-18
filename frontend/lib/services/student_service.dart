@@ -285,4 +285,21 @@ class StudentService {
       throw Exception('Failed to attend meeting: ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> fetchUserProfile() async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch user profile: ${response.body}');
+    }
+  }
 }

@@ -44,7 +44,7 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.light,
       scaffoldBackgroundColor: LoginColors.background,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: LoginColors.accent,
         onPrimary: LoginColors.surface,
         secondary: LoginColors.textSecondary,
@@ -65,15 +65,15 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: LoginColors.border),
+          borderSide: BorderSide(color: LoginColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: LoginColors.border),
+          borderSide: BorderSide(color: LoginColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
+          borderSide: BorderSide(
             color: LoginColors.borderActive,
             width: 1.6,
           ),

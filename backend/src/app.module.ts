@@ -7,6 +7,9 @@ import { AuthModule } from './auth/auth.module';
 import { ProjectsModule } from './projects/projects.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { UsersModule } from './users/users.module';
+import { ModulesModule } from './modules/modules.module';
+import { TagsModule } from './tags/tags.module';
+import { ModuleLeaderModule } from './module-leader/module-leader.module';
 
 @Module({
   imports: [
@@ -15,7 +18,10 @@ import { UsersModule } from './users/users.module';
     AuthModule, 
     ProjectsModule,
     MeetingsModule,
-    UsersModule
+    UsersModule,
+    ModulesModule,
+    TagsModule,
+    ModuleLeaderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

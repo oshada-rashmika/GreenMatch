@@ -21,6 +21,29 @@ export class MeetingsService {
     });
   }
 
+  async getMyMeetings(studentId: string) {
+    return this.prisma.meeting.findMany({
+      where: {
+        group: {
+          members: {
+            some: { studentId: studentId }
+          }
+        }
+      },
+      select: {
+        id: true,
+        scheduledDate: true,
+        windowExpiry: true,
+        status: true,
+        supervisorNotes: true,
+        supervisor: {
+          select: { fullName: true }
+        }
+      },
+      orderBy: { scheduledDate: 'desc' }
+    });
+  }
+
   async markAttendance(studentId: string, meetingId: string) {
     const meeting = await this.prisma.meeting.findUnique({
       where: { id: meetingId },

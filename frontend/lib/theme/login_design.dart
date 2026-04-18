@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_theme.dart';
 
 class LoginColors {
-  static const Color background = Color(0xFFF6F6F6);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color panel = Color(0xFFF3F3F3);
-  static const Color border = Color(0xFFDDDDDD);
-  static const Color borderActive = Color(0xFF8E8E8E);
-  static const Color textPrimary = Color(0xFF141414);
-  static const Color textSecondary = Color(0xFF5F6368);
-  static const Color accent = Color(0xFF111111);
-  static const Color accentSoft = Color(0xFF4D4D4D);
-  static const Color inputFill = Color(0xFFF5F5F5);
-  static const Color shadow = Color(0x22000000);
-  static const Color link = Color(0xFF1A1A1A);
-  static const Color error = Color(0xFFC62828);
+  static const Color background = AppTheme.premiumBlack;
+  static Color surface = Colors.white.withValues(alpha: 0.02);
+  static Color panel = Colors.white.withValues(alpha: 0.05);
+  static Color border = Colors.white.withValues(alpha: 0.1);
+  static Color borderActive = AppTheme.forestEmerald.withValues(alpha: 0.5);
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Colors.white60;
+  static const Color accent = AppTheme.forestEmerald;
+  static const Color accentSoft = Color(0xFF34D399);
+  static Color inputFill = Colors.white.withValues(alpha: 0.05);
+  static const Color shadow = Colors.transparent;
+  static const Color link = AppTheme.forestEmerald;
+  static const Color error = Color(0xFFCF6679);
 }
 
 class LoginTypography {
@@ -48,7 +49,7 @@ class LoginTypography {
   static TextStyle button = GoogleFonts.montserrat(
     fontSize: 15,
     fontWeight: FontWeight.w700,
-    color: LoginColors.surface,
+    color: Colors.white,
     letterSpacing: 0.4,
   );
 

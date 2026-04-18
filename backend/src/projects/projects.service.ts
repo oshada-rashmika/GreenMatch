@@ -50,6 +50,42 @@ export class ProjectsService {
     });
   }
 
+  async getMyProposal(studentId: string) {
+    return this.prisma.project.findFirst({
+      where: {
+        group: {
+          members: {
+            some: { studentId: studentId },
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        abstract: true,
+        status: true,
+        createdAt: true,
+        tags: {
+          select: { tag: { select: { name: true } } },
+        },
+        module: { 
+          select: { 
+            moduleName: true,
+            milestoneMatchDate: true,
+            milestoneReviewDate: true,
+            milestoneMidtermDate: true,
+            milestoneFinalDate: true,
+            milestoneVivaDate: true,
+          } 
+        },
+        supervisor: {
+          select: { fullName: true, email: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getPendingAnonymousProjects() {
     return this.prisma.project.findMany({
       where: {
@@ -75,6 +111,79 @@ export class ProjectsService {
       orderBy: {
         createdAt: 'desc',
       },
+    });
+  }
+
+  async getAllProjectsForModuleLeader() {
+    return this.prisma.project.findMany({
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        createdAt: true,
+        module: {
+          select: {
+            moduleCode: true,
+            moduleName: true,
+          },
+        },
+        supervisor: {
+          select: {
+            fullName: true,
+          },
+        },
+        group: {
+          select: {
+            id: true,
+            groupName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async getMySupervisedProjects(supervisorId: string) {
+    return this.prisma.project.findMany({
+      where: {
+        supervisorId,
+        status: 'MATCHED',
+      },
+      select: {
+        id: true,
+        title: true,
+        abstract: true,
+        status: true,
+        createdAt: true,
+        groupId: true,
+        group: {
+          select: {
+            groupName: true,
+            members: {
+              select: {
+                student: {
+                  select: {
+                    fullName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        tags: {
+          select: {
+            tag: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

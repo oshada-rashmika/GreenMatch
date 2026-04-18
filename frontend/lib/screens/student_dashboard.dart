@@ -8,9 +8,9 @@ import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 import 'profile_screen.dart';
 import 'my_proposals_screen.dart';
-import 'login_screen.dart';
 import 'student_chat.dart';
 import 'guidelines_screen.dart';
+import 'mark_meetings.dart'; // Added missing import for Meetings logic if used
 
 enum ProposalStatus { pending, underReview, matched }
 
@@ -375,7 +375,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           ListTile(
             leading: Icon(Icons.menu_book, color: mutedTextColor),
-            title: Text('Formatting Guidelines', style: TextStyle(color: mutedTextColor)),
+            title: Text('Academic Guidelines', style: TextStyle(color: mutedTextColor)),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -747,7 +747,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening University Guidelines...')));
              },
              icon: const Icon(Icons.menu_book, size: 16),
-             label: const Text('View Formatting Guidelines'),
+             label: const Text('View Academic Guidelines'),
              style: TextButton.styleFrom(foregroundColor: mutedTextColor),
           )
         ],

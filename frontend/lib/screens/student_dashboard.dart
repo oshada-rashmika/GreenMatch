@@ -307,7 +307,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   void _withdrawProposal() {
     setState(() {
-      _proposal = null;
+      if (_proposals.isNotEmpty) {
+        _proposals.removeAt(_activeProjectIndex);
+        if (_activeProjectIndex > 0 && _activeProjectIndex >= _proposals.length) {
+          _activeProjectIndex--;
+        }
+      }
     });
   }
 

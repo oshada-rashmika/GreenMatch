@@ -6,6 +6,47 @@ import { UpdateOnboardingDto } from './dto/onboarding.dto';
 export class SupervisorsService {
   constructor(private prisma: PrismaService) {}
 
+  async getSupervisorProfile(id: string) {
+    const supervisor = await this.prisma.supervisor.findUnique({
+      where: { id },
+      include: {
+        supervisedProjects: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
+        expertiseTags: {
+          include: {
+            tag: true,
+          },
+        },
+        meetings: {
+          select: {
+            id: true,
+            status: true,
+            scheduledDate: true,
+          },
+        },
+      },
+    });
+
+    if (!supervisor) {
+      throw new NotFoundException(`Supervisor with ID ${id} not found`);
+    }
+
+    // Calculate active projects count
+    const activeProjectsCount = supervisor.supervisedProjects.filter(
+      (p) => p.status === 'MATCHED',
+    ).length;
+
+    return {
+      ...supervisor,
+      activeProjectsCount,
+    };
+  }
+
   async updateOnboarding(id: string, updateOnboardingDto: UpdateOnboardingDto) {
     const supervisor = await this.prisma.supervisor.findUnique({
       where: { id },

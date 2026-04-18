@@ -283,92 +283,281 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 
   Widget _buildOverviewContent() {
-    return FutureBuilder<_OverviewViewModel>(
-      future: _overviewFuture,
-      builder: (context, snapshot) {
-        final viewModel = snapshot.data;
-
-        if (snapshot.connectionState == ConnectionState.waiting ||
-            viewModel == null) {
-          return _buildOverviewSkeleton();
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 900
-                    ? 3
-                    : constraints.maxWidth >= 620
-                    ? 2
-                    : 1;
-                return Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder<_OverviewViewModel>(
+            future: _overviewFuture,
+            builder: (context, snapshot) {
+              final viewModel = snapshot.data;
+              if (snapshot.connectionState == ConnectionState.waiting || viewModel == null) {
+                return _buildOverviewSkeleton();
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 900 ? 3 : constraints.maxWidth >= 620 ? 2 : 1;
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          _MetricCard(
+                            title: 'TOTAL PROJECTS',
+                            value: viewModel.statistics.totalProjects.toString(),
+                            detail: 'All active and pending records',
+                            width: _metricWidth(constraints.maxWidth, columns),
+                            accentColor: const Color(0xFF6366F1), // Indigo
+                            iconData: Icons.folder_open_rounded,
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                                  future: _projectsFuture,
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return SizedBox(
+                                        height: MediaQuery.of(context).size.height * 0.85,
+                                        child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                      );
+                                    }
+                                    return _SmartProjectsPopup(
+                                      projects: snapshot.data!,
+                                      title: 'Total Projects',
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                          _MetricCard(
+                            title: 'PENDING BLIND MATCHES',
+                            value: viewModel.statistics.pendingBlindMatches.toString(),
+                            detail: 'Waiting for blind review assignment',
+                            width: _metricWidth(constraints.maxWidth, columns),
+                            accentColor: AppTheme.forestEmerald,
+                            iconData: Icons.shield_outlined,
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                                  future: _projectsFuture,
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return SizedBox(
+                                        height: MediaQuery.of(context).size.height * 0.85,
+                                        child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                      );
+                                    }
+                                    final pendingProjects = snapshot.data!.where((p) => p.status.toUpperCase() == 'PENDING').toList();
+                                    return _SmartProjectsPopup(
+                                      projects: pendingProjects,
+                                      title: 'Pending Matches',
+                                      onRunAutoMatch: _executeGodModeMatcher,
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                          _MetricCard(
+                            title: 'GHOSTED MEETINGS',
+                            value: viewModel.statistics.ghostedMissedMeetings.toString(),
+                            detail: 'Requires immediate follow-up',
+                            accentColor: const Color(0xFFEF4444), // Red
+                            width: _metricWidth(constraints.maxWidth, columns),
+                            iconData: Icons.warning_amber_rounded,
+                            onTap: () {},
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionPanel(
+                    title: 'Action Required',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Project groups directly escalating MISSED meeting statuses.',
+                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                        ),
+                        const SizedBox(height: 16),
+                        _ActionRequiredTable(items: viewModel.actionRequiredGroups),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          FutureBuilder<ModuleLeaderAcademicModulesPayload>(
+             future: _academicModulesFuture,
+             builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
+                   return _buildAcademicModulesSkeleton();
+                }
+                final payload = snapshot.data!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _MetricCard(
-                      title: 'TOTAL PROJECTS',
-                      value: viewModel.statistics.totalProjects.toString(),
-                      detail: 'All active and pending records',
-                      width: _metricWidth(constraints.maxWidth, columns),
-                      accentColor: const Color(0xFF6366F1), // Indigo
-                      iconData: Icons.folder_open_rounded,
-                      onTap: () {
-                        setState(() {
-                          _selectedSection = _ModuleLeaderSection.projectAllocations;
-                          _projectFilter = _ProjectAllocationFilter.all;
-                        });
-                      },
+                    _SectionPanel(
+                       title: 'ACADEMIC MODULES',
+                       child: SizedBox(
+                          height: 180,
+                          child: ListView.separated(
+                             scrollDirection: Axis.horizontal,
+                             itemCount: payload.modules.length,
+                             separatorBuilder: (_, __) => const SizedBox(width: 16),
+                             itemBuilder: (context, index) {
+                               final module = payload.modules[index];
+                               return GestureDetector(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                                        future: _projectsFuture,
+                                        builder: (context, projSnap) {
+                                          if (!projSnap.hasData) {
+                                            return SizedBox(
+                                              height: MediaQuery.of(context).size.height * 0.85,
+                                              child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                            );
+                                          }
+                                          final filtered = projSnap.data!.where((p) => p.moduleCode == module.moduleCode).toList();
+                                          return _SmartProjectsPopup(
+                                            projects: filtered,
+                                            title: module.moduleName,
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width * 0.75,
+                                    constraints: const BoxConstraints(maxWidth: 320),
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          AppTheme.forestEmerald.withValues(alpha: 0.12),
+                                          const Color(0xFF1E293B).withValues(alpha: 0.4),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(24),
+                                      border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.2)),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.forestEmerald.withValues(alpha: 0.05),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(module.moduleCode, style: const TextStyle(color: AppTheme.forestEmerald, fontWeight: FontWeight.bold, fontSize: 11)),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(module.moduleName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                        const Spacer(),
+                                        Text('${module.batch} • ${module.academicYear}', style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                                      ],
+                                    ),
+                                  ),
+                               );
+                             },
+                          ),
+                       ),
                     ),
-                    _MetricCard(
-                      title: 'PENDING BLIND MATCHES',
-                      value: viewModel.statistics.pendingBlindMatches.toString(),
-                      detail: 'Waiting for blind review assignment',
-                      width: _metricWidth(constraints.maxWidth, columns),
-                      accentColor: AppTheme.forestEmerald,
-                      iconData: Icons.shield_outlined,
-                      onTap: () {
-                        setState(() {
-                          _selectedSection = _ModuleLeaderSection.projectAllocations;
-                          _projectFilter = _ProjectAllocationFilter.pending;
-                        });
-                      },
-                    ),
-                    _MetricCard(
-                      title: 'GHOSTED MEETINGS',
-                      value: viewModel.statistics.ghostedMissedMeetings.toString(),
-                      detail: 'Requires immediate follow-up',
-                      accentColor: const Color(0xFFEF4444), // Red
-                      width: _metricWidth(constraints.maxWidth, columns),
-                      iconData: Icons.warning_amber_rounded,
-                      onTap: () {
-                        // Ghosted meetings are in the Action Required table right below this card.
-                        // Can simply trigger a small UI snap or do nothing since it's already in view on the Overview tab.
-                      },
+                    const SizedBox(height: 32),
+                    _SectionPanel(
+                       title: 'SUPERVISOR POOL',
+                       child: SizedBox(
+                          height: 110,
+                          child: ListView.separated(
+                             scrollDirection: Axis.horizontal,
+                             itemCount: payload.supervisors.length,
+                             separatorBuilder: (_, __) => const SizedBox(width: 16),
+                             itemBuilder: (context, index) {
+                               final supervisor = payload.supervisors[index];
+                               return Container(
+                                 width: MediaQuery.of(context).size.width * 0.7,
+                                 constraints: const BoxConstraints(maxWidth: 250),
+                                 padding: const EdgeInsets.all(12),
+                                 decoration: BoxDecoration(
+                                   color: Colors.white.withValues(alpha: 0.02),
+                                   borderRadius: BorderRadius.circular(30),
+                                   border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                 ),
+                                 child: Row(
+                                   children: [
+                                     CircleAvatar(
+                                       radius: 20,
+                                       backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                                       child: Text(
+                                         supervisor.fullName.substring(0, 1).toUpperCase(),
+                                         style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 16),
+                                     Expanded(
+                                       child: Column(
+                                         crossAxisAlignment: CrossAxisAlignment.start,
+                                         mainAxisAlignment: MainAxisAlignment.center,
+                                         children: [
+                                           Text(supervisor.fullName, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                           const SizedBox(height: 6),
+                                           Text(supervisor.email, style: const TextStyle(color: Colors.white54, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                         ],
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               );
+                             },
+                          ),
+                       ),
                     ),
                   ],
                 );
-              },
-            ),
-            const SizedBox(height: 24),
-            _SectionPanel(
-              title: 'Action Required',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Project groups directly escalating MISSED meeting statuses.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  _ActionRequiredTable(items: viewModel.actionRequiredGroups),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+             }
+          ),
+
+          const SizedBox(height: 32),
+          
+          FutureBuilder<List<ModuleLeaderTag>>(
+            future: _tagsFuture,
+            builder: (context, snapshot) {
+               if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox();
+               return _SectionPanel(
+                 title: 'AVAILABLE RESEARCH TOPICS',
+                 child: _TagsMasonryGrid(tags: snapshot.data!),
+               );
+            }
+          ),
+          
+          const SizedBox(height: 48), // Padding bottom
+        ]
+      )
     );
   }
 
@@ -487,7 +676,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
             ),
             const SizedBox(height: 24),
             _SectionPanel(
-              title: 'Global Taxonomy',
+              title: 'AVAILABLE RESEARCH TOPICS',
               child: _TagsMasonryGrid(tags: tags),
             ),
           ],
@@ -515,6 +704,41 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     });
   }
 
+  Future<void> _refreshOverviewData() async {
+    setState(() {
+      _loadOverviewData();
+    });
+  }
+
+  Future<void> _executeGodModeMatcher() async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) return;
+
+    try {
+      final matchesMade = await _moduleLeaderService.runAutoMatchAlgorithm(jwtToken: token);
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✨ Algorithm successfully paired $matchesMade orphaned projects!'),
+          backgroundColor: AppTheme.forestEmerald,
+        ),
+      );
+
+      // Force refresh overarching state organically
+      _refreshOverviewData();
+      _refreshProjects();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to execute auto-matcher pipeline.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
   Future<void> _showCreateTagSheet() async {
     final controller = TextEditingController();
 
@@ -529,7 +753,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: LoginColors.surface,
+              color: AppTheme.premiumBlack,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
@@ -556,9 +780,23 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  decoration: const InputDecoration(
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
                     labelText: 'Tag name',
                     hintText: 'Machine Learning',
+                    labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                    hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.03),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -571,6 +809,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.forestEmerald,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
                       onPressed: _isCreatingTag
                           ? null
                           : () async {
@@ -587,7 +831,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                               Navigator.of(sheetContext).pop();
                               await _createTag(name);
                             },
-                      child: const Text('Create'),
+                      child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                   ],
                 ),
@@ -926,7 +1170,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
             return Container(
               height: MediaQuery.of(sheetContext).size.height * 0.72,
               decoration: BoxDecoration(
-                color: LoginColors.surface,
+                color: AppTheme.premiumBlack,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
@@ -1056,6 +1300,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.forestEmerald,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
                           onPressed: _isAssigningSupervisors
                               ? null
                               : () async {
@@ -1065,7 +1315,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                     selectedSupervisorIds.toList(),
                                   );
                                 },
-                          child: const Text('Save Assignment'),
+                          child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ],
                     ),
@@ -1280,12 +1530,13 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 }
 
-class _MetricCard extends StatelessWidget {
+class _MetricCard extends StatefulWidget {
   const _MetricCard({
     required this.title,
     required this.value,
     required this.detail,
     required this.width,
+    super.key,
     this.accentColor,
     this.iconData = Icons.analytics,
     this.onTap,
@@ -1300,80 +1551,190 @@ class _MetricCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_MetricCard> createState() => _MetricCardState();
+}
+
+class _MetricCardState extends State<_MetricCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    _glowAnimation = Tween<double>(begin: 0.15, end: 0.35).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final effectiveColor = accentColor ?? const Color(0xFF3B82F6);
-    return Container(
-      width: width < 220 ? double.infinity : width,
-      child: GestureDetector(
-        onTap: onTap,
-        child: MouseRegion(
-          cursor: onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-          child: GlassContainer(
-            opacity: 0.03,
-            blur: 20,
-            borderRadius: 24,
-            borderColor: effectiveColor.withValues(alpha: 0.15),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
+    final effectiveColor = widget.accentColor ?? const Color(0xFF3B82F6);
+    return SizedBox(
+      width: widget.width < 220 ? double.infinity : widget.width,
+      child: MouseRegion(
+        cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        onEnter: (_) {
+          if (widget.onTap != null) {
+            setState(() => _isHovered = true);
+            _controller.forward();
+          }
+        },
+        onExit: (_) {
+          if (widget.onTap != null) {
+            setState(() => _isHovered = false);
+            _controller.reverse();
+          }
+        },
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onTapDown: (_) {
+            if (widget.onTap != null) {
+              setState(() => _isHovered = true);
+              _controller.forward();
+            }
+          },
+          onTapUp: (_) {
+            if (widget.onTap != null) {
+              setState(() => _isHovered = false);
+              _controller.reverse();
+            }
+          },
+          onTapCancel: () {
+            if (widget.onTap != null) {
+              setState(() => _isHovered = false);
+              _controller.reverse();
+            }
+          },
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        effectiveColor.withValues(alpha: _isHovered ? 0.2 : 0.12),
+                        const Color(0xFF0F172A),
+                      ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: effectiveColor.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: effectiveColor.withValues(alpha: _glowAnimation.value + 0.1)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: effectiveColor.withValues(alpha: _isHovered ? 0.15 : 0.05),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
                       ),
-                      child: Icon(iconData, color: effectiveColor, size: 16),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 42,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1.0,
-                shadows: [
-                  Shadow(
-                    color: effectiveColor.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: effectiveColor.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: effectiveColor.withValues(alpha: 0.1)),
-              ),
-              child: Text(
-                detail,
-                style: TextStyle(color: effectiveColor, fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -15,
+                        bottom: -15,
+                        child: Transform.rotate(
+                          angle: -0.2,
+                          child: Icon(
+                            widget.iconData,
+                            size: 110,
+                            color: effectiveColor.withValues(alpha: 0.08),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: effectiveColor.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(widget.iconData, color: effectiveColor, size: 18),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    widget.title.toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  widget.value,
+                                  style: TextStyle(
+                                    fontFamily: 'Montserrat',
+                                    fontSize: MediaQuery.of(context).size.width < 600 ? 40 : 48,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    height: 1.0,
+                                    shadows: [
+                                      Shadow(
+                                        color: effectiveColor.withValues(alpha: _glowAnimation.value * 2),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: LoginColors.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                              ),
+                              child: Text(
+                                widget.detail,
+                                style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ),
-      ),
-      ),
       ),
     );
   }
@@ -1459,83 +1820,109 @@ class _ProjectAllocationList extends StatelessWidget {
             borderRadius: 20,
             opacity: 0.02,
             borderColor: Colors.white.withValues(alpha: 0.05),
-            child: Row(
+            child: Column(
               children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isPending ? Icons.pending_actions_rounded : Icons.check_circle_rounded, 
+                        color: statusColor, 
+                        size: 20
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            project.title,
+                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${project.moduleCode} - ${project.moduleName}',
+                            style: const TextStyle(color: Colors.white54, fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                      ),
+                      child: Text(
+                        project.status,
+                        style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.02),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                   ),
-                  child: Icon(
-                    isPending ? Icons.pending_actions_rounded : Icons.check_circle_rounded, 
-                    color: statusColor, 
-                    size: 20
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        project.title,
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Supervisor', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(
+                              project.supervisorName ?? 'Unassigned',
+                              style: TextStyle(
+                                color: project.supervisorName == null ? const Color(0xFFEF4444) : Colors.white,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${project.moduleCode} - ${project.moduleName}',
-                        style: const TextStyle(color: Colors.white54, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: Colors.white.withValues(alpha: 0.1),
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
                       ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Supervisor', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(
-                        project.supervisorName ?? 'Unassigned',
-                        style: TextStyle(
-                          color: project.supervisorName == null ? const Color(0xFFEF4444) : Colors.white,
-                          fontSize: 13,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Group', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(
+                              project.groupName ?? 'No Group',
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Group', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(
-                        project.groupName ?? 'No Group',
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.2)),
-                  ),
-                  child: Text(
-                    project.status,
-                    style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                 ),
               ],
@@ -1589,49 +1976,49 @@ class _AcademicModulesGrid extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.school_rounded, color: AppTheme.forestEmerald, size: 18),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                module.moduleCode,
-                                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, fontFamily: 'Montserrat'),
-                              ),
-                            ],
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            module.moduleName,
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                          child: const Icon(Icons.school_rounded, color: AppTheme.forestEmerald, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            module.moduleCode,
+                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, fontFamily: 'Montserrat'),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.15),
-                        foregroundColor: AppTheme.forestEmerald,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        side: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+                    const SizedBox(height: 8),
+                    Text(
+                      module.moduleName,
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                          foregroundColor: AppTheme.forestEmerald,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          side: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+                        ),
+                        onPressed: () => onAssignSupervisors(module, availableSupervisors),
+                        icon: const Icon(Icons.group_add_rounded, size: 16),
+                        label: const Text('Assign Supervisors'),
                       ),
-                      onPressed: () => onAssignSupervisors(module, availableSupervisors),
-                      icon: const Icon(Icons.group_add_rounded, size: 16),
-                      label: const Text('Faculty Allocation'),
                     ),
                   ],
                 ),
@@ -2119,7 +2506,7 @@ class _SectionPanel extends StatelessWidget {
     return GlassContainer(
       opacity: 0.02,
       blur: 20,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 16 : 24),
       borderRadius: 24,
       borderColor: Colors.white.withValues(alpha: 0.05),
       child: Column(
@@ -2236,6 +2623,34 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
     );
   }
 
+  Widget _buildTextField(TextEditingController controller, String label, String hint, {bool isAllCaps = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: TextField(
+        controller: controller,
+        textCapitalization: isAllCaps ? TextCapitalization.characters : TextCapitalization.none,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+          hintStyle: const TextStyle(color: Colors.white24, fontSize: 13),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+          ),
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.03),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -2257,15 +2672,12 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
               const SizedBox(height: 12),
               Text('Define an academic module and its project milestones.', style: LoginTypography.body.copyWith(fontSize: 13)),
               const SizedBox(height: 20),
-              TextField(controller: codeController, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Module Code', hintText: 'PUSL2020')),
-              const SizedBox(height: 12),
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Module Name', hintText: 'Software Development Tools')),
-              const SizedBox(height: 12),
-              TextField(controller: yearController, decoration: const InputDecoration(labelText: 'Academic Year', hintText: '2026/2027')),
-              const SizedBox(height: 12),
-              TextField(controller: batchController, decoration: const InputDecoration(labelText: 'Batch', hintText: 'Batch 24')),
+              _buildTextField(codeController, 'Module Code', 'PUSL2020', isAllCaps: true),
+              _buildTextField(nameController, 'Module Name', 'Software Development Tools'),
+              _buildTextField(yearController, 'Academic Year', '2026/2027'),
+              _buildTextField(batchController, 'Batch', 'Batch 24'),
               
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               Text('Project Milestones (Optional)', style: LoginTypography.label.copyWith(fontSize: 14)),
               const SizedBox(height: 8),
               _buildDatePickerField('Supervisor Match Deadline', matchDate, (d) => matchDate = d),
@@ -2281,6 +2693,12 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
                   TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
                   const SizedBox(width: 12),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.forestEmerald,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
                     onPressed: () {
                       final moduleCode = codeController.text.trim();
                       final moduleName = nameController.text.trim();
@@ -2292,13 +2710,332 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
                       }
                       widget.onCreate(moduleCode, moduleName, academicYear, batch, matchDate, reviewDate, midtermDate, finalDate, vivaDate);
                     },
-                    child: const Text('Create Module'),
+                    child: const Text('Create Module', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ],
               ),
               const SizedBox(height: 40),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmartProjectsPopup extends StatefulWidget {
+  const _SmartProjectsPopup({
+    required this.projects,
+    required this.title,
+    this.onRunAutoMatch,
+    super.key,
+  });
+
+  final List<ModuleLeaderProject> projects;
+  final String title;
+  final Future<void> Function()? onRunAutoMatch;
+
+  @override
+  State<_SmartProjectsPopup> createState() => _SmartProjectsPopupState();
+}
+
+class _SmartProjectsPopupState extends State<_SmartProjectsPopup> {
+  String _selectedModuleCode = 'All';
+  bool _isRunningAlgo = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final Set<String> moduleCodes = {'All'};
+    for (var p in widget.projects) {
+      if (p.moduleCode.isNotEmpty) {
+        moduleCodes.add(p.moduleCode);
+      }
+    }
+
+    final filteredProjects = widget.projects.where((p) {
+      if (_selectedModuleCode == 'All') return true;
+      return p.moduleCode == _selectedModuleCode;
+    }).toList();
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: AppTheme.premiumBlack,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: LoginColors.border),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const SizedBox(height: 8),
+                      Text('${filteredProjects.length} records found', style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            
+            if (moduleCodes.length > 1) ...[
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: moduleCodes.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final code = moduleCodes.elementAt(index);
+                    final isSelected = _selectedModuleCode == code;
+                    return InkWell(
+                      onTap: () => setState(() => _selectedModuleCode = code),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            code,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.white70,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white12, height: 1),
+            ],
+            
+            Expanded(
+              child: filteredProjects.isEmpty
+                  ? const Center(child: Text('No projects available in this category.', style: TextStyle(color: Colors.white54)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(24),
+                      itemCount: filteredProjects.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final project = filteredProjects[index];
+                        final isPending = project.status.toUpperCase() == 'PENDING';
+                        final statusColor = isPending ? const Color(0xFFEAB308) : AppTheme.forestEmerald;
+                        
+                        return GlassContainer(
+                          padding: const EdgeInsets.all(20),
+                          borderRadius: 20,
+                          opacity: 0.02,
+                          borderColor: Colors.white.withValues(alpha: 0.05),
+                          child: Column(
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      isPending ? Icons.pending_actions_rounded : Icons.check_circle_rounded, 
+                                      color: statusColor, 
+                                      size: 20
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          project.title,
+                                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          '${project.moduleCode} - ${project.moduleName}',
+                                          style: const TextStyle(color: Colors.white54, fontSize: 13),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                                    ),
+                                    child: Text(
+                                      project.status,
+                                      style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.02),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Supervisor', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            project.supervisorName ?? 'Unassigned',
+                                            style: TextStyle(
+                                              color: project.supervisorName == null ? const Color(0xFFEF4444) : Colors.white,
+                                              fontSize: 13,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 30,
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Group', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            project.groupName ?? 'No Group',
+                                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            if (widget.onRunAutoMatch != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.premiumBlack,
+                  border: const Border(top: BorderSide(color: Colors.white12)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                      blurRadius: 40,
+                      offset: const Offset(0, -10),
+                    )
+                  ],
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ).copyWith(
+                    elevation: WidgetStateProperty.all(0),
+                  ),
+                  onPressed: _isRunningAlgo 
+                    ? null 
+                    : () async {
+                        setState(() => _isRunningAlgo = true);
+                        await widget.onRunAutoMatch!();
+                        if (mounted) {
+                          setState(() => _isRunningAlgo = false);
+                          Navigator.of(context).pop();
+                        }
+                      },
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.forestEmerald.withValues(alpha: 0.8),
+                          const Color(0xFF6366F1).withValues(alpha: 0.8), // Deep Indigo
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Container(
+                      alignment: Alignment.center,
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: _isRunningAlgo
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+                              SizedBox(width: 12),
+                              Text(
+                                'RUN AUTO-MATCH ALGORITHM',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

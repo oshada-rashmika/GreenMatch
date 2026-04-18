@@ -367,7 +367,7 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
               Text(
                 '${value.round()}/100',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Color.lerp(Colors.amber, AppTheme.forestEmerald, value / 100),
+                  color: AppTheme.forestEmerald,
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
@@ -377,13 +377,13 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
           const SizedBox(height: 12),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: Color.lerp(Colors.amber, AppTheme.forestEmerald, value / 100),
+              activeTrackColor: AppTheme.forestEmerald,
               inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
               trackHeight: 6,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 10),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12, elevation: 12),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
               thumbColor: Colors.white,
-              overlayColor: AppTheme.forestEmerald.withValues(alpha: 0.1),
+              overlayColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
             ),
             child: Slider(
               value: value,

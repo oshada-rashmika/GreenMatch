@@ -357,7 +357,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         blur: 15,
         borderColor: Colors.transparent,
         child: AppBar(
-          centerTitle: true,
+          centerTitle: false,
           title: Text(
             "Blind Review",
             style: GoogleFonts.montserrat(
@@ -481,10 +481,10 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                 child: Icon(
-                  _isFocusMode ? Icons.view_carousel_rounded : Icons.view_agenda_rounded,
+                  _isFocusMode ? Icons.close_rounded : Icons.view_agenda_rounded,
                   key: ValueKey(_isFocusMode),
                   size: 22,
-                  color: _isFocusMode ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.9),
+                  color: _isFocusMode ? const Color(0xFFFF4545) : Colors.white.withValues(alpha: 0.9),
                 ),
               ),
             ),
@@ -708,9 +708,11 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                           ),
                         ],
                       ),
-                      CardSwiper(
-                        controller: _swiperController,
-                        cardsCount: projects.length,
+                      if (projects.isNotEmpty)
+                        CardSwiper(
+                          controller: _swiperController,
+                          cardsCount: projects.length,
+                          numberOfCardsDisplayed: projects.length == 1 ? 1 : 2,
                         cardBuilder: (context, index, horizontalOffsetPercentage, verticalOffsetPercentage) {
                           final project = projects[index];
                           return FocusProjectCard(
@@ -742,7 +744,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                   ),
                 ),
               ),
-              _buildFocusActionBar(),
+              if (projects.isNotEmpty) _buildFocusActionBar(),
             ],
           ),
         ),

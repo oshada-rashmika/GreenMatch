@@ -33,6 +33,24 @@ class TagData {
   }
 }
 
+class MemberData {
+  final String studentId;
+  final String fullName;
+  final String degree;
+  final bool isLeader;
+
+  MemberData({required this.studentId, required this.fullName, required this.degree, required this.isLeader});
+
+  factory MemberData.fromJson(Map<String, dynamic> json) {
+    return MemberData(
+      studentId: json['student']['studentId'] ?? '',
+      fullName: json['student']['fullName'] ?? '',
+      degree: json['student']['degree'] ?? '',
+      isLeader: json['isLeader'] ?? false,
+    );
+  }
+}
+
 class MyProposalData {
   final String id;
   final String title;
@@ -40,6 +58,7 @@ class MyProposalData {
   final String status;
   final String moduleName;
   final List<String> tags;
+  final List<MemberData> members;
   final String? supervisorName;
   final String? supervisorEmail;
   final DateTime? milestoneMatchDate;
@@ -56,6 +75,7 @@ class MyProposalData {
     required this.status,
     required this.moduleName,
     required this.tags,
+    required this.members,
     this.supervisorName,
     this.supervisorEmail,
     this.milestoneMatchDate,
@@ -68,6 +88,7 @@ class MyProposalData {
 
   factory MyProposalData.fromJson(Map<String, dynamic> json) {
     var rawTags = json['tags'] as List? ?? [];
+    var rawMembers = json['group']?['members'] as List? ?? [];
     final moduleMap = json['module'] ?? <String, dynamic>{};
     return MyProposalData(
       id: json['id'],
@@ -81,6 +102,7 @@ class MyProposalData {
       milestoneFinalDate: moduleMap['milestoneFinalDate'] != null ? DateTime.tryParse(moduleMap['milestoneFinalDate'])?.toLocal() : null,
       milestoneVivaDate: moduleMap['milestoneVivaDate'] != null ? DateTime.tryParse(moduleMap['milestoneVivaDate'])?.toLocal() : null,
       tags: rawTags.map((t) => t['tag']['name'] as String).toList(),
+      members: rawMembers.map((m) => MemberData.fromJson(m)).toList(),
       supervisorName: json['supervisor']?['fullName'],
       supervisorEmail: json['supervisor']?['email'],
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'])?.toLocal() : null,

@@ -14,6 +14,8 @@ import '../widgets/glass_container.dart';
 import 'login_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
+import '../services/shortlist_provider.dart';
+import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -26,10 +28,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   late final ProjectService projectService;
   List<AnonymousProject> projects = [];
   List<SupervisedProject> supervisedProjects = [];
-  int _currentTab = 0; // 0 = Available Projects, 1 = My Supervised Projects
+  int _currentTab = 0;
   bool isLoading = true;
   String? errorMessage;
   final Set<String> matchedProjectIds = {};
+  bool _isFocusMode = false;
+  final CardSwiperController _swiperController = CardSwiperController();
+
+  final List<String> activeSpecifications = [
+    'Artificial Intelligence',
+    'Python',
+    'TensorFlow',
+  ];
 
   String _selectedFilter = "All";
   List<String> _filters = ["All"];
@@ -140,7 +150,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       setState(() {
         projects = fetchedProjects;
         supervisedProjects = mySupervised;
-        _filters = ["All", ...uniqueTags];
+        _filters = ["All", "My Shortlist", ...uniqueTags];
         isLoading = false;
       });
     } on ProjectServiceException catch (e) {
@@ -159,18 +169,13 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     }
   }
 
-  List<AnonymousProject> get _filteredProjects {
-    if (_selectedFilter == "All") {
-      return projects;
-    }
-    return projects.where((p) => p.tags.contains(_selectedFilter)).toList();
-  }
 
   @override
   void dispose() {
     _warningTimer?.cancel();
     _logoutTimer?.cancel();
     _countdownTick?.cancel();
+    _swiperController.dispose();
     super.dispose();
   }
 
@@ -363,6 +368,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           ),
           actions: [
             if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
+            const SizedBox(width: 8),
+            _buildFocusToggle(),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
             GestureDetector(
@@ -440,6 +447,49 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           ],
         ),
         child: Icon(icon, size: 22, color: Colors.white.withValues(alpha: 0.9)),
+      ),
+    );
+  }
+
+  Widget _buildFocusToggle() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _isFocusMode = !_isFocusMode);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _isFocusMode 
+                    ? AppTheme.forestEmerald.withValues(alpha: 0.15) 
+                    : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _isFocusMode 
+                      ? AppTheme.forestEmerald.withValues(alpha: 0.3) 
+                      : Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                child: Icon(
+                  _isFocusMode ? Icons.view_carousel_rounded : Icons.view_agenda_rounded,
+                  key: ValueKey(_isFocusMode),
+                  size: 22,
+                  color: _isFocusMode ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.9),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -543,11 +593,201 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildProjectContent() {
-    final filtered = _filteredProjects;
+    final shortlistProvider = context.watch<ShortlistProvider>();
+    List<AnonymousProject> filtered;
+    
+    if (_selectedFilter == "All") {
+      filtered = projects;
+    } else if (_selectedFilter == "My Shortlist") {
+      filtered = projects.where((p) => shortlistProvider.isShortlisted(p.id)).toList();
+    } else {
+      filtered = projects.where((p) => p.tags.contains(_selectedFilter)).toList();
+    }
+
     if (filtered.isEmpty) {
+      if (_selectedFilter == "My Shortlist") {
+        return _buildEmptyShortlistState();
+      }
       return _buildEmptyState();
     }
-    return _buildBentoGrid(filtered);
+    
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      switchInCurve: Curves.easeOutQuart,
+      switchOutCurve: Curves.easeInQuart,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.05),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: _isFocusMode
+          ? _buildFocusModeContent(filtered)
+          : _buildBentoGrid(filtered),
+    );
+  }
+
+  Widget _buildFocusModeContent(List<AnonymousProject> projects) {
+    if (projects.isEmpty) {
+      return Container(
+        key: const ValueKey('focus_mode_empty'),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.view_carousel_rounded, size: 64, color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+              const SizedBox(height: 16),
+              Text(
+                "No projects to review.",
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      key: const ValueKey('focus_mode_swiper'),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Expanded(
+                child: Focus(
+                  autofocus: true,
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent) {
+                      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                        _swiperController.swipe(CardSwiperDirection.left);
+                        return KeyEventResult.handled;
+                      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                        _swiperController.swipe(CardSwiperDirection.right);
+                        return KeyEventResult.handled;
+                      }
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                            ),
+                            child: const Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.forestEmerald),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            "You've reviewed\nall projects!",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.montserrat(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      CardSwiper(
+                        controller: _swiperController,
+                        cardsCount: projects.length,
+                        cardBuilder: (context, index, horizontalOffsetPercentage, verticalOffsetPercentage) {
+                          final project = projects[index];
+                          return FocusProjectCard(
+                            project: project,
+                            activeSpecifications: activeSpecifications,
+                            onMatch: () => _onMatchConfirmed(project.id),
+                            percentX: horizontalOffsetPercentage,
+                          );
+                        },
+                        allowedSwipeDirection: const AllowedSwipeDirection.symmetric(horizontal: true),
+                        onSwipe: (previousIndex, currentIndex, direction) {
+                          final project = projects[previousIndex];
+                          if (direction == CardSwiperDirection.right) {
+                            final shortlistProvider = context.read<ShortlistProvider>();
+                            if (!shortlistProvider.isShortlisted(project.id)) {
+                              shortlistProvider.toggleShortlist(project.id);
+                              HapticFeedback.lightImpact();
+                            }
+                          } else if (direction == CardSwiperDirection.left) {
+                              HapticFeedback.selectionClick();
+                          }
+                          return true;
+                        },
+                        onEnd: () {
+                          HapticFeedback.mediumImpact();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildFocusActionBar(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFocusActionBar() {
+    return Container(
+      margin: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _swiperController.swipe(CardSwiperDirection.left);
+            },
+            icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 28),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              padding: const EdgeInsets.all(12),
+            ),
+          ),
+          const SizedBox(width: 48),
+          IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _swiperController.swipe(CardSwiperDirection.right);
+            },
+            icon: const Icon(Icons.bookmark, color: Color(0xFFFBBF24), size: 28),
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFFFBBF24).withValues(alpha: 0.15),
+              padding: const EdgeInsets.all(12),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildErrorState(String message) {
@@ -635,6 +875,50 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 ),
               ),
             ).animate().fadeIn(delay: 400.ms).scale(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyShortlistState() {
+    return SizedBox.expand(
+      child: Container(
+        key: const ValueKey('empty_shortlist'),
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+                  Icons.bookmark_outline_rounded,
+                  size: 100,
+                  color: const Color(0xFFFBBF24).withValues(alpha: 0.15),
+                )
+                .animate()
+                .fadeIn(duration: 1.seconds)
+                .scale(begin: const Offset(0.8, 0.8)),
+            const SizedBox(height: 24),
+            Text(
+              "Your Shortlist is Empty",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
+            const SizedBox(height: 12),
+            Text(
+              "BOOKMARK PROJECTS TO REVIEW THEM LATER",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2.0,
+                color: AppTheme.forestEmerald,
+              ),
+            ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
           ],
         ),
       ),
@@ -745,6 +1029,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     return _ProjectCardHolder(
       project: project,
       index: index,
+      activeSpecifications: activeSpecifications,
       isMatched: matchedProjectIds.contains(project.id),
       onMatch: () => _onMatchConfirmed(project.id),
     );
@@ -1051,6 +1336,60 @@ class _SupervisedProjectCardHolderState extends State<_SupervisedProjectCardHold
           ),
         ),
       ),
+        ),
+        if (rightSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: rightSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
+                      const SizedBox(height: 16),
+                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (leftSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.05),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.2),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: leftSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
+                      const SizedBox(height: 16),
+                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1059,12 +1398,14 @@ class _ProjectCardHolder extends StatefulWidget {
   final AnonymousProject project;
   final int index;
   final bool isMatched;
+  final List<String> activeSpecifications;
   final Future<void> Function() onMatch;
 
   const _ProjectCardHolder({
     required this.project,
     required this.index,
     required this.isMatched,
+    required this.activeSpecifications,
     required this.onMatch,
   });
 
@@ -1075,6 +1416,108 @@ class _ProjectCardHolder extends StatefulWidget {
 class _ProjectCardHolderState extends State<_ProjectCardHolder> {
   bool _isHovered = false;
   bool _isMatching = false;
+
+  double get _fraction {
+    if (widget.project.tags.isEmpty) return 0.0;
+    int matches = widget.project.tags
+        .where((tag) => widget.activeSpecifications
+            .map((s) => s.toLowerCase())
+            .contains(tag.toLowerCase()))
+        .length;
+    return matches / widget.project.tags.length;
+  }
+
+  int get _score => (_fraction * 100).round();
+
+  Color get _scoreColor {
+    if (_score >= 80) return AppTheme.forestEmerald;      // Premium Green
+    if (_score >= 50) return const Color(0xFFFBBF24);       // Amber
+    return Colors.white.withValues(alpha: 0.15);            // Muted, frosted grey
+  }
+
+  Widget _buildMatchScoreIndicator() {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _scoreColor.withValues(alpha: 0.1),
+        boxShadow: [
+          BoxShadow(
+            color: _scoreColor.withValues(alpha: _score >= 50 ? 0.2 : 0.0),
+            blurRadius: 10,
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 46,
+            height: 46,
+            child: CircularProgressIndicator(
+              value: _fraction,
+              strokeWidth: 3.5,
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              valueColor: AlwaysStoppedAnimation<Color>(_scoreColor),
+            ),
+          ),
+          Text(
+            '$_score%',
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookmarkButton() {
+    return Consumer<ShortlistProvider>(
+      builder: (context, shortlistProvider, child) {
+        final isShortlisted = shortlistProvider.isShortlisted(widget.project.id);
+        
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            shortlistProvider.toggleShortlist(widget.project.id);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isShortlisted 
+                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15) 
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isShortlisted 
+                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3) 
+                    : Colors.white.withValues(alpha: 0.1),
+              ),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Icon(
+                isShortlisted ? Icons.bookmark : Icons.bookmark_border,
+                key: ValueKey<bool>(isShortlisted),
+                color: isShortlisted ? const Color(0xFFFBBF24) : Colors.white54,
+                size: 20,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1109,9 +1552,14 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
                                   .toList(),
                             ),
                           ),
-                          Icon(
-                            Icons.more_horiz,
-                            color: Colors.white.withValues(alpha: 0.3),
+                          const SizedBox(width: 12),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildBookmarkButton(),
+                              const SizedBox(width: 10),
+                              _buildMatchScoreIndicator(),
+                            ],
                           ),
                         ],
                       ),
@@ -1299,6 +1747,60 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
           ),
         ],
       ),
+        ),
+        if (rightSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: rightSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
+                      const SizedBox(height: 16),
+                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (leftSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.05),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.2),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: leftSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
+                      const SizedBox(height: 16),
+                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1573,6 +2075,366 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
           ),
         ),
       ),
+        ),
+        if (rightSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: rightSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
+                      const SizedBox(height: 16),
+                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (leftSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.05),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.2),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: leftSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
+                      const SizedBox(height: 16),
+                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class FocusProjectCard extends StatelessWidget {
+  final AnonymousProject project;
+  final List<String> activeSpecifications;
+  final Future<void> Function() onMatch;
+  final int percentX;
+
+  const FocusProjectCard({
+    super.key,
+    required this.project,
+    required this.activeSpecifications,
+    required this.onMatch,
+    this.percentX = 0,
+  });
+
+  double get _fraction {
+    if (project.tags.isEmpty) return 0.0;
+    int matches = project.tags
+        .where((tag) => activeSpecifications
+            .map((s) => s.toLowerCase())
+            .contains(tag.toLowerCase()))
+        .length;
+    return matches / project.tags.length;
+  }
+
+  int get _score => (_fraction * 100).round();
+
+  Color get _scoreColor {
+    if (_score >= 80) return AppTheme.forestEmerald;
+    if (_score >= 50) return const Color(0xFFFBBF24);
+    return Colors.white.withValues(alpha: 0.15);
+  }
+
+  Widget _buildBookmarkButton() {
+    return Consumer<ShortlistProvider>(
+      builder: (context, shortlistProvider, child) {
+        final isShortlisted = shortlistProvider.isShortlisted(project.id);
+        
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            shortlistProvider.toggleShortlist(project.id);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isShortlisted 
+                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15) 
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isShortlisted 
+                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3) 
+                    : Colors.white.withValues(alpha: 0.1),
+              ),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return ScaleTransition(scale: animation, child: child);
+              },
+              child: Icon(
+                isShortlisted ? Icons.bookmark : Icons.bookmark_border,
+                key: ValueKey<bool>(isShortlisted),
+                color: isShortlisted ? const Color(0xFFFBBF24) : Colors.white54,
+                size: 28,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMatchScoreIndicator() {
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _scoreColor.withValues(alpha: 0.1),
+        boxShadow: [
+          BoxShadow(
+            color: _scoreColor.withValues(alpha: _score >= 50 ? 0.2 : 0.0),
+            blurRadius: 15,
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 70,
+            height: 70,
+            child: CircularProgressIndicator(
+              value: _fraction,
+              strokeWidth: 5.0,
+              backgroundColor: Colors.white.withValues(alpha: 0.05),
+              valueColor: AlwaysStoppedAnimation<Color>(_scoreColor),
+            ),
+          ),
+          Text(
+            '$_score%',
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagBadge(String tag) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.forestEmerald.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.1)),
+      ),
+      child: Text(
+        tag.toUpperCase(),
+        style: GoogleFonts.montserrat(
+          color: AppTheme.forestEmerald,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double rightSwipeOpacity = (percentX / 100).clamp(0.0, 1.0);
+    final double leftSwipeOpacity = (-percentX / 100).clamp(0.0, 1.0);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      borderRadius: 32,
+      opacity: 0.08,
+      borderColor: AppTheme.forestEmerald.withValues(alpha: 0.4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: project.tags.map((tag) => _buildTagBadge(tag)).toList(),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildBookmarkButton(),
+                  const SizedBox(width: 16),
+                  _buildMatchScoreIndicator(),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'ANONYMOUS STUDENT GROUP',
+            style: GoogleFonts.montserrat(
+              color: AppTheme.forestEmerald,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            project.title,
+            style: GoogleFonts.montserrat(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Text(
+                project.abstract,
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 16,
+                  height: 1.8,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          InkWell(
+            onTap: onMatch,
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.forestEmerald,
+                    AppTheme.forestEmerald.withBlue(100),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Center(
+                child: Text(
+                  "Confirm Match",
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+        ),
+        if (rightSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: rightSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
+                      const SizedBox(height: 16),
+                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (leftSwipeOpacity > 0)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.05),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.2),
+                  width: 2,
+                ),
+              ),
+              child: Center(
+                child: Opacity(
+                  opacity: leftSwipeOpacity,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
+                      const SizedBox(height: 16),
+                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -10,7 +10,8 @@ import 'student_dashboard.dart';
 import 'module_leader_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool adminOnly;
+  const LoginScreen({super.key, this.adminOnly = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -19,7 +20,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   // View state
-  bool _isStaffView = false;
+  late bool _isStaffView;
   String _staffRole = 'supervisor'; // 'supervisor' or 'module_leader'
 
   // Form states
@@ -68,6 +69,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+    _isStaffView = widget.adminOnly;
     _initializeFocusNodes();
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 400),
@@ -297,9 +299,11 @@ class _LoginScreenState extends State<LoginScreen>
                               duration: const Duration(milliseconds: 400),
                               switchInCurve: Curves.easeOutQuart,
                               switchOutCurve: Curves.easeInQuart,
-                              child: !_isStaffView
-                                  ? _buildStudentView()
-                                  : _buildStaffView(),
+                              child: widget.adminOnly
+                                  ? _buildStaffView()
+                                  : (!_isStaffView
+                                      ? _buildStudentView()
+                                      : _buildStaffView()),
                             ),
                           ],
                         ),
@@ -328,7 +332,8 @@ class _LoginScreenState extends State<LoginScreen>
                   return Stack(
                     children: [
                       content,
-                      Positioned(top: 20, right: 24, child: _buildLockButton()),
+                      if (!widget.adminOnly)
+                        Positioned(top: 20, right: 24, child: _buildLockButton()),
                     ],
                   );
                 },

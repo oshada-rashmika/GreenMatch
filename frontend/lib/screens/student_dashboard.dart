@@ -10,6 +10,7 @@ import 'profile_screen.dart';
 import 'my_proposals_screen.dart';
 import 'login_screen.dart';
 import 'student_chat.dart';
+import 'guidelines_screen.dart';
 
 enum ProposalStatus { pending, underReview, matched }
 
@@ -377,7 +378,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
             title: Text('Formatting Guidelines', style: TextStyle(color: mutedTextColor)),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening University Guidelines...')));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GuidelinesScreen()),
+              );
             },
           ),
           ListTile(

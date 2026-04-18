@@ -314,6 +314,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                       width: _metricWidth(constraints.maxWidth, columns),
                       accentColor: const Color(0xFF6366F1), // Indigo
                       iconData: Icons.folder_open_rounded,
+                      onTap: () {
+                        setState(() {
+                          _selectedSection = _ModuleLeaderSection.projectAllocations;
+                          _projectFilter = _ProjectAllocationFilter.all;
+                        });
+                      },
                     ),
                     _MetricCard(
                       title: 'PENDING BLIND MATCHES',
@@ -322,6 +328,12 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                       width: _metricWidth(constraints.maxWidth, columns),
                       accentColor: AppTheme.forestEmerald,
                       iconData: Icons.shield_outlined,
+                      onTap: () {
+                        setState(() {
+                          _selectedSection = _ModuleLeaderSection.projectAllocations;
+                          _projectFilter = _ProjectAllocationFilter.pending;
+                        });
+                      },
                     ),
                     _MetricCard(
                       title: 'GHOSTED MEETINGS',
@@ -330,6 +342,10 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                       accentColor: const Color(0xFFEF4444), // Red
                       width: _metricWidth(constraints.maxWidth, columns),
                       iconData: Icons.warning_amber_rounded,
+                      onTap: () {
+                        // Ghosted meetings are in the Action Required table right below this card.
+                        // Can simply trigger a small UI snap or do nothing since it's already in view on the Overview tab.
+                      },
                     ),
                   ],
                 );
@@ -1272,6 +1288,7 @@ class _MetricCard extends StatelessWidget {
     required this.width,
     this.accentColor,
     this.iconData = Icons.analytics,
+    this.onTap,
   });
 
   final String title;
@@ -1280,44 +1297,49 @@ class _MetricCard extends StatelessWidget {
   final double width;
   final Color? accentColor;
   final IconData iconData;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final effectiveColor = accentColor ?? const Color(0xFF3B82F6);
     return Container(
       width: width < 220 ? double.infinity : width,
-      child: GlassContainer(
-        opacity: 0.03,
-        blur: 20,
-        borderRadius: 24,
-        borderColor: effectiveColor.withValues(alpha: 0.15),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: GestureDetector(
+        onTap: onTap,
+        child: MouseRegion(
+          cursor: onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          child: GlassContainer(
+            opacity: 0.03,
+            blur: 20,
+            borderRadius: 24,
+            borderColor: effectiveColor.withValues(alpha: 0.15),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: effectiveColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(iconData, color: effectiveColor, size: 16),
+                    ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: effectiveColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(iconData, color: effectiveColor, size: 16),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
             Text(
               value,
               style: TextStyle(
@@ -1350,6 +1372,8 @@ class _MetricCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      ),
       ),
     );
   }

@@ -1336,60 +1336,6 @@ class _SupervisedProjectCardHolderState extends State<_SupervisedProjectCardHold
           ),
         ),
       ),
-        ),
-        if (rightSwipeOpacity > 0)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Opacity(
-                  opacity: rightSwipeOpacity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
-                      const SizedBox(height: 16),
-                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (leftSwipeOpacity > 0)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.05),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.2),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Opacity(
-                  opacity: leftSwipeOpacity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
-                      const SizedBox(height: 16),
-                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -1747,60 +1693,6 @@ class _ProjectCardHolderState extends State<_ProjectCardHolder> {
           ),
         ],
       ),
-        ),
-        if (rightSwipeOpacity > 0)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Opacity(
-                  opacity: rightSwipeOpacity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
-                      const SizedBox(height: 16),
-                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (leftSwipeOpacity > 0)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.05),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.2),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Opacity(
-                  opacity: leftSwipeOpacity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
-                      const SizedBox(height: 16),
-                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -2075,60 +1967,6 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
           ),
         ),
       ),
-        ),
-        if (rightSwipeOpacity > 0)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Opacity(
-                  opacity: rightSwipeOpacity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
-                      const SizedBox(height: 16),
-                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (leftSwipeOpacity > 0)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.05),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: leftSwipeOpacity * 0.2),
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Opacity(
-                  opacity: leftSwipeOpacity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
-                      const SizedBox(height: 16),
-                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

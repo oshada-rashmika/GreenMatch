@@ -8,19 +8,7 @@ import '../services/auth_provider.dart';
 import '../services/evaluation_service.dart';
 import '../services/project_service.dart';
 import '../widgets/glass_container.dart';
-
-class EvaluationCanvasScreen extends StatelessWidget {
-  final String projectId;
-  const EvaluationCanvasScreen({super.key, required this.projectId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Evaluation Canvas')),
-      body: Center(child: Text('Evaluating Project: $projectId')),
-    );
-  }
-}
+import 'evaluation_canvas_screen.dart';
 
 class EvaluationHubScreen extends StatefulWidget {
   const EvaluationHubScreen({super.key});
@@ -290,7 +278,7 @@ class _ProjectEvaluationCard extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => EvaluationCanvasScreen(projectId: project.id),
+                            builder: (context) => EvaluationCanvasScreen(project: project),
                           ),
                         );
                       },

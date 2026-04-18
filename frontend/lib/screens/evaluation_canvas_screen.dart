@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,8 @@ import '../theme/app_theme.dart';
 import '../services/auth_provider.dart';
 import '../services/evaluation_service.dart';
 import '../services/project_service.dart';
+import '../widgets/glass_container.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 class EvaluationCanvasScreen extends StatefulWidget {
   final SupervisedProject project;
@@ -143,6 +146,8 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDesktop = MediaQuery.of(context).size.width > 850;
+
     return Theme(
       data: AppTheme.darkTheme,
       child: Scaffold(
@@ -152,30 +157,105 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
             const _CanvasBackground(),
 
             SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    _buildTopNav(),
-                    const SizedBox(height: 30),
-                    _buildFinalMarkGauge(),
-                    const SizedBox(height: 40),
-                    _buildProjectInfo(),
-                    const SizedBox(height: 32),
-                    _buildGradingSection(),
-                    const SizedBox(height: 24),
-                    _buildFeedbackSection(),
-                    const SizedBox(height: 40),
-                    _buildSubmitButton(),
-                    const SizedBox(height: 40),
-                  ],
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          _buildTopNav(),
+                          const SizedBox(height: 30),
+                          _buildProjectInfo(),
+                          const SizedBox(height: 32),
+                          if (isDesktop)
+                            _buildBentoGrid()
+                          else
+                            _buildMobileStack(),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBentoGrid() {
+    return Column(
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 1,
+                child: GlassContainer(
+                  padding: const EdgeInsets.all(24),
+                  borderRadius: 24,
+                  height: double.infinity,
+                  child: Column(
+                    children: [
+                      _buildFinalMarkGauge(),
+                      const Spacer(),
+                      _buildSubmitButton(),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  children: [
+                    _buildCriterionSlider(
+                      label: 'Technical Feasibility',
+                      value: _feasibilityScale,
+                      onChanged: (val) => setState(() => _feasibilityScale = val),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCriterionSlider(
+                      label: 'Innovation & Research',
+                      value: _innovationScale,
+                      onChanged: (val) => setState(() => _innovationScale = val),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCriterionSlider(
+                      label: 'Project Scope & Execution',
+                      value: _scopeScale,
+                      onChanged: (val) => setState(() => _scopeScale = val),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildFeedbackSection(),
+      ],
+    );
+  }
+
+  Widget _buildMobileStack() {
+    return Column(
+      children: [
+        _buildFinalMarkGauge(),
+        const SizedBox(height: 40),
+        _buildGradingSection(),
+        const SizedBox(height: 24),
+        _buildFeedbackSection(),
+        const SizedBox(height: 40),
+        _buildSubmitButton(),
+      ],
     );
   }
 
@@ -338,13 +418,9 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
     required double value,
     required ValueChanged<double> onChanged,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
+    return GlassContainer(
+      padding: const EdgeInsets.all(24),
+      borderRadius: 24,
       child: Column(
         children: [
           Row(
@@ -372,16 +448,23 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: AppTheme.forestEmerald,
-              inactiveTrackColor: Colors.white.withValues(alpha: 0.05),
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
+              trackHeight: 6,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12, elevation: 12),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
               thumbColor: Colors.white,
               overlayColor: AppTheme.forestEmerald.withValues(alpha: 0.2),
-              trackHeight: 4,
             ),
             child: Slider(
               value: value,
               min: 0,
               max: 100,
-              onChanged: onChanged,
+              onChanged: (val) {
+                if (val.round() != value.round()) {
+                  HapticFeedback.selectionClick();
+                }
+                onChanged(val);
+              },
             ),
           ),
         ],
@@ -390,13 +473,9 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
   }
 
   Widget _buildFeedbackSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
+    return GlassContainer(
+      padding: const EdgeInsets.all(24),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -456,20 +535,23 @@ class _EvaluationCanvasScreenState extends State<EvaluationCanvasScreen> {
         ),
         child: _isSubmitting
             ? const CircularProgressIndicator(color: Colors.white)
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Submit Final Grade',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Submit Final Grade',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.send_rounded, size: 20),
-                ],
+                    const SizedBox(width: 12),
+                    const Icon(Icons.send_rounded, size: 20),
+                  ],
+                ),
               ),
       ),
     ).animate().fadeIn(delay: 1.seconds);

@@ -427,33 +427,31 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   );
                 }
               ),
-              title: Text(
-                'Student Portal',
-                style: GoogleFonts.montserrat(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   Container(
+                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                     decoration: BoxDecoration(
+                       color: _getStatusColor().withOpacity(0.15),
+                       borderRadius: BorderRadius.circular(20),
+                       border: Border.all(color: _getStatusColor().withOpacity(0.5)),
+                     ),
+                     child: Row(
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Icon(Icons.radio_button_checked, color: _getStatusColor(), size: 12),
+                         const SizedBox(width: 6),
+                         Text(
+                           _getStatusText(),
+                           style: TextStyle(color: _getStatusColor(), fontSize: 12, fontWeight: FontWeight.w700),
+                         ),
+                       ],
+                     ),
+                   ),
+                ],
               ),
         actions: [
-          Center(
-             child: Container(
-               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-               decoration: BoxDecoration(
-                 color: _getStatusColor().withOpacity(0.15),
-                 borderRadius: BorderRadius.circular(20),
-                 border: Border.all(color: _getStatusColor().withOpacity(0.5)),
-               ),
-               child: Row(
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   Icon(Icons.radio_button_checked, color: _getStatusColor(), size: 12),
-                   const SizedBox(width: 6),
-                   Text(
-                     _getStatusText(),
-                     style: TextStyle(color: _getStatusColor(), fontSize: 12, fontWeight: FontWeight.w700),
-                   ),
-                 ],
-               ),
-             ),
-           ),
-          const SizedBox(width: 8),
           PopupMenuButton<String>(
             color: cardColor,
             offset: const Offset(0, 48),

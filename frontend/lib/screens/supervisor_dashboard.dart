@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ui';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -20,7 +19,7 @@ import './supervisor_profile.dart';
 import '../services/shortlist_provider.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import '../services/supervisor_service.dart';
-import '../models/supervisor_profile.dart';
+import '../models/supervisor_profile.dart' as supervisor_model;
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -368,14 +367,14 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               ),
             ),
           ),
-          leading: _isMobile(context) 
-            ? Builder(
-                builder: (context) => IconButton(
-                  icon: _buildAppBarIcon(Icons.menu),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                ),
-              )
-            : null,
+          leading: _isMobile(context)
+              ? Builder(
+                  builder: (context) => IconButton(
+                    icon: _buildAppBarIcon(Icons.menu),
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  ),
+                )
+              : null,
           actions: [
             if (!_isMobile(context)) ...[
               if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
@@ -384,16 +383,17 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               const SizedBox(width: 8),
               _buildActionsRow(),
             ] else if (matchedProjectIds.isNotEmpty) ...[
-               _buildMatchesButton(),
-               const SizedBox(width: 16),
-            ]
+              _buildMatchesButton(),
+              const SizedBox(width: 16),
+            ],
           ],
         ),
       ),
     );
   }
 
-  bool _isMobile(BuildContext context) => MediaQuery.of(context).size.width < 800;
+  bool _isMobile(BuildContext context) =>
+      MediaQuery.of(context).size.width < 800;
 
   Widget _buildActionsRow() {
     return Row(
@@ -412,11 +412,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                   isLabelVisible: count > 0,
                   label: Text(
                     count.toString(),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFF0F1F14)),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      color: Color(0xFF0F1F14),
+                    ),
                   ),
                   backgroundColor: const Color(0xFFFBBF24),
                   offset: const Offset(-4, 0),
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
                   child: _buildAppBarIcon(Icons.bookmark_border_rounded),
                 ),
               ),
@@ -431,7 +438,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               context,
               MaterialPageRoute(builder: (_) => const EvaluationHubScreen()),
             );
-            _fetchProjects(); 
+            _fetchProjects();
           },
           child: _buildAppBarIcon(Icons.assessment_outlined),
         ),
@@ -686,7 +693,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildProjectContent() {
-    final shortlistProvider = context.watch<ShortlistProvider>();
     List<AnonymousProject> filtered;
 
     if (_selectedFilter == "All") {
@@ -1573,7 +1579,7 @@ class _DashboardDrawer extends StatelessWidget {
                   context,
                   icon: Icons.notifications_none_rounded,
                   title: 'Notifications',
-                  onTap: () {}, 
+                  onTap: () {},
                 ),
                 _buildDrawerItem(
                   context,
@@ -1672,7 +1678,7 @@ class _DashboardDrawer extends StatelessWidget {
         if (snapshot.hasData) {
           try {
             final data = snapshot.data!;
-            final profile = SupervisorProfile.fromJson(
+            final profile = supervisor_model.SupervisorProfile.fromJson(
               data['success'] ? data['data'] : data,
             );
             name = profile.fullName;

@@ -10,112 +10,108 @@ class NotFoundScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const String binary404 = '''
+1 0 0 1   0 0 0 0   1 0 0 1
+1    1   0    0   1    1
+1 0 0 1   0    0   1 0 0 1
+     1   0    0        1
+     1   0 0 0 0        1
+''';
+
     return Scaffold(
       backgroundColor: AppTheme.premiumBlack,
       body: Stack(
         children: [
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.forestEmerald.withValues(alpha: 0.05),
-                    blurRadius: 100,
-                    spreadRadius: 50,
-                  ),
-                ],
+          Center(
+            child: Opacity(
+              opacity: 0.05,
+              child: Text(
+                List.generate(20, (_) => '0 1 1 0 1 0 1 1 0 0 1 0').join('\n'),
+                style: GoogleFonts.firaCode(color: AppTheme.forestEmerald, fontSize: 12),
               ),
             ),
           ),
 
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500),
+              constraints: const BoxConstraints(maxWidth: 600),
               child: Padding(
-                padding: const EdgeInsets.all(40.0),
+                padding: const EdgeInsets.all(32.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    GlassContainer(
-                      padding: const EdgeInsets.all(32),
-                      borderRadius: 40,
-                      child: Icon(
-                        Icons.explore_off_rounded,
-                        size: 80,
-                        color: AppTheme.forestEmerald.withValues(alpha: 0.6),
+
+                    Text(
+                      binary404,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.firaCode(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.forestEmerald,
+                        height: 1.2,
+                        shadows: [
+                          Shadow(
+                            color: AppTheme.forestEmerald.withValues(alpha: 0.8),
+                            blurRadius: 20,
+                          ),
+                          Shadow(
+                            color: AppTheme.forestEmerald.withValues(alpha: 0.5),
+                            blurRadius: 40,
+                          ),
+                        ],
                       ),
-                    ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+                    ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.9, 0.9)),
 
                     const SizedBox(height: 48),
 
                     Text(
-                      '404',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 100,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -5,
-                      ),
-                    ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.2),
-
-                    Text(
-                      'Lost in the Review?',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white70,
-                      ),
-                    ).animate().fadeIn(delay: 200.ms, duration: 800.ms),
-
-                    const SizedBox(height: 16),
-
-                    Text(
-                      "The route you're looking for doesn't exist or has been moved in the latest update.",
+                      "We only built three dashboards and two login screens...\nHow tf did you end up here?",
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        color: Colors.white38,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white70,
                         height: 1.6,
                       ),
                     ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 60),
 
                     InkWell(
-                      onTap: () => Navigator.of(context).pushReplacementNamed('/'),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 18,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.forestEmerald,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.forestEmerald.withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                      onTap: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: GlassContainer(
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        borderRadius: 16,
+                        borderColor: AppTheme.forestEmerald.withValues(alpha: 0.3),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.terminal_rounded,
+                              color: AppTheme.forestEmerald,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Return to Base',
+                              style: GoogleFonts.firaCode(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ],
                         ),
-                        child: Text(
-                          'Back to Orbit',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                          ),
-                        ),
                       ),
-                    ).animate().fadeIn(delay: 600.ms).scale(duration: 400.ms),
+                    ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2),
                   ],
                 ),
               ),

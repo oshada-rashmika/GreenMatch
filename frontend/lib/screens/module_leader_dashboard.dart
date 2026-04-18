@@ -1525,7 +1525,7 @@ class _MetricCardState extends State<_MetricCard> with SingleTickerProviderState
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
     _glowAnimation = Tween<double>(begin: 0.15, end: 0.35).animate(
@@ -1560,8 +1560,24 @@ class _MetricCardState extends State<_MetricCard> with SingleTickerProviderState
         },
         child: GestureDetector(
           onTap: widget.onTap,
-          onTapDown: (_) { if (widget.onTap != null) _controller.reverse(); },
-          onTapUp: (_) { if (widget.onTap != null) _controller.forward(); },
+          onTapDown: (_) {
+            if (widget.onTap != null) {
+              setState(() => _isHovered = true);
+              _controller.forward();
+            }
+          },
+          onTapUp: (_) {
+            if (widget.onTap != null) {
+              setState(() => _isHovered = false);
+              _controller.reverse();
+            }
+          },
+          onTapCancel: () {
+            if (widget.onTap != null) {
+              setState(() => _isHovered = false);
+              _controller.reverse();
+            }
+          },
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {

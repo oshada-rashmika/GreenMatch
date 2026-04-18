@@ -315,10 +315,14 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                       accentColor: const Color(0xFF6366F1), // Indigo
                       iconData: Icons.folder_open_rounded,
                       onTap: () {
-                        setState(() {
-                          _selectedSection = _ModuleLeaderSection.projectAllocations;
-                          _projectFilter = _ProjectAllocationFilter.all;
-                        });
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => _SmartProjectsPopup(
+                            projects: context.read<ModuleLeaderOverviewViewModel>().projectAllocations,
+                            title: 'Total Projects',
+                          ),
+                        );
                       },
                     ),
                     _MetricCard(
@@ -329,10 +333,16 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                       accentColor: AppTheme.forestEmerald,
                       iconData: Icons.shield_outlined,
                       onTap: () {
-                        setState(() {
-                          _selectedSection = _ModuleLeaderSection.projectAllocations;
-                          _projectFilter = _ProjectAllocationFilter.pending;
-                        });
+                        final pendingProjects = context.read<ModuleLeaderOverviewViewModel>().projectAllocations
+                          .where((p) => p.status.toUpperCase() == 'PENDING').toList();
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => _SmartProjectsPopup(
+                            projects: pendingProjects,
+                            title: 'Pending Matches',
+                          ),
+                        );
                       },
                     ),
                     _MetricCard(
@@ -1280,12 +1290,13 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 }
 
-class _MetricCard extends StatelessWidget {
+class _MetricCard extends StatefulWidget {
   const _MetricCard({
     required this.title,
     required this.value,
     required this.detail,
     required this.width,
+    super.key,
     this.accentColor,
     this.iconData = Icons.analytics,
     this.onTap,
@@ -1300,80 +1311,136 @@ class _MetricCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_MetricCard> createState() => _MetricCardState();
+}
+
+class _MetricCardState extends State<_MetricCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+  bool _isHovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    _glowAnimation = Tween<double>(begin: 0.15, end: 0.35).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final effectiveColor = accentColor ?? const Color(0xFF3B82F6);
-    return Container(
-      width: width < 220 ? double.infinity : width,
-      child: GestureDetector(
-        onTap: onTap,
-        child: MouseRegion(
-          cursor: onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-          child: GlassContainer(
-            opacity: 0.03,
-            blur: 20,
-            borderRadius: 24,
-            borderColor: effectiveColor.withValues(alpha: 0.15),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+    final effectiveColor = widget.accentColor ?? const Color(0xFF3B82F6);
+    return SizedBox(
+      width: widget.width < 220 ? double.infinity : widget.width,
+      child: MouseRegion(
+        cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        onEnter: (_) {
+          if (widget.onTap != null) {
+            setState(() => _isHovered = true);
+            _controller.forward();
+          }
+        },
+        onExit: (_) {
+          if (widget.onTap != null) {
+            setState(() => _isHovered = false);
+            _controller.reverse();
+          }
+        },
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onTapDown: (_) { if (widget.onTap != null) _controller.reverse(); },
+          onTapUp: (_) { if (widget.onTap != null) _controller.forward(); },
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: GlassContainer(
+                  opacity: _isHovered ? 0.05 : 0.03,
+                  blur: 20,
+                  borderRadius: 24,
+                  borderColor: effectiveColor.withValues(alpha: _glowAnimation.value),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            widget.title,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: effectiveColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              boxShadow: _isHovered 
+                                ? [BoxShadow(color: effectiveColor.withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 2)]
+                                : [],
+                            ),
+                            child: Icon(widget.iconData, color: effectiveColor, size: 16),
+                          ),
+                        ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: effectiveColor.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                      const SizedBox(height: 16),
+                      Text(
+                        widget.value,
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 42,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.0,
+                          shadows: [
+                            Shadow(
+                              color: effectiveColor.withValues(alpha: _glowAnimation.value * 2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Icon(iconData, color: effectiveColor, size: 16),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-            Text(
-              value,
-              style: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 42,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1.0,
-                shadows: [
-                  Shadow(
-                    color: effectiveColor.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: effectiveColor.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: effectiveColor.withValues(alpha: _isHovered ? 0.3 : 0.1)),
+                        ),
+                        child: Text(
+                          widget.detail,
+                          style: TextStyle(color: effectiveColor, fontSize: 11, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: effectiveColor.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: effectiveColor.withValues(alpha: 0.1)),
-              ),
-              child: Text(
-                detail,
-                style: TextStyle(color: effectiveColor, fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-      ),
       ),
     );
   }
@@ -2356,6 +2423,246 @@ class _CreateModuleSheetWidgetState extends State<_CreateModuleSheetWidget> {
               const SizedBox(height: 40),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmartProjectsPopup extends StatefulWidget {
+  const _SmartProjectsPopup({
+    required this.projects,
+    required this.title,
+    super.key,
+  });
+
+  final List<ModuleLeaderProject> projects;
+  final String title;
+
+  @override
+  State<_SmartProjectsPopup> createState() => _SmartProjectsPopupState();
+}
+
+class _SmartProjectsPopupState extends State<_SmartProjectsPopup> {
+  String _selectedModuleCode = 'All';
+
+  @override
+  Widget build(BuildContext context) {
+    final Set<String> moduleCodes = {'All'};
+    for (var p in widget.projects) {
+      if (p.moduleCode.isNotEmpty) {
+        moduleCodes.add(p.moduleCode);
+      }
+    }
+
+    final filteredProjects = widget.projects.where((p) {
+      if (_selectedModuleCode == 'All') return true;
+      return p.moduleCode == _selectedModuleCode;
+    }).toList();
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: AppTheme.premiumBlack,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: LoginColors.border),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const SizedBox(height: 8),
+                      Text('${filteredProjects.length} records found', style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            
+            if (moduleCodes.length > 1) ...[
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  itemCount: moduleCodes.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final code = moduleCodes.elementAt(index);
+                    final isSelected = _selectedModuleCode == code;
+                    return InkWell(
+                      onTap: () => setState(() => _selectedModuleCode = code),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            code,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.white70,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white12, height: 1),
+            ],
+            
+            Expanded(
+              child: filteredProjects.isEmpty
+                  ? const Center(child: Text('No projects available in this category.', style: TextStyle(color: Colors.white54)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(24),
+                      itemCount: filteredProjects.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final project = filteredProjects[index];
+                        final isPending = project.status.toUpperCase() == 'PENDING';
+                        final statusColor = isPending ? const Color(0xFFEAB308) : AppTheme.forestEmerald;
+                        
+                        return GlassContainer(
+                          padding: const EdgeInsets.all(20),
+                          borderRadius: 20,
+                          opacity: 0.02,
+                          borderColor: Colors.white.withValues(alpha: 0.05),
+                          child: Column(
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      isPending ? Icons.pending_actions_rounded : Icons.check_circle_rounded, 
+                                      color: statusColor, 
+                                      size: 20
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          project.title,
+                                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          '${project.moduleCode} - ${project.moduleName}',
+                                          style: const TextStyle(color: Colors.white54, fontSize: 13),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+                                    ),
+                                    child: Text(
+                                      project.status,
+                                      style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.02),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Supervisor', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            project.supervisorName ?? 'Unassigned',
+                                            style: TextStyle(
+                                              color: project.supervisorName == null ? const Color(0xFFEF4444) : Colors.white,
+                                              fontSize: 13,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 30,
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Group', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            project.groupName ?? 'No Group',
+                                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );

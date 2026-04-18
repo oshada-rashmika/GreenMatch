@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../theme/app_theme.dart';
 import '../models/guideline.dart';
 import '../services/guideline_service.dart';
@@ -23,43 +24,24 @@ class _GuidelinesScreenState extends State<GuidelinesScreen> {
 
   Future<void> _loadGuidelines() async {
     try {
+      setState(() => _isLoading = true);
+      final fetched = await _guidelineService.fetchGuidelinesForStudent();
       setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-
-      final fetchedGuidelines = await _guidelineService.fetchGuidelinesForStudent();
-      
-      setState(() {
-        _guidelines = fetchedGuidelines;
+        _guidelines = fetched;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.toString();
-      });
-      _showPremiumError(e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      setState(() => _isLoading = false);
     }
-  }
-
-  void _showPremiumError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message, style: const TextStyle(color: Colors.white, fontSize: 13))),
-          ],
-        ),
-        backgroundColor: const Color(0xFFEF4444),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override
@@ -69,7 +51,7 @@ class _GuidelinesScreenState extends State<GuidelinesScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.premiumBlack,
         appBar: AppBar(
-          backgroundColor: AppTheme.premiumBlack,
+          backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -80,7 +62,30 @@ class _GuidelinesScreenState extends State<GuidelinesScreen> {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
-        body: _buildBody(),
+        body: Stack(
+          children: [
+            Positioned(
+              top: -150,
+              right: -150,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                      blurRadius: 100,
+                      spreadRadius: 50,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(child: _buildBody()),
+          ],
+        ),
       ),
     );
   }
@@ -88,9 +93,7 @@ class _GuidelinesScreenState extends State<GuidelinesScreen> {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: AppTheme.forestEmerald,
-        ),
+        child: CircularProgressIndicator(color: AppTheme.forestEmerald),
       );
     }
 
@@ -98,18 +101,42 @@ class _GuidelinesScreenState extends State<GuidelinesScreen> {
       return _buildEmptyState();
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadGuidelines,
-      color: AppTheme.forestEmerald,
-      backgroundColor: Colors.white.withValues(alpha: 0.05),
-      child: ListView.separated(
-        padding: const EdgeInsets.all(24.0),
-        itemCount: _guidelines.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 24),
-        itemBuilder: (context, index) {
-          return _buildGuidelineCard(_guidelines[index]);
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = 1;
+        if (constraints.maxWidth > 850) {
+          crossAxisCount = 3;
+        } else if (constraints.maxWidth > 600) {
+          crossAxisCount = 2;
+        }
+
+        return RefreshIndicator(
+          onRefresh: _loadGuidelines,
+          color: AppTheme.forestEmerald,
+          child: MasonryGridView.count(
+            padding: const EdgeInsets.all(24),
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            itemCount: _guidelines.length,
+            itemBuilder: (context, index) {
+              final guideline = _guidelines[index];
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                ),
+                child: Text(
+                  guideline.title,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -130,98 +157,6 @@ class _GuidelinesScreenState extends State<GuidelinesScreen> {
             style: TextStyle(color: Colors.white54, fontSize: 15),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildGuidelineCard(Guideline guideline) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.menu_book, color: AppTheme.forestEmerald),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      guideline.module?.moduleCode ?? 'N/A',
-                      style: TextStyle(
-                        color: AppTheme.forestEmerald.withValues(alpha: 0.6),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    Text(
-                      guideline.title,
-                      style: const TextStyle(
-                        color: AppTheme.forestEmerald,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            guideline.instructions,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              height: 1.6,
-            ),
-          ),
-          if (guideline.deliverables.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            const Text(
-              'REQUIRED DELIVERABLES',
-              style: TextStyle(
-                color: Colors.white38,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: guideline.deliverables.keys.map((d) => _buildDeliverableChip(d)).toList(),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDeliverableChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.2)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppTheme.forestEmerald,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

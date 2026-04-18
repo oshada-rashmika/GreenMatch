@@ -14,7 +14,7 @@ import '../widgets/glass_container.dart';
 import 'bookmarks_screen.dart';
 import 'login_screen.dart';
 import 'matches_screen.dart';
-import 'profile_screen.dart';
+import './supervisor_profile.dart';
 import '../services/shortlist_provider.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 
@@ -427,7 +427,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ProfileScreen(),
+                  builder: (_) => const SupervisorProfileScreen(),
                 ),
               ),
               child: _buildAppBarIcon(Icons.person),

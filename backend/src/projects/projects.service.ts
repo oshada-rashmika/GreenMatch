@@ -50,8 +50,8 @@ export class ProjectsService {
     });
   }
 
-  async getMyProposal(studentId: string) {
-    return this.prisma.project.findFirst({
+  async getMyProposals(studentId: string) {
+    return this.prisma.project.findMany({
       where: {
         group: {
           members: {

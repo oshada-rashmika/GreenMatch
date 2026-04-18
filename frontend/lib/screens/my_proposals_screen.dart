@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/student_service.dart';
 
 class MyProposalsScreen extends StatefulWidget {
   const MyProposalsScreen({super.key});
@@ -12,6 +13,43 @@ class _MyProposalsScreenState extends State<MyProposalsScreen> {
   final Color cardColor = const Color(0xFF1A2235);
   final Color accentColor = const Color(0xFFFACC15); // Yellow
   final Color mutedTextColor = const Color(0xFF94A3B8); // Slate 400
+
+  List<MyProposalData> _proposals = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProposals();
+  }
+
+  Future<void> _fetchProposals() async {
+    try {
+      final fetched = await StudentService().fetchMyProposals();
+      if (mounted) {
+        setState(() {
+          _proposals = fetched;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Unknown Date';
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'MATCHED': return const Color(0xFF10B981); // Emerald
+      case 'UNDER_REVIEW': return const Color(0xFF3B82F6); // Blue
+      case 'REJECTED': return const Color(0xFFEF4444); // Red
+      default: return accentColor;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,65 +80,71 @@ class _MyProposalsScreenState extends State<MyProposalsScreen> {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildActiveAndDraftsTab(),
-            _buildPastProjectsTab(),
-          ],
-        ),
+        body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              children: [
+                _buildActiveAndDraftsTab(),
+                _buildPastProjectsTab(),
+              ],
+            ),
       ),
     );
   }
 
   Widget _buildActiveAndDraftsTab() {
-    return ListView(
+    final active = _proposals.where((p) => p.status != 'REJECTED' && p.status != 'COMPLETED').toList();
+
+    if (active.isEmpty) {
+       return Center(child: Text("No active proposals found.", style: TextStyle(color: mutedTextColor)));
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(20),
-      children: [
-        _buildProposalCard(
-          title: 'Predictive Modeling for Solar Energy Output',
-          status: 'Under Review',
-          statusColor: const Color(0xFF3B82F6),
-          date: 'Submitted: Oct 15, 2026',
-          abstractPreview: 'Utilizing deep learning models to predict solar panel output based on local weather forecasts and historical data...',
-          isDraft: false,
-        ),
-        const SizedBox(height: 16),
-        _buildProposalCard(
-          title: 'AI-Driven Waste Segregation System',
-          status: 'Draft',
-          statusColor: mutedTextColor,
-          date: 'Last edited: Oct 12, 2026',
-          abstractPreview: 'A computer vision approach to automate waste sorting at the edge using Raspberry Pi and TensorFlow Lite...',
-          isDraft: true,
-        ),
-      ],
+      itemCount: active.length,
+      itemBuilder: (context, index) {
+        final p = active[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildProposalCard(
+            title: p.title,
+            status: p.status,
+            statusColor: _getStatusColor(p.status),
+            date: 'Submitted: ${_formatDate(p.createdAt)}',
+            abstractPreview: p.abstractText,
+            isDraft: false,
+            supervisor: p.supervisorName,
+          ),
+        );
+      },
     );
   }
 
   Widget _buildPastProjectsTab() {
-    return ListView(
+    final past = _proposals.where((p) => p.status == 'REJECTED' || p.status == 'COMPLETED').toList();
+
+    if (past.isEmpty) {
+       return Center(child: Text("No past projects found.", style: TextStyle(color: mutedTextColor)));
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(20),
-      children: [
-        _buildProposalCard(
-          title: 'Blockchain for Transparent Supply Chains',
-          status: 'Matched',
-          statusColor: const Color(0xFF10B981),
-          date: 'Matched: Jan 10, 2026',
-          abstractPreview: 'Implementing Ethereum smart contracts to ensure transparency and provenance in local agricultural chains.',
-          isDraft: false,
-          supervisor: 'Dr. Sarah Connor',
-        ),
-        const SizedBox(height: 16),
-        _buildProposalCard(
-          title: 'Sentiment Analysis on Climate Change tweets',
-          status: 'Rejected',
-          statusColor: const Color(0xFFEF4444),
-          date: 'Reviewed: Nov 05, 2025',
-          abstractPreview: 'Analyzing public sentiment regarding global warming policies using NLP techniques on Twitter data.',
-          isDraft: false,
-          feedback: 'Lacks sufficient technical depth for a capstone project. Consider adding a predictive component rather than just observation.',
-        ),
-      ],
+      itemCount: past.length,
+      itemBuilder: (context, index) {
+        final p = past[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildProposalCard(
+            title: p.title,
+            status: p.status,
+            statusColor: _getStatusColor(p.status),
+            date: 'Concluded: ${_formatDate(p.createdAt)}',
+            abstractPreview: p.abstractText,
+            isDraft: false,
+            supervisor: p.supervisorName,
+          ),
+        );
+      },
     );
   }
 

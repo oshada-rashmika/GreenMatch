@@ -21,6 +21,7 @@ class _Activity {
 }
 
 class _ProposalData {
+  String id;
   String title;
   String abstractText;
   String techStack;
@@ -40,6 +41,7 @@ class _ProposalData {
   DateTime? milestoneVivaDate;
 
   _ProposalData({
+    required this.id,
     required this.title,
     required this.abstractText,
     required this.techStack,
@@ -72,7 +74,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   final Color accentColor = AppTheme.forestEmerald;
   final Color mutedTextColor = Colors.white60;
 
-  _ProposalData? _proposal;
+  List<_ProposalData> _proposals = [];
+  int _activeProjectIndex = 0;
+  _ProposalData? get _proposal => _proposals.isNotEmpty ? _proposals[_activeProjectIndex] : null;
   List<MeetingData> _meetings = [];
 
   bool _isLoadingData = true;
@@ -92,7 +96,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final service = StudentService();
       final fetchedModules = await service.fetchModules();
       final fetchedTags = await service.fetchTags();
-      final myProposal = await service.fetchMyProposal();
+      final myProposalsList = await service.fetchMyProposals();
       final fetchedMeetings = await service.fetchMyMeetings();
 
       if (mounted) {
@@ -104,37 +108,37 @@ class _StudentDashboardState extends State<StudentDashboard> {
           if (_modules.isNotEmpty) _selectedModuleId = _modules.first.id;
           if (_tags.isNotEmpty) _selectedTagId = _tags.first.id;
 
-          if (myProposal != null) {
-            ProposalStatus mappedStatus;
-            switch (myProposal.status) {
-              case 'MATCHED':
-                mappedStatus = ProposalStatus.matched;
-                break;
-              case 'UNDER_REVIEW':
-                mappedStatus = ProposalStatus.underReview;
-                break;
-              default:
-                mappedStatus = ProposalStatus.pending;
-            }
-
-            _proposal = _ProposalData(
-              title: myProposal.title,
-              abstractText: myProposal.abstractText,
-              techStack: myProposal.tags.join(', '),
-              researchArea: (myProposal.tags.isNotEmpty) ? myProposal.tags.first : 'N/A',
-              status: mappedStatus,
-              supervisorName: myProposal.supervisorName,
-              supervisorContact: myProposal.supervisorEmail,
-              submittedDate: DateTime.now(), // Fallback
-              expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
-              impactBadges: [],
-              activityLog: [],
-              milestoneMatchDate: myProposal.milestoneMatchDate,
-              milestoneReviewDate: myProposal.milestoneReviewDate,
-              milestoneMidtermDate: myProposal.milestoneMidtermDate,
-              milestoneFinalDate: myProposal.milestoneFinalDate,
-              milestoneVivaDate: myProposal.milestoneVivaDate,
-            );
+          if (myProposalsList.isNotEmpty) {
+            _proposals = myProposalsList.map((myP) {
+              ProposalStatus mappedStatus;
+              switch (myP.status) {
+                case 'MATCHED': mappedStatus = ProposalStatus.matched; break;
+                case 'UNDER_REVIEW': mappedStatus = ProposalStatus.underReview; break;
+                default: mappedStatus = ProposalStatus.pending;
+              }
+              return _ProposalData(
+                id: myP.id,
+                title: myP.title,
+                abstractText: myP.abstractText,
+                techStack: myP.tags.join(', '),
+                researchArea: (myP.tags.isNotEmpty) ? myP.tags.first : 'N/A',
+                status: mappedStatus,
+                supervisorName: myP.supervisorName,
+                supervisorContact: myP.supervisorEmail,
+                submittedDate: DateTime.now(), // Fallback
+                expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
+                impactBadges: [],
+                activityLog: [],
+                milestoneMatchDate: myP.milestoneMatchDate,
+                milestoneReviewDate: myP.milestoneReviewDate,
+                milestoneMidtermDate: myP.milestoneMidtermDate,
+                milestoneFinalDate: myP.milestoneFinalDate,
+                milestoneVivaDate: myP.milestoneVivaDate,
+              );
+            }).toList();
+            _activeProjectIndex = 0; // Default to most recently submitted
+          } else {
+            _proposals = [];
           }
 
           _isLoadingData = false;
@@ -158,7 +162,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: cardColor,
+      backgroundColor: AppTheme.premiumBlack,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -258,23 +262,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 tagIds: _selectedTagId != null ? [_selectedTagId!] : null,
                               );
                               if (mounted) {
-                                setState(() {
-                                  _proposal = _ProposalData(
-                                    title: titleController.text,
-                                    abstractText: abstractController.text,
-                                    techStack: 'Tech Stack Added',
-                                    researchArea: 'Pending tags',
-                                    status: ProposalStatus.pending,
-                                    submittedDate: DateTime.now(),
-                                    expectedDecisionDate: DateTime.now().add(const Duration(days: 14)),
-                                    impactBadges: [],
-                                    activityLog: [
-                                      _Activity('Just now', 'Proposal submitted for committee review.', Icons.upload_file, AppTheme.forestEmerald),
-                                    ],
-                                  );
-                                });
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Proposal Submitted Successfully!')));
+                                _fetchInitialData(); // Re-fetch entire environment to populate the new project safely
                               }
                             } catch (e) {
                               if (mounted) {
@@ -320,7 +310,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   void _withdrawProposal() {
     setState(() {
-      _proposal = null;
+      if (_proposals.isNotEmpty) {
+        _proposals.removeAt(_activeProjectIndex);
+        if (_activeProjectIndex > 0 && _activeProjectIndex >= _proposals.length) {
+          _activeProjectIndex--;
+        }
+      }
     });
   }
 
@@ -435,33 +430,36 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   );
                 }
               ),
-              title: Text(
-                'Student Portal',
-                style: GoogleFonts.montserrat(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+               title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   Flexible(
+                     child: Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                       decoration: BoxDecoration(
+                         color: _getStatusColor().withOpacity(0.15),
+                         borderRadius: BorderRadius.circular(20),
+                         border: Border.all(color: _getStatusColor().withOpacity(0.5)),
+                       ),
+                       child: Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           Icon(Icons.radio_button_checked, color: _getStatusColor(), size: 12),
+                           const SizedBox(width: 6),
+                           Flexible(
+                             child: Text(
+                               _getStatusText(),
+                               style: TextStyle(color: _getStatusColor(), fontSize: 12, fontWeight: FontWeight.w700),
+                               overflow: TextOverflow.ellipsis,
+                             ),
+                           ),
+                         ],
+                       ),
+                     ),
+                   ),
+                ],
               ),
         actions: [
-          Center(
-             child: Container(
-               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-               decoration: BoxDecoration(
-                 color: _getStatusColor().withOpacity(0.15),
-                 borderRadius: BorderRadius.circular(20),
-                 border: Border.all(color: _getStatusColor().withOpacity(0.5)),
-               ),
-               child: Row(
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   Icon(Icons.radio_button_checked, color: _getStatusColor(), size: 12),
-                   const SizedBox(width: 6),
-                   Text(
-                     _getStatusText(),
-                     style: TextStyle(color: _getStatusColor(), fontSize: 12, fontWeight: FontWeight.w700),
-                   ),
-                 ],
-               ),
-             ),
-           ),
-          const SizedBox(width: 8),
           PopupMenuButton<String>(
             color: cardColor,
             offset: const Offset(0, 48),
@@ -475,6 +473,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 child: Text('Reminder: Deadline in 14 days', style: TextStyle(color: Colors.white, fontSize: 13)),
               ),
             ],
+          ),
+          const SizedBox(width: 8),
+          _buildCircleButtonWidget(
+            Icons.add, 
+            cardColor, 
+            onPressed: () => _showSubmissionForm(),
           ),
           const SizedBox(width: 8),
           _buildCircleButtonWidget(Icons.person_outline, cardColor, onPressed: () {
@@ -511,7 +515,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 100, left: 20.0, right: 20.0, bottom: 20.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -526,7 +530,66 @@ class _StudentDashboardState extends State<StudentDashboard> {
               'Dashboard Overview',
               style: TextStyle(color: mutedTextColor, fontSize: 14),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+
+            if (_proposals.length > 1) ...[
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: List.generate(_proposals.length, (index) {
+                    final curr = _proposals[index];
+                    final isSelected = index == _activeProjectIndex;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12.0),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _activeProjectIndex = index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.fastOutSlowIn,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.forestEmerald : cardColor,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? AppTheme.forestEmerald : Colors.white.withValues(alpha: 0.05),
+                            ),
+                            boxShadow: isSelected
+                                ? [BoxShadow(color: AppTheme.forestEmerald.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                                : [],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isSelected ? Icons.rocket_launch : Icons.folder_outlined,
+                                color: isSelected ? Colors.white : mutedTextColor,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                curr.title.length > 18 ? '${curr.title.substring(0, 18)}...' : curr.title,
+                                style: GoogleFonts.montserrat(
+                                  color: isSelected ? Colors.white : mutedTextColor,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 32),
+            ] else if (_proposals.length == 1) ...[
+              const SizedBox(height: 32),
+            ] else ...[
+              const SizedBox(height: 32),
+            ],
+
 
             if (_proposal == null) ...[
               _buildEmptyState(),
@@ -1012,34 +1075,45 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildDeadlineBanner() {
+    if (_proposal == null) return const SizedBox.shrink();
+
+    final projectMeetings = _meetings.where((m) => m.projectId == _proposal!.id).toList();
+    final unmissed = projectMeetings.where((m) => m.status != 'MISSED' && m.status != 'COMPLETED').toList();
+    if (unmissed.isEmpty) return const SizedBox.shrink();
+    
+    unmissed.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
+    final upcoming = unmissed.first;
+
+    final dateStr = '${upcoming.scheduledDate.year}-${upcoming.scheduledDate.month.toString().padLeft(2, '0')}-${upcoming.scheduledDate.day.toString().padLeft(2, '0')}';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF3B82F6).withOpacity(0.1),
+        color: const Color(0xFF10B981).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.timer_outlined, color: Color(0xFF60A5FA), size: 20),
+          const Icon(Icons.event_available, color: Color(0xFF34D399), size: 20),
           const SizedBox(width: 12),
           const Expanded(
             child: Text(
-              'Upcoming Deadline: Fall 2026 Proposal Submissions close in 14 days.',
-              style: TextStyle(color: Color(0xFFDBEAFE), fontSize: 13),
+              'Upcoming Meeting with Supervisor.',
+              style: TextStyle(color: Color(0xFFD1FAE5), fontSize: 13),
             ),
           ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withOpacity(0.2),
+              color: const Color(0xFF10B981).withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'Nov 1, 2026',
-              style: TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold, fontSize: 12),
+            child: Text(
+              dateStr,
+              style: const TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
         ],
@@ -1471,6 +1545,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildMeetingsSection() {
+    if (_proposal == null) return const SizedBox.shrink();
+    final projectMeetings = _meetings.where((m) => m.projectId == _proposal!.id).toList();
+
     return GlassContainer(
       padding: const EdgeInsets.all(24),
       borderRadius: 24,
@@ -1491,10 +1568,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ],
           ),
           const SizedBox(height: 20),
-          if (_meetings.isEmpty)
+          if (projectMeetings.isEmpty)
             Text('No upcoming meetings scheduled.', style: TextStyle(color: mutedTextColor, fontSize: 14))
           else
-            ..._meetings.map((meeting) => _buildMeetingCard(meeting)).toList(),
+            ...projectMeetings.map((meeting) => _buildMeetingCard(meeting)),
         ],
       ),
     );

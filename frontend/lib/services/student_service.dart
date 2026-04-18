@@ -47,6 +47,7 @@ class MyProposalData {
   final DateTime? milestoneMidtermDate;
   final DateTime? milestoneFinalDate;
   final DateTime? milestoneVivaDate;
+  final DateTime? createdAt;
 
   MyProposalData({
     required this.id,
@@ -62,6 +63,7 @@ class MyProposalData {
     this.milestoneMidtermDate,
     this.milestoneFinalDate,
     this.milestoneVivaDate,
+    this.createdAt,
   });
 
   factory MyProposalData.fromJson(Map<String, dynamic> json) {
@@ -81,12 +83,14 @@ class MyProposalData {
       tags: rawTags.map((t) => t['tag']['name'] as String).toList(),
       supervisorName: json['supervisor']?['fullName'],
       supervisorEmail: json['supervisor']?['email'],
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'])?.toLocal() : null,
     );
   }
 }
 
 class MeetingData {
   final String id;
+  final String projectId;
   final DateTime scheduledDate;
   final DateTime windowExpiry;
   final String status;
@@ -95,6 +99,7 @@ class MeetingData {
 
   MeetingData({
     required this.id,
+    required this.projectId,
     required this.scheduledDate,
     required this.windowExpiry,
     required this.status,
@@ -105,11 +110,12 @@ class MeetingData {
   factory MeetingData.fromJson(Map<String, dynamic> json) {
     return MeetingData(
       id: json['id'],
+      projectId: json['groupId'],
       scheduledDate: DateTime.parse(json['scheduledDate']).toLocal(),
       windowExpiry: DateTime.parse(json['windowExpiry']).toLocal(),
       status: json['status'],
       supervisorNotes: json['supervisorNotes'],
-      supervisorName: json['supervisor']['fullName'],
+      supervisorName: json['supervisor']?['fullName'] ?? 'Unknown Supervisor',
     );
   }
 }
@@ -202,7 +208,7 @@ class StudentService {
     }
   }
 
-  Future<MyProposalData?> fetchMyProposal() async {
+  Future<List<MyProposalData>> fetchMyProposals() async {
     final token = await _getToken();
     final response = await http.get(
       Uri.parse('$baseUrl/projects/my-proposal'),
@@ -214,14 +220,14 @@ class StudentService {
 
     if (response.statusCode == 200) {
       if (response.body.isNotEmpty) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return MyProposalData.fromJson(data);
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => MyProposalData.fromJson(json)).toList();
       }
-      return null;
+      return [];
     } else if (response.statusCode == 404) {
-      return null;
+      return [];
     } else {
-      throw Exception('Failed to fetch proposal: ${response.body}');
+      throw Exception('Failed to fetch proposals: ${response.body}');
     }
   }
 

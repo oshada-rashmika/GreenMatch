@@ -13,6 +13,7 @@ type Project = {
   title: string;
   status: ProjectStatus;
   category: ProjectCategory;
+  description: string;
 };
 
 type SupervisorDashboardProps = {
@@ -128,7 +129,12 @@ function SupervisorDashboard({ fetchProjects, onConfirmMatch }: SupervisorDashbo
           >
             <h3>{project.title}</h3>
             <p>Status: {project.status}</p>
-            <p>Category: {project.category}</p>
+            <span className="project-tag-chip">{project.category}</span>
+            <p>{project.description}</p>
+            <span aria-label="progress-indicator">0%</span>
+            <button type="button" aria-label={`Bookmark ${project.title}`}>
+              Bookmark
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -150,10 +156,34 @@ function SupervisorDashboard({ fetchProjects, onConfirmMatch }: SupervisorDashbo
 
 describe("SupervisorDashboard - Verify the component renders the 'Available Projects' tab by default", () => {
   const mockProjects: Project[] = [
-    { id: 'p1', title: 'AI Attendance System', status: 'AVAILABLE', category: 'Algorithms' },
-    { id: 'p2', title: 'Smart Campus Navigator', status: 'AVAILABLE', category: 'Cloud Computing' },
-    { id: 'p3', title: 'Cloud Timetable Optimizer', status: 'SUPERVISED', category: 'Cloud Computing' },
-    { id: 'p4', title: 'Automated Marking Assistant', status: 'EVALUATED', category: 'Algorithms' },
+    {
+      id: 'p1',
+      title: 'AI Attendance System',
+      status: 'AVAILABLE',
+      category: 'Algorithms',
+      description: 'Vision-based attendance with model tracking.',
+    },
+    {
+      id: 'p2',
+      title: 'Smart Campus Navigator',
+      status: 'AVAILABLE',
+      category: 'Cloud Computing',
+      description: 'Path optimization for campus wayfinding.',
+    },
+    {
+      id: 'p3',
+      title: 'Cloud Timetable Optimizer',
+      status: 'SUPERVISED',
+      category: 'Cloud Computing',
+      description: 'Resource-aware schedule optimization.',
+    },
+    {
+      id: 'p4',
+      title: 'Automated Marking Assistant',
+      status: 'EVALUATED',
+      category: 'Algorithms',
+      description: 'Auto-grading and rubric scoring engine.',
+    },
   ];
 
   let mockFetchProjects: jest.MockedFunction<() => Promise<Project[]>>;
@@ -259,9 +289,27 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
 
   test("Verify that clicking the 'Algorithms' category chip filters the project list correctly.", async () => {
     const categoryFilterProjects: Project[] = [
-      { id: 'a1', title: 'Evalora | Edu', status: 'AVAILABLE', category: 'Algorithms' },
-      { id: 'c1', title: 'CeylonDash Mobile App', status: 'AVAILABLE', category: 'Cloud Computing' },
-      { id: 's1', title: 'Marked Attendance Engine', status: 'SUPERVISED', category: 'Algorithms' },
+      {
+        id: 'a1',
+        title: 'Evalora | Edu',
+        status: 'AVAILABLE',
+        category: 'Algorithms',
+        description: 'Algorithm-first rubric assistant.',
+      },
+      {
+        id: 'c1',
+        title: 'CeylonDash Mobile App',
+        status: 'AVAILABLE',
+        category: 'Cloud Computing',
+        description: 'Cloud-native student dashboard app.',
+      },
+      {
+        id: 's1',
+        title: 'Marked Attendance Engine',
+        status: 'SUPERVISED',
+        category: 'Algorithms',
+        description: 'Attendance anomaly detection pipeline.',
+      },
     ];
 
     mockFetchProjects.mockImplementation(async () => categoryFilterProjects);
@@ -313,8 +361,20 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
 
   test("Verify that clicking 'Confirm Match' triggers the correct action with the specific project ID.", async () => {
     const confirmMatchProjects: Project[] = [
-      { id: 'proj_123', title: 'GreenMatch', status: 'AVAILABLE', category: 'Algorithms' },
-      { id: 'proj_777', title: 'CeylonDash Mobile App', status: 'AVAILABLE', category: 'Cloud Computing' },
+      {
+        id: 'proj_123',
+        title: 'GreenMatch',
+        status: 'AVAILABLE',
+        category: 'Algorithms',
+        description: 'OOP',
+      },
+      {
+        id: 'proj_777',
+        title: 'CeylonDash Mobile App',
+        status: 'AVAILABLE',
+        category: 'Cloud Computing',
+        description: 'Flutter, iOS',
+      },
     ];
 
     mockFetchProjects.mockImplementation(async () => confirmMatchProjects);
@@ -345,5 +405,63 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
     expect(await within(greenMatchCard as HTMLElement).findByRole('status')).toHaveTextContent(
       'Match confirmed',
     );
+  });
+
+  test('Verify that project cards correctly display unique content (Title, Tags, Description).', async () => {
+    const contentProjects: Project[] = [
+      {
+        id: 'proj_123',
+        title: 'GreenMatch',
+        status: 'AVAILABLE',
+        category: 'Algorithms',
+        description: 'OOP',
+      },
+      {
+        id: 'proj_777',
+        title: 'CeylonDash Mobile App',
+        status: 'AVAILABLE',
+        category: 'Cloud Computing',
+        description: 'Flutter, iOS',
+      },
+    ];
+
+    mockFetchProjects.mockImplementation(async () => contentProjects);
+
+    render(
+      <SupervisorDashboard
+        fetchProjects={mockFetchProjects}
+        onConfirmMatch={mockOnConfirmMatch}
+      />,
+    );
+
+    const greenMatchTitle = await screen.findByRole('heading', {
+      name: 'GreenMatch',
+    });
+    const greenMatchCard = greenMatchTitle.closest('[data-testid="project-card"]');
+    expect(greenMatchCard).not.toBeNull();
+
+    expect(
+      within(greenMatchCard as HTMLElement).getByRole('heading', {
+        name: 'GreenMatch',
+      }),
+    ).toBeInTheDocument();
+    expect(within(greenMatchCard as HTMLElement).getByText('Algorithms')).toBeInTheDocument();
+    expect(within(greenMatchCard as HTMLElement).getByText('OOP')).toBeInTheDocument();
+
+    const ceylonDashTitle = await screen.findByRole('heading', {
+      name: 'CeylonDash Mobile App',
+    });
+    const ceylonDashCard = ceylonDashTitle.closest('[data-testid="project-card"]');
+    expect(ceylonDashCard).not.toBeNull();
+
+    expect(
+      within(ceylonDashCard as HTMLElement).getByRole('heading', {
+        name: 'CeylonDash Mobile App',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(ceylonDashCard as HTMLElement).getByText('Cloud Computing'),
+    ).toBeInTheDocument();
+    expect(within(ceylonDashCard as HTMLElement).getByText('Flutter, iOS')).toBeInTheDocument();
   });
 });

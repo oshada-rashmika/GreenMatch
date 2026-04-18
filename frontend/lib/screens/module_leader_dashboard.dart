@@ -14,6 +14,7 @@ enum _ModuleLeaderSection {
   researchAreas,
   projectAllocations,
   academicModules,
+  guidelines,
 }
 
 enum _ProjectAllocationFilter { all, pending, matched }
@@ -146,6 +147,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
             _buildTabButton('Research Areas', _ModuleLeaderSection.researchAreas),
             _buildTabButton('Project Allocations', _ModuleLeaderSection.projectAllocations),
             _buildTabButton('Academic Modules', _ModuleLeaderSection.academicModules),
+            _buildTabButton('Guidelines', _ModuleLeaderSection.guidelines),
           ],
         ),
       ),
@@ -214,6 +216,10 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
         'Academic Modules',
         'Create modules and manage supervisor assignment.',
       ),
+      _ModuleLeaderSection.guidelines => (
+        'Guidelines',
+        'Manage and distribute formatting rules and university guidelines.',
+      ),
     };
 
     return Row(
@@ -279,7 +285,32 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
       _ModuleLeaderSection.projectAllocations =>
         _buildProjectAllocationsContent(),
       _ModuleLeaderSection.academicModules => _buildAcademicModulesContent(),
+      _ModuleLeaderSection.guidelines => _buildGuidelinesContent(),
     };
+  }
+
+  Widget _buildGuidelinesContent() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          children: [
+            Icon(Icons.menu_book, size: 64, color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            const Text(
+              'Guidelines Module',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Here you can manage university templates and formatting guidelines.',
+              style: TextStyle(color: Colors.white60, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildOverviewContent() {

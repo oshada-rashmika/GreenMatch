@@ -2,15 +2,17 @@
 /// <reference types="react-dom" />
 
 import { useEffect, useState } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 type ProjectStatus = 'AVAILABLE' | 'SUPERVISED' | 'EVALUATED';
+type ProjectCategory = 'Algorithms' | 'Cloud Computing';
 
 type Project = {
   id: string;
   title: string;
   status: ProjectStatus;
+  category: ProjectCategory;
 };
 
 type SupervisorDashboardProps = {
@@ -19,6 +21,7 @@ type SupervisorDashboardProps = {
 
 function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
   const [activeTab, setActiveTab] = useState<'available' | 'supervised' | 'evaluated'>('available');
+  const [activeCategory, setActiveCategory] = useState<'All' | ProjectCategory>('All');
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
@@ -46,7 +49,9 @@ function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
   };
 
   const visibleProjects = projects.filter(
-    (project) => project.status === statusByTab[activeTab],
+    (project) =>
+      project.status === statusByTab[activeTab] &&
+      (activeCategory === 'All' || project.category === activeCategory),
   );
 
   return (
@@ -81,6 +86,28 @@ function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
         </button>
       </div>
 
+      <div
+        role="group"
+        aria-label="project-category-filters"
+        style={{ display: 'flex', gap: '8px', marginTop: '12px' }}
+      >
+        {(['All', 'Algorithms', 'Cloud Computing'] as const).map((chip) => (
+          <button
+            key={chip}
+            type="button"
+            aria-pressed={activeCategory === chip}
+            className={
+              activeCategory === chip
+                ? 'filter-chip chip-active bg-sky-100 text-sky-900'
+                : 'filter-chip chip-inactive bg-gray-100 text-gray-700'
+            }
+            onClick={() => setActiveCategory(chip)}
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
       <div aria-label="project-cards" style={{ marginTop: '16px' }}>
         {visibleProjects.map((project) => (
           <article
@@ -91,6 +118,7 @@ function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
           >
             <h3>{project.title}</h3>
             <p>Status: {project.status}</p>
+            <p>Category: {project.category}</p>
           </article>
         ))}
       </div>
@@ -100,10 +128,10 @@ function SupervisorDashboard({ fetchProjects }: SupervisorDashboardProps) {
 
 describe("SupervisorDashboard - Verify the component renders the 'Available Projects' tab by default", () => {
   const mockProjects: Project[] = [
-    { id: 'p1', title: 'AI Attendance System', status: 'AVAILABLE' },
-    { id: 'p2', title: 'Smart Campus Navigator', status: 'AVAILABLE' },
-    { id: 'p3', title: 'Cloud Timetable Optimizer', status: 'SUPERVISED' },
-    { id: 'p4', title: 'Automated Marking Assistant', status: 'EVALUATED' },
+    { id: 'p1', title: 'AI Attendance System', status: 'AVAILABLE', category: 'Algorithms' },
+    { id: 'p2', title: 'Smart Campus Navigator', status: 'AVAILABLE', category: 'Cloud Computing' },
+    { id: 'p3', title: 'Cloud Timetable Optimizer', status: 'SUPERVISED', category: 'Cloud Computing' },
+    { id: 'p4', title: 'Automated Marking Assistant', status: 'EVALUATED', category: 'Algorithms' },
   ];
 
   let mockFetchProjects: jest.MockedFunction<() => Promise<Project[]>>;
@@ -193,5 +221,54 @@ describe("SupervisorDashboard - Verify the component renders the 'Available Proj
 
     expect(screen.queryByText('AI Attendance System')).not.toBeInTheDocument();
     expect(screen.queryByText('Smart Campus Navigator')).not.toBeInTheDocument();
+  });
+
+  test("Verify that clicking the 'Algorithms' category chip filters the project list correctly.", async () => {
+    const categoryFilterProjects: Project[] = [
+      { id: 'a1', title: 'Evalora | Edu', status: 'AVAILABLE', category: 'Algorithms' },
+      { id: 'c1', title: 'CeylonDash Mobile App', status: 'AVAILABLE', category: 'Cloud Computing' },
+      { id: 's1', title: 'Marked Attendance Engine', status: 'SUPERVISED', category: 'Algorithms' },
+    ];
+
+    mockFetchProjects.mockImplementation(async () => categoryFilterProjects);
+
+    render(<SupervisorDashboard fetchProjects={mockFetchProjects} />);
+
+    const filterGroup = screen.getByRole('group', {
+      name: /project-category-filters/i,
+    });
+    const allChip = within(filterGroup).getByRole('button', { name: /^all$/i });
+    const algorithmsChip = within(filterGroup).getByRole('button', {
+      name: /algorithms/i,
+    });
+
+    await waitFor(() => {
+      expect(mockFetchProjects).toHaveBeenCalledTimes(1);
+    });
+
+    expect(await screen.findByText('Evalora | Edu')).toBeInTheDocument();
+    expect(await screen.findByText('CeylonDash Mobile App')).toBeInTheDocument();
+
+    fireEvent.click(algorithmsChip);
+
+    await waitFor(() => {
+      expect(algorithmsChip).toHaveClass('chip-active');
+    });
+
+    expect(algorithmsChip).toHaveAttribute('aria-pressed', 'true');
+    expect(allChip).toHaveClass('chip-inactive');
+    expect(allChip).toHaveAttribute('aria-pressed', 'false');
+
+    expect(await screen.findByText('Evalora | Edu')).toBeInTheDocument();
+    expect(screen.queryByText('CeylonDash Mobile App')).not.toBeInTheDocument();
+
+    fireEvent.click(allChip);
+
+    await waitFor(() => {
+      expect(allChip).toHaveClass('chip-active');
+    });
+
+    expect(await screen.findByText('Evalora | Edu')).toBeInTheDocument();
+    expect(await screen.findByText('CeylonDash Mobile App')).toBeInTheDocument();
   });
 });

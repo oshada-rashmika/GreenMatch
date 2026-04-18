@@ -9,6 +9,7 @@ import { MeetingsModule } from './meetings/meetings.module';
 import { UsersModule } from './users/users.module';
 import { ModulesModule } from './modules/modules.module';
 import { TagsModule } from './tags/tags.module';
+import { ModuleLeaderModule } from './module-leader/module-leader.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TagsModule } from './tags/tags.module';
     UsersModule,
     ModulesModule,
     TagsModule,
+    ModuleLeaderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

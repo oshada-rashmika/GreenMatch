@@ -12,9 +12,6 @@ class NotFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const String binary404 = '''
-                              
-     mmm     mmmm        mmm  
-    m###    ##""##      m###  
 111 000 111
 1 1 0 0 1 1
 111 0 0 111
@@ -49,7 +46,7 @@ class NotFoundScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 40.0),
+                padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 60.0),
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -83,10 +80,9 @@ class NotFoundScreen extends StatelessWidget {
                       ),
                     ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.9, 0.9)),
 
-                    const SizedBox(height: 54),
-
+                    const SizedBox(height: 40),
                     Text(
-                      "We only built three dashboards and two login screens...",
+                      "We only got Three Dashboards and Two Login Screen.",
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
                         fontSize: 18,
@@ -96,10 +92,10 @@ class NotFoundScreen extends StatelessWidget {
                       ),
                     ).animate().fadeIn(delay: 400.ms, duration: 800.ms),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     Text(
-                      "How tf did you end up here?",
+                      "How tf did you endup here?",
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
@@ -109,7 +105,15 @@ class NotFoundScreen extends StatelessWidget {
                       ),
                     ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
 
-                    const SizedBox(height: 60),
+                    const SizedBox(height: 40),
+
+                    Image.asset(
+                      'public/robot.png',
+                      height: 250,
+                      fit: BoxFit.contain,
+                    ).animate().fadeIn(delay: 800.ms).scale(begin: const Offset(0.8, 0.8)),
+
+                    const SizedBox(height: 40),
 
                     InkWell(
                       onTap: () {
@@ -121,7 +125,7 @@ class NotFoundScreen extends StatelessWidget {
                       },
                       borderRadius: BorderRadius.circular(24),
                       child: Container(
-                        width: 280,
+                        width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         decoration: BoxDecoration(
                           boxShadow: [
@@ -163,7 +167,7 @@ class NotFoundScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2),
+                    ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2),
                   ],
                 ),
               ),

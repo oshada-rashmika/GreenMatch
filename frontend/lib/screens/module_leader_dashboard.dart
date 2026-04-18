@@ -442,12 +442,27 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                     );
                                   },
                                   child: Container(
-                                    width: 300,
+                                    width: MediaQuery.of(context).size.width * 0.75,
+                                    constraints: const BoxConstraints(maxWidth: 320),
                                     padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.03),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          AppTheme.forestEmerald.withValues(alpha: 0.12),
+                                          const Color(0xFF1E293B).withValues(alpha: 0.4),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(24),
+                                      border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.2)),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.forestEmerald.withValues(alpha: 0.05),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 10),
+                                        ),
+                                      ],
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,12 +499,13 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                              itemBuilder: (context, index) {
                                final supervisor = payload.supervisors[index];
                                return Container(
-                                 width: 250,
-                                 padding: const EdgeInsets.all(16),
+                                 width: MediaQuery.of(context).size.width * 0.7,
+                                 constraints: const BoxConstraints(maxWidth: 250),
+                                 padding: const EdgeInsets.all(12),
                                  decoration: BoxDecoration(
-                                   color: Colors.white.withValues(alpha: 0.03),
-                                   borderRadius: BorderRadius.circular(16),
-                                   border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                   color: Colors.white.withValues(alpha: 0.02),
+                                   borderRadius: BorderRadius.circular(30),
+                                   border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                                  ),
                                  child: Row(
                                    children: [
@@ -1590,7 +1606,7 @@ class _MetricCardState extends State<_MetricCard> with SingleTickerProviderState
                         widget.value,
                         style: TextStyle(
                           fontFamily: 'Montserrat',
-                          fontSize: 42,
+                          fontSize: MediaQuery.of(context).size.width < 600 ? 32 : 42,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           height: 1.0,
@@ -2394,7 +2410,7 @@ class _SectionPanel extends StatelessWidget {
     return GlassContainer(
       opacity: 0.02,
       blur: 20,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 16 : 24),
       borderRadius: 24,
       borderColor: Colors.white.withValues(alpha: 0.05),
       child: Column(

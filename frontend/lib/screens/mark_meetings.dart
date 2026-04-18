@@ -725,9 +725,7 @@ class _MeetingDaysGridScreenState extends State<MeetingDaysGridScreen>
                                     primary: AppTheme.forestEmerald,
                                     surface: Color(0xFF0F1F14),
                                     onSurface: Colors.white,
-                                  ),
-                                  dialogBackgroundColor:
-                                      const Color(0xFF0F1F14),
+                                  ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF0F1F14)),
                                 ),
                                 child: child!,
                               );

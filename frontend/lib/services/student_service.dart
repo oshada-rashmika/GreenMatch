@@ -219,9 +219,9 @@ class StudentService {
         'title': title,
         'abstract': abstractText,
         'moduleId': moduleId,
-        if (groupName != null) 'groupName': groupName,
-        if (tagIds != null) 'tagIds': tagIds,
-        if (memberStudentIds != null) 'memberStudentIds': memberStudentIds,
+        'groupName': ?groupName,
+        'tagIds': ?tagIds,
+        'memberStudentIds': ?memberStudentIds,
       }),
     );
 

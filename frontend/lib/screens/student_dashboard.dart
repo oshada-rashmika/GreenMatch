@@ -532,6 +532,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             const SizedBox(height: 24),
 
+            _buildSavedResourcesCarousel(),
+            const SizedBox(height: 32),
+
             if (_proposals.length > 1) ...[
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -1669,5 +1672,109 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to record attendance: $e')));
       }
     }
+  }
+
+  Widget _buildSavedResourcesCarousel() {
+    final resources = [
+      {'title': 'University Fall 2026 Guidelines', 'type': 'PDF', 'size': '2.4 MB'},
+      {'title': 'AI Climate Modeling Architectures', 'type': 'PDF', 'size': '5.1 MB'},
+      {'title': 'GreenMatch Portal Documentation', 'type': 'Link', 'size': '--'},
+      {'title': 'TensorFlow for Environmental Data', 'type': 'PDF', 'size': '1.2 MB'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Pinned Resources',
+              style: GoogleFonts.montserrat(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            TextButton(
+              onPressed: () {},
+              child: Text(
+                'View All',
+                style: GoogleFonts.montserrat(
+                  color: AppTheme.forestEmerald,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: resources.map((res) {
+              final isPdf = res['type'] == 'PDF';
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: GlassContainer(
+                  width: 200,
+                  padding: const EdgeInsets.all(16),
+                  borderRadius: 20,
+                  opacity: 0.03,
+                  borderColor: Colors.white.withValues(alpha: 0.05),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isPdf ? const Color(0xFFEF4444).withValues(alpha: 0.1) : const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              isPdf ? Icons.picture_as_pdf_outlined : Icons.link,
+                              color: isPdf ? const Color(0xFFEF4444) : const Color(0xFF3B82F6),
+                              size: 18,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.push_pin, color: mutedTextColor.withValues(alpha: 0.5), size: 14),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        res['title']!,
+                        style: GoogleFonts.montserrat(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${res['type']} • ${res['size']}',
+                        style: GoogleFonts.montserrat(
+                          color: mutedTextColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
   }
 }

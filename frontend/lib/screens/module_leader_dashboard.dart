@@ -497,7 +497,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                        radius: 20,
                                        backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.15),
                                        child: Text(
-                                         supervisor.name.substring(0, 1).toUpperCase(),
+                                         supervisor.fullName.substring(0, 1).toUpperCase(),
                                          style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold),
                                        ),
                                      ),
@@ -507,7 +507,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                          crossAxisAlignment: CrossAxisAlignment.start,
                                          mainAxisAlignment: MainAxisAlignment.center,
                                          children: [
-                                           Text(supervisor.name, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                           Text(supervisor.fullName, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
                                            const SizedBox(height: 6),
                                            Text(supervisor.email, style: const TextStyle(color: Colors.white54, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
                                          ],

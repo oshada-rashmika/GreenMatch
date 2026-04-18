@@ -9,7 +9,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   async validateStudent(email: string, pass: string) {
     const user = await this.prisma.student.findUnique({ where: { email } });
@@ -39,15 +39,9 @@ export class AuthService {
   }
 
   async login(user: any, role: Role) {
-    const payload: any = { email: user.email, sub: user.id, role: role };
-
-    if (user.isFirstLogin !== undefined) {
-      payload.isFirstLogin = user.isFirstLogin;
-    }
-
+    const payload = { email: user.email, sub: user.id, role: role };
     return {
       access_token: this.jwtService.sign(payload),
-      user: user
     };
   }
 }

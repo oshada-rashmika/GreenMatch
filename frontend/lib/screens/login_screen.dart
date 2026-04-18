@@ -8,7 +8,6 @@ import '../services/auth_provider.dart';
 import 'supervisor_dashboard.dart';
 import 'student_dashboard.dart';
 import 'module_leader_dashboard.dart';
-import 'supervisor_onboarding_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool adminOnly;
@@ -162,7 +161,9 @@ class _LoginScreenState extends State<LoginScreen>
     );
 
     if (success && context.mounted) {
-      _showGlassSnackBar(context, 'Student login successful!');
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Student login successful!')),
+      );
 
       navigator.pushReplacement(
         MaterialPageRoute(builder: (context) => const StudentDashboard()),
@@ -216,22 +217,19 @@ class _LoginScreenState extends State<LoginScreen>
           );
 
     if (success && context.mounted) {
-      _showGlassSnackBar(
-        context,
-        '${_staffRole == 'supervisor' ? 'Supervisor' : 'Module Leader'} login successful!',
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '${_staffRole == 'supervisor' ? 'Supervisor' : 'Module Leader'} login successful!',
+          ),
+        ),
       );
 
       navigator.pushReplacement(
         MaterialPageRoute(
-          builder: (context) {
-            if (_staffRole == 'supervisor') {
-              return authProvider.isFirstLogin
-                  ? const SupervisorOnboardingScreen()
-                  : const SupervisorDashboard();
-            } else {
-              return const ModuleLeaderDashboard();
-            }
-          },
+          builder: (context) => _staffRole == 'supervisor'
+              ? const SupervisorDashboard()
+              : const ModuleLeaderDashboard(),
         ),
       );
     }
@@ -952,73 +950,6 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     ).animate().fadeIn().shake(duration: 400.ms, hz: 4);
   }
-
-  void _showGlassSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(milliseconds: 2500),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height - 120,
-          left: 20,
-          right: 20,
-        ),
-        content: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppTheme.forestEmerald.withValues(alpha: 0.4),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  )
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.forestEmerald.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: AppTheme.forestEmerald,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ============================================================================
@@ -1175,73 +1106,6 @@ class _GlassTextField extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  void _showGlassSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(milliseconds: 2500),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height - 120,
-          left: 20,
-          right: 20,
-        ),
-        content: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppTheme.forestEmerald.withValues(alpha: 0.4),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  )
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.forestEmerald.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: AppTheme.forestEmerald,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

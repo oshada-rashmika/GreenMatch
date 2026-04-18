@@ -14,13 +14,9 @@ import '../widgets/glass_container.dart';
 import 'bookmarks_screen.dart';
 import 'login_screen.dart';
 import 'matches_screen.dart';
-import 'evaluation_hub_screen.dart';
-import './supervisor_profile.dart';
+import 'profile_screen.dart';
 import '../services/shortlist_provider.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
-import '../services/supervisor_service.dart';
-import '../models/supervisor_profile.dart' as supervisor_model;
-import './project_selection_screen.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -50,14 +46,14 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   List<String> _filters = ["All"];
 
   static const Duration _warningDuration = Duration(minutes: 30);
-  static const Duration _logoutDuration = Duration(minutes: 45);
+  static const Duration _logoutDuration  = Duration(minutes: 45);
 
   Timer? _warningTimer;
   Timer? _logoutTimer;
 
   bool _showWarning = false;
 
-  int _countdownSeconds = 15 * 60;
+  int _countdownSeconds = 15 * 60; 
   Timer? _countdownTick;
 
   @override
@@ -81,7 +77,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     }
 
     _warningTimer = Timer(_warningDuration, _onWarningTriggered);
-    _logoutTimer = Timer(_logoutDuration, _onAutoLogout);
+    _logoutTimer  = Timer(_logoutDuration,  _onAutoLogout);
   }
 
   void _onWarningTriggered() {
@@ -146,7 +142,10 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       final fetchedProjects = await projectService.fetchAnonymousProjects();
       final mySupervised = await projectService.fetchMySupervisedProjects();
 
-      final uniqueTags = fetchedProjects.expand((p) => p.tags).toSet().toList()
+      final uniqueTags = fetchedProjects
+          .expand((p) => p.tags)
+          .toSet()
+          .toList()
         ..sort();
 
       setState(() {
@@ -171,6 +170,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     }
   }
 
+
   @override
   void dispose() {
     _warningTimer?.cancel();
@@ -192,7 +192,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     } on ProjectServiceException catch (e) {
       if (e.statusCode == 400) {
         _showErrorSnackBar('Project already claimed by another supervisor');
-        _fetchProjects();
+        _fetchProjects(); 
       } else {
         _showErrorSnackBar('Failed to match project: ${e.message}');
       }
@@ -212,7 +212,10 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
@@ -237,7 +240,10 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
@@ -250,7 +256,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         action: SnackBarAction(
           label: 'Dismiss',
           textColor: Colors.white70,
-          onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+          onPressed: () =>
+              ScaffoldMessenger.of(context).hideCurrentSnackBar(),
         ),
       ),
     );
@@ -266,7 +273,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         onPointerMove: _handlePointerEvent,
         child: Scaffold(
           extendBodyBehindAppBar: true,
-          drawer: !_isMobile(context) ? null : const _DashboardDrawer(),
           appBar: _buildAppBar(),
           body: Stack(
             children: [
@@ -322,12 +328,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                                 ),
                               )
                             : errorMessage != null
-                            ? _buildErrorState(errorMessage!)
-                            : (_currentTab == 0
-                                  ? _buildProjectContent()
-                                  : _currentTab == 1
-                                  ? _buildSupervisedContent()
-                                  : _buildEvaluatedContent()),
+                                ? _buildErrorState(errorMessage!)
+                                : (_currentTab == 0 ? _buildProjectContent() : _buildSupervisedContent()),
                       ),
                     ),
                   ],
@@ -357,103 +359,83 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         borderColor: Colors.transparent,
         child: AppBar(
           centerTitle: false,
-          title: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              "Blind Review",
-              style: GoogleFonts.montserrat(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-                fontSize: _isMobile(context) ? 18 : 22,
-              ),
+          title: Text(
+            "Blind Review",
+            style: GoogleFonts.montserrat(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              fontSize: 22,
             ),
           ),
-          automaticallyImplyLeading: !_isMobile(context),
-          leading: _isMobile(context)
-              ? Builder(
-                  builder: (context) => IconButton(
-                    icon: _buildAppBarIcon(Icons.menu),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                  ),
-                )
-              : null,
           actions: [
-            if (!_isMobile(context)) ...[
-              if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
-              const SizedBox(width: 8),
-              _buildFocusToggle(),
-              const SizedBox(width: 8),
-              _buildActionsRow(),
-            ] else if (matchedProjectIds.isNotEmpty) ...[
-              _buildMatchesButton(),
-              const SizedBox(width: 16),
-            ],
+            if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
+            const SizedBox(width: 8),
+            _buildFocusToggle(),
+            const SizedBox(width: 8),
+            Consumer<ShortlistProvider>(
+              builder: (context, shortlistProvider, child) {
+                final count = shortlistProvider.shortlistedIds.length;
+                return Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BookmarksScreen(),
+                      ),
+                    ),
+                    child: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text(
+                        count.toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 10, 
+                          color: Color(0xFF0F1F14), // Dark background text for contrast
+                        ),
+                      ),
+                      backgroundColor: const Color(0xFFFBBF24), // Premium Amber/Gold color
+                      offset: const Offset(-4, 0),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.bookmark_border_rounded, 
+                          size: 22, 
+                          color: Colors.white.withValues(alpha: 0.9)
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            _buildAppBarIcon(Icons.notifications_none_rounded),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ProfileScreen(),
+                ),
+              ),
+              child: _buildAppBarIcon(Icons.person),
+            ),
+            const SizedBox(width: 16),
           ],
         ),
       ),
-    );
-  }
-
-  bool _isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < 800;
-
-  Widget _buildActionsRow() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Consumer<ShortlistProvider>(
-          builder: (context, shortlistProvider, child) {
-            final count = shortlistProvider.shortlistedIds.length;
-            return Center(
-              child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BookmarksScreen()),
-                ),
-                child: Badge(
-                  isLabelVisible: count > 0,
-                  label: Text(
-                    count.toString(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                      color: Color(0xFF0F1F14),
-                    ),
-                  ),
-                  backgroundColor: const Color(0xFFFBBF24),
-                  offset: const Offset(-4, 0),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 1,
-                  ),
-                  child: _buildAppBarIcon(Icons.bookmark_border_rounded),
-                ),
-              ),
-            );
-          },
-        ),
-        _buildAppBarIcon(Icons.notifications_none_rounded),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const EvaluationHubScreen()),
-            );
-            _fetchProjects();
-          },
-          child: _buildAppBarIcon(Icons.assessment_outlined),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SupervisorProfileScreen()),
-          ),
-          child: _buildAppBarIcon(Icons.person),
-        ),
-        const SizedBox(width: 16),
-      ],
     );
   }
 
@@ -536,29 +518,24 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _isFocusMode
-                    ? AppTheme.forestEmerald.withValues(alpha: 0.15)
+                color: _isFocusMode 
+                    ? AppTheme.forestEmerald.withValues(alpha: 0.15) 
                     : Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _isFocusMode
-                      ? AppTheme.forestEmerald.withValues(alpha: 0.3)
+                  color: _isFocusMode 
+                      ? AppTheme.forestEmerald.withValues(alpha: 0.3) 
                       : Colors.white.withValues(alpha: 0.1),
                 ),
               ),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, anim) =>
-                    ScaleTransition(scale: anim, child: child),
+                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                 child: Icon(
-                  _isFocusMode
-                      ? Icons.close_rounded
-                      : Icons.view_agenda_rounded,
+                  _isFocusMode ? Icons.close_rounded : Icons.view_agenda_rounded,
                   key: ValueKey(_isFocusMode),
                   size: 22,
-                  color: _isFocusMode
-                      ? const Color(0xFFFF4545)
-                      : Colors.white.withValues(alpha: 0.9),
+                  color: _isFocusMode ? const Color(0xFFFF4545) : Colors.white.withValues(alpha: 0.9),
                 ),
               ),
             ),
@@ -584,20 +561,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: _currentTab == 0
-                        ? AppTheme.forestEmerald
-                        : Colors.transparent,
+                    color: _currentTab == 0 ? AppTheme.forestEmerald : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
                     child: Text(
-                      'Available Projects',
+                      'Available Projects', 
                       style: GoogleFonts.montserrat(
                         color: _currentTab == 0 ? Colors.white : Colors.white60,
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
-                      ),
-                    ),
+                      )
+                    )
                   ),
                 ),
               ),
@@ -608,44 +583,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: _currentTab == 1
-                        ? AppTheme.forestEmerald
-                        : Colors.transparent,
+                    color: _currentTab == 1 ? AppTheme.forestEmerald : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
                     child: Text(
-                      'Supervised',
+                      'My Supervised', 
                       style: GoogleFonts.montserrat(
                         color: _currentTab == 1 ? Colors.white : Colors.white60,
                         fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _currentTab = 2),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: _currentTab == 2
-                        ? AppTheme.forestEmerald
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Evaluated',
-                      style: GoogleFonts.montserrat(
-                        color: _currentTab == 2 ? Colors.white : Colors.white60,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
+                        fontSize: 13,
+                      )
+                    )
                   ),
                 ),
               ),
@@ -695,20 +644,19 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildProjectContent() {
+    final shortlistProvider = context.watch<ShortlistProvider>();
     List<AnonymousProject> filtered;
-
+    
     if (_selectedFilter == "All") {
       filtered = projects;
     } else {
-      filtered = projects
-          .where((p) => p.tags.contains(_selectedFilter))
-          .toList();
+      filtered = projects.where((p) => p.tags.contains(_selectedFilter)).toList();
     }
 
     if (filtered.isEmpty) {
       return _buildEmptyState();
     }
-
+    
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 500),
       switchInCurve: Curves.easeOutQuart,
@@ -739,11 +687,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.view_carousel_rounded,
-                size: 64,
-                color: AppTheme.forestEmerald.withValues(alpha: 0.5),
-              ),
+              Icon(Icons.view_carousel_rounded, size: 64, color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
               const SizedBox(height: 16),
               Text(
                 "No projects to review.",
@@ -776,8 +720,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
                         _swiperController.swipe(CardSwiperDirection.left);
                         return KeyEventResult.handled;
-                      } else if (event.logicalKey ==
-                          LogicalKeyboardKey.arrowRight) {
+                      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
                         _swiperController.swipe(CardSwiperDirection.right);
                         return KeyEventResult.handled;
                       }
@@ -794,15 +737,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppTheme.forestEmerald.withValues(
-                                alpha: 0.1,
-                              ),
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
                             ),
-                            child: const Icon(
-                              Icons.check_circle_outline_rounded,
-                              size: 64,
-                              color: AppTheme.forestEmerald,
-                            ),
+                            child: const Icon(Icons.check_circle_outline_rounded, size: 64, color: AppTheme.forestEmerald),
                           ),
                           const SizedBox(height: 24),
                           Text(
@@ -822,45 +759,33 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                           controller: _swiperController,
                           cardsCount: projects.length,
                           numberOfCardsDisplayed: projects.length == 1 ? 1 : 2,
-                          cardBuilder:
-                              (
-                                context,
-                                index,
-                                horizontalOffsetPercentage,
-                                verticalOffsetPercentage,
-                              ) {
-                                final project = projects[index];
-                                return FocusProjectCard(
-                                  project: project,
-                                  activeSpecifications: activeSpecifications,
-                                  onMatch: () => _onMatchConfirmed(project.id),
-                                  percentX: horizontalOffsetPercentage,
-                                );
-                              },
-                          allowedSwipeDirection:
-                              const AllowedSwipeDirection.symmetric(
-                                horizontal: true,
-                              ),
-                          onSwipe: (previousIndex, currentIndex, direction) {
-                            final project = projects[previousIndex];
-                            if (direction == CardSwiperDirection.right) {
-                              final shortlistProvider = context
-                                  .read<ShortlistProvider>();
-                              if (!shortlistProvider.isShortlisted(
-                                project.id,
-                              )) {
-                                shortlistProvider.toggleShortlist(project.id);
-                                HapticFeedback.lightImpact();
-                              }
-                            } else if (direction == CardSwiperDirection.left) {
-                              HapticFeedback.selectionClick();
+                        cardBuilder: (context, index, horizontalOffsetPercentage, verticalOffsetPercentage) {
+                          final project = projects[index];
+                          return FocusProjectCard(
+                            project: project,
+                            activeSpecifications: activeSpecifications,
+                            onMatch: () => _onMatchConfirmed(project.id),
+                            percentX: horizontalOffsetPercentage,
+                          );
+                        },
+                        allowedSwipeDirection: const AllowedSwipeDirection.symmetric(horizontal: true),
+                        onSwipe: (previousIndex, currentIndex, direction) {
+                          final project = projects[previousIndex];
+                          if (direction == CardSwiperDirection.right) {
+                            final shortlistProvider = context.read<ShortlistProvider>();
+                            if (!shortlistProvider.isShortlisted(project.id)) {
+                              shortlistProvider.toggleShortlist(project.id);
+                              HapticFeedback.lightImpact();
                             }
-                            return true;
-                          },
-                          onEnd: () {
-                            HapticFeedback.mediumImpact();
-                          },
-                        ),
+                          } else if (direction == CardSwiperDirection.left) {
+                              HapticFeedback.selectionClick();
+                          }
+                          return true;
+                        },
+                        onEnd: () {
+                          HapticFeedback.mediumImpact();
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -890,11 +815,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               HapticFeedback.lightImpact();
               _swiperController.swipe(CardSwiperDirection.left);
             },
-            icon: const Icon(
-              Icons.close_rounded,
-              color: Colors.white54,
-              size: 28,
-            ),
+            icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 28),
             style: IconButton.styleFrom(
               backgroundColor: Colors.white.withValues(alpha: 0.05),
               padding: const EdgeInsets.all(12),
@@ -906,11 +827,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               HapticFeedback.lightImpact();
               _swiperController.swipe(CardSwiperDirection.right);
             },
-            icon: const Icon(
-              Icons.bookmark,
-              color: Color(0xFFFBBF24),
-              size: 28,
-            ),
+            icon: const Icon(Icons.bookmark, color: Color(0xFFFBBF24), size: 28),
             style: IconButton.styleFrom(
               backgroundColor: const Color(0xFFFBBF24).withValues(alpha: 0.15),
               padding: const EdgeInsets.all(12),
@@ -931,20 +848,20 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFB00020).withValues(alpha: 0.1),
-                    border: Border.all(
-                      color: const Color(0xFFB00020).withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.cloud_off_rounded,
-                    size: 48,
-                    color: Color(0xFFB00020),
-                  ),
-                )
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFB00020).withValues(alpha: 0.1),
+                border: Border.all(
+                  color: const Color(0xFFB00020).withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Icon(
+                Icons.cloud_off_rounded,
+                size: 48,
+                color: Color(0xFFB00020),
+              ),
+            )
                 .animate()
                 .fadeIn(duration: 600.ms)
                 .scale(begin: const Offset(0.8, 0.8)),
@@ -1012,27 +929,26 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     );
   }
 
-  Widget _buildEmptyState({
-    IconData icon = Icons.manage_search_rounded,
-    String title = "The Archive is Empty",
-    String subtitle = "NO PROJECTS MATCH YOUR CURRENT SELECTION",
-    bool showReset = true,
-  }) {
+  Widget _buildEmptyState() {
     return SizedBox.expand(
       child: Container(
-        key: ValueKey('empty_$title'),
+        key: const ValueKey('empty'),
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 100, color: Colors.white.withValues(alpha: 0.05))
+            Icon(
+                  Icons.manage_search_rounded,
+                  size: 100,
+                  color: Colors.white.withValues(alpha: 0.05),
+                )
                 .animate()
                 .fadeIn(duration: 1.seconds)
                 .scale(begin: const Offset(0.8, 0.8)),
             const SizedBox(height: 24),
             Text(
-              title,
+              "The Archive is Empty",
               textAlign: TextAlign.center,
               style: GoogleFonts.montserrat(
                 fontSize: 24,
@@ -1042,49 +958,47 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
             const SizedBox(height: 12),
             Text(
-              subtitle.toUpperCase(),
+              "NO PROJECTS MATCH YOUR CURRENT SELECTION",
               textAlign: TextAlign.center,
               style: GoogleFonts.montserrat(
                 fontSize: 12,
-                letterSpacing: 2.5,
+                letterSpacing: 3,
                 fontWeight: FontWeight.w300,
                 color: Colors.white.withValues(alpha: 0.4),
               ),
             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
-            if (showReset) ...[
-              const SizedBox(height: 48),
-              InkWell(
-                onTap: () => setState(() => _selectedFilter = "All"),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+            const SizedBox(height: 48),
+            InkWell(
+              onTap: () => setState(() => _selectedFilter = "All"),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.3),
                   ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      spreadRadius: 2,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    "Reset Filters",
-                    style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: AppTheme.forestEmerald,
-                    ),
+                  ],
+                ),
+                child: Text(
+                  "Reset Filters",
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppTheme.forestEmerald,
                   ),
                 ),
-              ).animate().fadeIn(delay: 600.ms).scale(),
-            ],
+              ),
+            ).animate().fadeIn(delay: 600.ms).scale(),
           ],
         ),
       ),
@@ -1093,7 +1007,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
 
   Widget _buildBentoGrid(List<AnonymousProject> filtered) {
     return LayoutBuilder(
-      key: ValueKey(_selectedFilter),
+      key: ValueKey(
+        _selectedFilter,
+      ),
       builder: (context, constraints) {
         int crossAxisCount = constraints.maxWidth > 900
             ? 3
@@ -1124,66 +1040,24 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildSupervisedContent() {
-    final pending = supervisedProjects.where((p) => !p.isEvaluated).toList();
-    if (pending.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.assignment_outlined,
-        title: "No projects to supervise",
-        subtitle: "Active matches waiting for evaluation will appear here.",
-        showReset: false,
-      );
+    if (supervisedProjects.isEmpty) {
+      return _buildEmptyState();
     }
     return LayoutBuilder(
       key: const ValueKey('supervised_projects_tab'),
       builder: (context, constraints) {
-        int crossAxisCount = constraints.maxWidth > 900
-            ? 3
-            : (constraints.maxWidth > 600 ? 2 : 1);
+        int crossAxisCount = constraints.maxWidth > 900 ? 3 : (constraints.maxWidth > 600 ? 2 : 1);
         return MasonryGridView.count(
           padding: const EdgeInsets.all(16),
           crossAxisCount: crossAxisCount,
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          itemCount: pending.length,
+          itemCount: supervisedProjects.length,
           itemBuilder: (context, index) {
             return _SupervisedProjectCardHolder(
-              project: pending[index],
+              project: supervisedProjects[index],
               index: index,
-              onSchedule: () => _showScheduleMeetingModal(pending[index]),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildEvaluatedContent() {
-    final evaluated = supervisedProjects.where((p) => p.isEvaluated).toList();
-    if (evaluated.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.verified_rounded,
-        title: "No evaluated projects",
-        subtitle: "You haven't evaluated any projects yet.",
-        showReset: false,
-      );
-    }
-    return LayoutBuilder(
-      key: const ValueKey('evaluated_projects_tab'),
-      builder: (context, constraints) {
-        int crossAxisCount = constraints.maxWidth > 900
-            ? 3
-            : (constraints.maxWidth > 600 ? 2 : 1);
-        return MasonryGridView.count(
-          padding: const EdgeInsets.all(16),
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          itemCount: evaluated.length,
-          itemBuilder: (context, index) {
-            return _SupervisedProjectCardHolder(
-              project: evaluated[index],
-              index: index,
-              onSchedule: () => _showScheduleMeetingModal(evaluated[index]),
+              onSchedule: () => _showScheduleMeetingModal(supervisedProjects[index]),
             );
           },
         );
@@ -1203,273 +1077,193 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (bCtx, setModalState) {
-            final sDateStr = selectedDate != null
-                ? '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}'
-                : 'Select Date';
-            final sTimeStr = selectedTime != null
-                ? selectedTime!.format(context)
-                : 'Select Time';
+        return StatefulBuilder(builder: (bCtx, setModalState) {
+          final sDateStr = selectedDate != null
+              ? '${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}'
+              : 'Select Date';
+          final sTimeStr = selectedTime != null ? selectedTime!.format(context) : 'Select Time';
 
-            final eDateStr = expiryDate != null
-                ? '${expiryDate!.year}-${expiryDate!.month.toString().padLeft(2, '0')}-${expiryDate!.day.toString().padLeft(2, '0')}'
-                : 'Select Date';
-            final eTimeStr = expiryTime != null
-                ? expiryTime!.format(context)
-                : 'Select Time';
+          final eDateStr = expiryDate != null
+              ? '${expiryDate!.year}-${expiryDate!.month.toString().padLeft(2, '0')}-${expiryDate!.day.toString().padLeft(2, '0')}'
+              : 'Select Date';
+          final eTimeStr = expiryTime != null ? expiryTime!.format(context) : 'Select Time';
 
-            return Container(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(bCtx).viewInsets.bottom,
-                left: 24,
-                right: 24,
-                top: 24,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F1F14),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                border: Border.all(
-                  color: AppTheme.forestEmerald.withValues(alpha: 0.3),
-                ),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SCHEDULE CHECK-IN',
-                      style: GoogleFonts.montserrat(
-                        color: AppTheme.forestEmerald,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(bCtx).viewInsets.bottom,
+              left: 24,
+              right: 24,
+              top: 24,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F1F14),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.3)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SCHEDULE CHECK-IN',
+                    style: GoogleFonts.montserrat(
+                      color: AppTheme.forestEmerald,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Group: ${project.groupName}',
+                    style: GoogleFonts.montserrat(color: Colors.white, fontSize: 13),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildDateTimePickerRow(
+                    label: 'Meeting Time',
+                    dateStr: sDateStr,
+                    timeStr: sTimeStr,
+                    onDatePick: () async {
+                      final val = await showDatePicker(
+                        context: bCtx,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14), // Muted dark background
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (val != null) setModalState(() => selectedDate = val);
+                    },
+                    onTimePick: () async {
+                      final val = await showTimePicker(
+                        context: bCtx,
+                        initialTime: TimeOfDay.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14),
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (val != null) setModalState(() => selectedTime = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDateTimePickerRow(
+                    label: 'Window Expiry (Anti-ghosting)',
+                    dateStr: eDateStr,
+                    timeStr: eTimeStr,
+                    onDatePick: () async {
+                      final val = await showDatePicker(
+                        context: bCtx,
+                        initialDate: selectedDate ?? DateTime.now(),
+                        firstDate: selectedDate ?? DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14),
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (val != null) setModalState(() => expiryDate = val);
+                    },
+                    onTimePick: () async {
+                      final val = await showTimePicker(
+                        context: bCtx,
+                        initialTime: TimeOfDay.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14),
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (val != null) setModalState(() => expiryTime = val);
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.forestEmerald,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Group: ${project.groupName}',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildDateTimePickerRow(
-                      label: 'Meeting Time',
-                      dateStr: sDateStr,
-                      timeStr: sTimeStr,
-                      onDatePick: () async {
-                        final val = await showDatePicker(
-                          context: bCtx,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 365),
-                          ),
-                          builder: (context, child) {
-                            return Theme(
-                              data: ThemeData.dark().copyWith(
-                                colorScheme: const ColorScheme.dark(
-                                  primary: AppTheme.forestEmerald,
-                                  surface: Color(
-                                    0xFF0F1F14,
-                                  ), // Muted dark background
-                                  onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (val != null)
-                          setModalState(() => selectedDate = val);
-                      },
-                      onTimePick: () async {
-                        final val = await showTimePicker(
-                          context: bCtx,
-                          initialTime: TimeOfDay.now(),
-                          builder: (context, child) {
-                            return Theme(
-                              data: ThemeData.dark().copyWith(
-                                colorScheme: const ColorScheme.dark(
-                                  primary: AppTheme.forestEmerald,
-                                  surface: Color(0xFF0F1F14),
-                                  onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (val != null)
-                          setModalState(() => selectedTime = val);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDateTimePickerRow(
-                      label: 'Window Expiry (Anti-ghosting)',
-                      dateStr: eDateStr,
-                      timeStr: eTimeStr,
-                      onDatePick: () async {
-                        final val = await showDatePicker(
-                          context: bCtx,
-                          initialDate: selectedDate ?? DateTime.now(),
-                          firstDate: selectedDate ?? DateTime.now(),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 365),
-                          ),
-                          builder: (context, child) {
-                            return Theme(
-                              data: ThemeData.dark().copyWith(
-                                colorScheme: const ColorScheme.dark(
-                                  primary: AppTheme.forestEmerald,
-                                  surface: Color(0xFF0F1F14),
-                                  onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (val != null) setModalState(() => expiryDate = val);
-                      },
-                      onTimePick: () async {
-                        final val = await showTimePicker(
-                          context: bCtx,
-                          initialTime: TimeOfDay.now(),
-                          builder: (context, child) {
-                            return Theme(
-                              data: ThemeData.dark().copyWith(
-                                colorScheme: const ColorScheme.dark(
-                                  primary: AppTheme.forestEmerald,
-                                  surface: Color(0xFF0F1F14),
-                                  onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
-                              ),
-                              child: child!,
-                            );
-                          },
-                        );
-                        if (val != null) setModalState(() => expiryTime = val);
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.forestEmerald,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: isSubmitting
-                            ? null
-                            : () async {
-                                if (selectedDate == null ||
-                                    selectedTime == null ||
-                                    expiryDate == null ||
-                                    expiryTime == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please select all dates and times.',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
+                      onPressed: isSubmitting ? null : () async {
+                        if (selectedDate == null || selectedTime == null || expiryDate == null || expiryTime == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select all dates and times.')));
+                          return;
+                        }
 
-                                final sched = DateTime(
-                                  selectedDate!.year,
-                                  selectedDate!.month,
-                                  selectedDate!.day,
-                                  selectedTime!.hour,
-                                  selectedTime!.minute,
-                                );
-                                final exp = DateTime(
-                                  expiryDate!.year,
-                                  expiryDate!.month,
-                                  expiryDate!.day,
-                                  expiryTime!.hour,
-                                  expiryTime!.minute,
-                                );
+                        final sched = DateTime(selectedDate!.year, selectedDate!.month, selectedDate!.day, selectedTime!.hour, selectedTime!.minute);
+                        final exp = DateTime(expiryDate!.year, expiryDate!.month, expiryDate!.day, expiryTime!.hour, expiryTime!.minute);
 
-                                if (exp.isBefore(sched)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Expiry must be after meeting time!',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (sched.isBefore(DateTime.now())) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Cannot schedule in the past.',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
+                        if (exp.isBefore(sched)) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Expiry must be after meeting time!')));
+                          return;
+                        }
+                        if (sched.isBefore(DateTime.now())) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot schedule in the past.')));
+                          return;
+                        }
 
-                                setModalState(() => isSubmitting = true);
-                                try {
-                                  await projectService.scheduleMeeting(
-                                    project.groupId,
-                                    sched,
-                                    exp,
-                                  );
-                                  Navigator.pop(bCtx);
-                                  _showSuccessSnackBar(
-                                    'Meeting Scheduled! Anti-ghosting enabled.',
-                                  );
-                                  _fetchProjects();
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(e.toString())),
-                                  );
-                                } finally {
-                                  if (mounted)
-                                    setModalState(() => isSubmitting = false);
-                                }
-                              },
-                        child: isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text(
-                                'Schedule Check-in',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
+                        setModalState(() => isSubmitting = true);
+                        try {
+                          await projectService.scheduleMeeting(project.groupId, sched, exp);
+                          Navigator.pop(bCtx);
+                          _showSuccessSnackBar('Meeting Scheduled! Anti-ghosting enabled.');
+                          _fetchProjects();
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                        } finally {
+                          if (mounted) setModalState(() => isSubmitting = false);
+                        }
+                      },
+                      child: isSubmitting
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Schedule Check-in', style: GoogleFonts.montserrat(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-            );
-          },
-        );
+            ),
+          );
+        });
       },
     );
   }
@@ -1484,10 +1278,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 12),
-        ),
+        Text(label, style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 12)),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -1496,16 +1287,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 onTap: onDatePick,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      dateStr,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+                  child: Center(child: Text(dateStr, style: const TextStyle(color: Colors.white))),
                 ),
               ),
             ),
@@ -1515,16 +1298,8 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 onTap: onTimePick,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      timeStr,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
+                  child: Center(child: Text(timeStr, style: const TextStyle(color: Colors.white))),
                 ),
               ),
             ),
@@ -1535,301 +1310,18 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 }
 
-class _DashboardDrawer extends StatelessWidget {
-  const _DashboardDrawer();
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.transparent,
-      width: MediaQuery.of(context).size.width * 0.8,
-      child: Stack(
-        children: [
-          ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  border: Border(
-                    right: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      width: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDrawerHeader(context),
-                const SizedBox(height: 30),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.bookmark_border_rounded,
-                  title: 'Bookmarks',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const BookmarksScreen()),
-                  ),
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.notifications_none_rounded,
-                  title: 'Notifications',
-                  onTap: () {},
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.assessment_outlined,
-                  title: 'Evaluations',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const EvaluationHubScreen(),
-                    ),
-                  ),
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: 'Chat',
-                  onTap: () {
-                    final authProvider = context.read<AuthProvider>();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProjectSelectionScreen(
-                          supervisorId: authProvider.userId ?? '',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.person_outline_rounded,
-                  title: 'Profile',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SupervisorProfileScreen(),
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                _buildProfileFooter(context),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.eco_rounded,
-              color: AppTheme.forestEmerald,
-              size: 30,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            'GreenMatch',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: ListTile(
-        onTap: () {
-          Navigator.pop(context);
-          onTap();
-        },
-        leading: Icon(icon, color: Colors.white70, size: 22),
-        title: Text(
-          title,
-          style: GoogleFonts.montserrat(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        hoverColor: Colors.white10,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      ),
-    );
-  }
-
-  Widget _buildProfileFooter(BuildContext context) {
-    final authProvider = context.read<AuthProvider>();
-    final supervisorId = authProvider.userId;
-
-    return FutureBuilder<supervisor_model.SupervisorProfile>(
-      future: supervisorId != null
-          ? SupervisorService().getSupervisorProfile(supervisorId)
-          : Future.error('No ID'),
-      builder: (context, snapshot) {
-        String name = "Loading...";
-        String email = "...";
-
-        if (snapshot.hasData) {
-          final profile = snapshot.data!;
-          name = profile.fullName;
-          email = profile.email;
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
-            border: Border(
-              top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppTheme.forestEmerald.withValues(
-                      alpha: 0.2,
-                    ),
-                    child: Text(
-                      name.isNotEmpty ? name[0] : "?",
-                      style: const TextStyle(
-                        color: AppTheme.forestEmerald,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          email,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.montserrat(
-                            color: Colors.white38,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _buildLogoutButton(context),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildLogoutButton(BuildContext context) {
-    return InkWell(
-      onTap: () async {
-        await context.read<AuthProvider>().logout();
-        if (context.mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-            (route) => false,
-          );
-        }
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 18),
-            const SizedBox(width: 10),
-            Text(
-              'Sign Out',
-              style: GoogleFonts.montserrat(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SupervisedProjectCardHolder extends StatefulWidget {
   final SupervisedProject project;
   final int index;
   final VoidCallback onSchedule;
 
-  const _SupervisedProjectCardHolder({
-    required this.project,
-    required this.index,
-    required this.onSchedule,
-  });
+  const _SupervisedProjectCardHolder({required this.project, required this.index, required this.onSchedule});
 
   @override
-  State<_SupervisedProjectCardHolder> createState() =>
-      _SupervisedProjectCardHolderState();
+  State<_SupervisedProjectCardHolder> createState() => _SupervisedProjectCardHolderState();
 }
 
-class _SupervisedProjectCardHolderState
-    extends State<_SupervisedProjectCardHolder> {
+class _SupervisedProjectCardHolderState extends State<_SupervisedProjectCardHolder> {
   bool _isHovered = false;
 
   @override
@@ -1845,37 +1337,18 @@ class _SupervisedProjectCardHolderState
           padding: const EdgeInsets.all(20),
           borderRadius: 24,
           opacity: _isHovered ? 0.08 : 0.04,
-          borderColor: _isHovered
-              ? AppTheme.forestEmerald.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.05),
+          borderColor: _isHovered ? AppTheme.forestEmerald.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: widget.project.tags
-                    .map(
-                      (tag) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.forestEmerald.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          tag.toUpperCase(),
-                          style: GoogleFonts.montserrat(
-                            color: AppTheme.forestEmerald,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
+                children: widget.project.tags.map((tag) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: AppTheme.forestEmerald.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                  child: Text(tag.toUpperCase(), style: GoogleFonts.montserrat(color: AppTheme.forestEmerald, fontSize: 9, fontWeight: FontWeight.w800)),
+                )).toList(),
               ),
               const SizedBox(height: 16),
               Text(
@@ -1888,78 +1361,32 @@ class _SupervisedProjectCardHolderState
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                widget.project.title,
-                style: GoogleFonts.montserrat(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  height: 1.2,
-                ),
-              ),
+              Text(widget.project.title, style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white, height: 1.2)),
               const SizedBox(height: 12),
-              Text(
-                widget.project.abstract,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.montserrat(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
-              ),
+              Text(widget.project.abstract, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.montserrat(color: Colors.white.withValues(alpha: 0.5), fontSize: 13, height: 1.5)),
               const SizedBox(height: 16),
               Container(height: 1, color: Colors.white.withValues(alpha: 0.1)),
               const SizedBox(height: 16),
-              Text(
-                'TEAM MEMBERS',
-                style: GoogleFonts.montserrat(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                ),
-              ),
+              Text('TEAM MEMBERS', style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.0)),
               const SizedBox(height: 8),
-              ...widget.project.teamMembers
-                  .map(
-                    (m) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
+              ...widget.project.teamMembers.map((m) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, size: 14, color: AppTheme.forestEmerald),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.person,
-                            size: 14,
-                            color: AppTheme.forestEmerald,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  m.fullName,
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  m.email,
-                                  style: GoogleFonts.montserrat(
-                                    color: Colors.white54,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          Text(m.fullName, style: GoogleFonts.montserrat(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(m.email, style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 10)),
                         ],
                       ),
                     ),
-                  )
-                  .toList(),
+                  ],
+                ),
+              )).toList(),
               const SizedBox(height: 24),
               InkWell(
                 onTap: widget.onSchedule,
@@ -1969,20 +1396,11 @@ class _SupervisedProjectCardHolderState
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: AppTheme.forestEmerald.withValues(alpha: 0.15),
-                    border: Border.all(
-                      color: AppTheme.forestEmerald.withValues(alpha: 0.5),
-                    ),
+                    border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.5)),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
-                    child: Text(
-                      'Schedule Check-in',
-                      style: GoogleFonts.montserrat(
-                        color: AppTheme.forestEmerald,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                      ),
-                    ),
+                    child: Text('Schedule Check-in', style: GoogleFonts.montserrat(color: AppTheme.forestEmerald, fontWeight: FontWeight.w800, fontSize: 14)),
                   ),
                 ),
               ),
@@ -2021,11 +1439,9 @@ class _ProjectCardState extends State<ProjectCard> {
   double get _fraction {
     if (widget.project.tags.isEmpty) return 0.0;
     int matches = widget.project.tags
-        .where(
-          (tag) => widget.activeSpecifications
-              .map((s) => s.toLowerCase())
-              .contains(tag.toLowerCase()),
-        )
+        .where((tag) => widget.activeSpecifications
+            .map((s) => s.toLowerCase())
+            .contains(tag.toLowerCase()))
         .length;
     return matches / widget.project.tags.length;
   }
@@ -2033,9 +1449,9 @@ class _ProjectCardState extends State<ProjectCard> {
   int get _score => (_fraction * 100).round();
 
   Color get _scoreColor {
-    if (_score >= 80) return AppTheme.forestEmerald; // Premium Green
-    if (_score >= 50) return const Color(0xFFFBBF24); // Amber
-    return Colors.white.withValues(alpha: 0.15); // Muted, frosted grey
+    if (_score >= 80) return AppTheme.forestEmerald;      // Premium Green
+    if (_score >= 50) return const Color(0xFFFBBF24);       // Amber
+    return Colors.white.withValues(alpha: 0.15);            // Muted, frosted grey
   }
 
   Widget _buildMatchScoreIndicator() {
@@ -2082,10 +1498,8 @@ class _ProjectCardState extends State<ProjectCard> {
   Widget _buildBookmarkButton() {
     return Consumer<ShortlistProvider>(
       builder: (context, shortlistProvider, child) {
-        final isShortlisted = shortlistProvider.isShortlisted(
-          widget.project.id,
-        );
-
+        final isShortlisted = shortlistProvider.isShortlisted(widget.project.id);
+        
         return InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
@@ -2096,13 +1510,13 @@ class _ProjectCardState extends State<ProjectCard> {
             duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isShortlisted
-                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15)
+              color: isShortlisted 
+                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15) 
                   : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isShortlisted
-                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3)
+                color: isShortlisted 
+                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3) 
                     : Colors.white.withValues(alpha: 0.1),
               ),
             ),
@@ -2236,9 +1650,7 @@ class _ProjectCardState extends State<ProjectCard> {
       decoration: BoxDecoration(
         color: AppTheme.forestEmerald.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.1)),
       ),
       child: Text(
         tag.toUpperCase(),
@@ -2255,13 +1667,11 @@ class _ProjectCardState extends State<ProjectCard> {
   Widget _buildMatchAction(String projectId) {
     return InkWell(
       key: const ValueKey('button'),
-      onTap: _isMatching
-          ? null
-          : () async {
-              setState(() => _isMatching = true);
-              await widget.onMatch();
-              if (mounted) setState(() => _isMatching = false);
-            },
+      onTap: _isMatching ? null : () async {
+        setState(() => _isMatching = true);
+        await widget.onMatch();
+        if (mounted) setState(() => _isMatching = false);
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
@@ -2291,24 +1701,21 @@ class _ProjectCardState extends State<ProjectCard> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Center(
-          child: _isMatching
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(
-                  "Confirm Match",
-                  style: GoogleFonts.montserrat(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    letterSpacing: 0.5,
-                  ),
+          child: _isMatching 
+            ? const SizedBox(
+                width: 20, 
+                height: 20, 
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+              )
+            : Text(
+                "Confirm Match",
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  letterSpacing: 0.5,
                 ),
+              ),
         ),
       ),
     );
@@ -2394,15 +1801,16 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
       duration: const Duration(milliseconds: 520),
     )..forward();
 
-    _slideAnim = Tween<Offset>(begin: const Offset(0, -1.0), end: Offset.zero)
-        .animate(
-          CurvedAnimation(parent: _slideController, curve: Curves.easeOutQuart),
-        );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, -1.0),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOutQuart),
+    );
 
-    _fadeAnim = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOut),
+    );
 
     HapticFeedback.mediumImpact();
   }
@@ -2466,22 +1874,22 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFFFFAA00).withValues(alpha: 0.12),
-                      border: Border.all(
-                        color: const Color(0xFFFFAA00).withValues(alpha: 0.35),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.lock_clock_outlined,
-                      color: Color(0xFFFFAA00),
-                      size: 28,
-                    ),
-                  )
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFAA00).withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: const Color(0xFFFFAA00).withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.lock_clock_outlined,
+                  color: Color(0xFFFFAA00),
+                  size: 28,
+                ),
+              )
                   .animate(onPlay: (c) => c.repeat(reverse: true))
                   .scaleXY(
                     begin: 1.0,
@@ -2559,7 +1967,10 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.refresh_rounded, size: 18),
+                      const Icon(
+                        Icons.refresh_rounded,
+                        size: 18,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         'Extend Session',
@@ -2575,7 +1986,7 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
               ),
 
               const SizedBox(height: 12),
-
+              
               GestureDetector(
                 onTap: _logoutInProgress
                     ? null
@@ -2602,9 +2013,9 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
                             style: GoogleFonts.montserrat(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: const Color(
-                                0xFFFF4545,
-                              ).withValues(alpha: 0.75),
+                              color: const Color(0xFFFF4545).withValues(
+                                alpha: 0.75,
+                              ),
                               decoration: TextDecoration.underline,
                               decorationColor: const Color(
                                 0xFFFF4545,
@@ -2626,7 +2037,7 @@ class FocusProjectCard extends StatelessWidget {
   final AnonymousProject project;
   final List<String> activeSpecifications;
   final Future<void> Function() onMatch;
-  final num percentX;
+  final int percentX;
 
   const FocusProjectCard({
     super.key,
@@ -2639,11 +2050,9 @@ class FocusProjectCard extends StatelessWidget {
   double get _fraction {
     if (project.tags.isEmpty) return 0.0;
     int matches = project.tags
-        .where(
-          (tag) => activeSpecifications
-              .map((s) => s.toLowerCase())
-              .contains(tag.toLowerCase()),
-        )
+        .where((tag) => activeSpecifications
+            .map((s) => s.toLowerCase())
+            .contains(tag.toLowerCase()))
         .length;
     return matches / project.tags.length;
   }
@@ -2660,7 +2069,7 @@ class FocusProjectCard extends StatelessWidget {
     return Consumer<ShortlistProvider>(
       builder: (context, shortlistProvider, child) {
         final isShortlisted = shortlistProvider.isShortlisted(project.id);
-
+        
         return InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
@@ -2671,13 +2080,13 @@ class FocusProjectCard extends StatelessWidget {
             duration: const Duration(milliseconds: 300),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isShortlisted
-                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15)
+              color: isShortlisted 
+                  ? const Color(0xFFFBBF24).withValues(alpha: 0.15) 
                   : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isShortlisted
-                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3)
+                color: isShortlisted 
+                    ? const Color(0xFFFBBF24).withValues(alpha: 0.3) 
                     : Colors.white.withValues(alpha: 0.1),
               ),
             ),
@@ -2746,9 +2155,7 @@ class FocusProjectCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.forestEmerald.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: AppTheme.forestEmerald.withValues(alpha: 0.1)),
       ),
       child: Text(
         tag.toUpperCase(),
@@ -2764,132 +2171,125 @@ class FocusProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double swipeRatio = percentX.toDouble() / 100.0;
-    final double rightSwipeOpacity = swipeRatio.clamp(0.0, 1.0).toDouble();
-    final double leftSwipeOpacity = (-swipeRatio).clamp(0.0, 1.0).toDouble();
+    final double rightSwipeOpacity = (percentX / 100).clamp(0.0, 1.0);
+    final double leftSwipeOpacity = (-percentX / 100).clamp(0.0, 1.0);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         GlassContainer(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          borderRadius: 32,
-          opacity: 0.08,
-          borderColor: AppTheme.forestEmerald.withValues(alpha: 0.4),
-          child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      borderRadius: 32,
+      opacity: 0.08,
+      borderColor: AppTheme.forestEmerald.withValues(alpha: 0.4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: project.tags
-                          .map((tag) => _buildTagBadge(tag))
-                          .toList(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildBookmarkButton(),
-                      const SizedBox(width: 16),
-                      _buildMatchScoreIndicator(),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'ANONYMOUS STUDENT GROUP',
-                style: GoogleFonts.montserrat(
-                  color: AppTheme.forestEmerald,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                project.title,
-                style: GoogleFonts.montserrat(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(height: 32),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Text(
-                    project.abstract,
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 16,
-                      height: 1.8,
-                    ),
-                  ),
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: project.tags.map((tag) => _buildTagBadge(tag)).toList(),
                 ),
               ),
-              const SizedBox(height: 32),
-              InkWell(
-                onTap: onMatch,
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.forestEmerald.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        spreadRadius: -5,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.forestEmerald,
-                        AppTheme.forestEmerald.withBlue(100),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Center(
-                    child: Text(
-                      "Confirm Match",
-                      style: GoogleFonts.montserrat(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ),
-                ),
+              const SizedBox(width: 16),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildBookmarkButton(),
+                  const SizedBox(width: 16),
+                  _buildMatchScoreIndicator(),
+                ],
               ),
             ],
           ),
+          const SizedBox(height: 32),
+          Text(
+            'ANONYMOUS STUDENT GROUP',
+            style: GoogleFonts.montserrat(
+              color: AppTheme.forestEmerald,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            project.title,
+            style: GoogleFonts.montserrat(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Text(
+                project.abstract,
+                style: GoogleFonts.montserrat(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 16,
+                  height: 1.8,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          InkWell(
+            onTap: onMatch,
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.forestEmerald,
+                    AppTheme.forestEmerald.withBlue(100),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Center(
+                child: Text(
+                  "Confirm Match",
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
         ),
         if (rightSwipeOpacity > 0)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(
-                  0xFFFBBF24,
-                ).withValues(alpha: rightSwipeOpacity * 0.15),
+                color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.15),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: const Color(
-                    0xFFFBBF24,
-                  ).withValues(alpha: rightSwipeOpacity * 0.5),
+                  color: const Color(0xFFFBBF24).withValues(alpha: rightSwipeOpacity * 0.5),
                   width: 2,
                 ),
               ),
@@ -2899,21 +2299,9 @@ class FocusProjectCard extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.bookmark,
-                        size: 100,
-                        color: Color(0xFFFBBF24),
-                      ),
+                      const Icon(Icons.bookmark, size: 100, color: Color(0xFFFBBF24)),
                       const SizedBox(height: 16),
-                      Text(
-                        "SHORTLIST",
-                        style: GoogleFonts.montserrat(
-                          color: const Color(0xFFFBBF24),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 4.0,
-                        ),
-                      ),
+                      Text("SHORTLIST", style: GoogleFonts.montserrat(color: const Color(0xFFFBBF24), fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
                     ],
                   ),
                 ),
@@ -2937,21 +2325,9 @@ class FocusProjectCard extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.close_rounded,
-                        size: 100,
-                        color: Colors.white54,
-                      ),
+                      const Icon(Icons.close_rounded, size: 100, color: Colors.white54),
                       const SizedBox(height: 16),
-                      Text(
-                        "SKIP",
-                        style: GoogleFonts.montserrat(
-                          color: Colors.white54,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 4.0,
-                        ),
-                      ),
+                      Text("SKIP", style: GoogleFonts.montserrat(color: Colors.white54, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4.0)),
                     ],
                   ),
                 ),

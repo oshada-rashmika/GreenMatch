@@ -70,15 +70,15 @@ class AcademicTextField extends StatelessWidget {
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: LoginColors.border),
+              borderSide: const BorderSide(color: LoginColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: LoginColors.border),
+              borderSide: const BorderSide(color: LoginColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                 color: LoginColors.borderActive,
                 width: 1.6,
               ),

@@ -66,6 +66,25 @@ export class SupervisorsService {
     });
   }
 
+  async updateSupervisorProfile(id: string, updateData: { fullName?: string; staffId?: string; capacityLimit?: number }) {
+    const supervisor = await this.prisma.supervisor.findUnique({
+      where: { id },
+    });
+
+    if (!supervisor) {
+      throw new NotFoundException(`Supervisor with ID ${id} not found`);
+    }
+
+    return this.prisma.supervisor.update({
+      where: { id },
+      data: {
+        ...(updateData.fullName && { fullName: updateData.fullName }),
+        ...(updateData.staffId && { staffId: updateData.staffId }),
+        ...(updateData.capacityLimit !== undefined && { capacityLimit: updateData.capacityLimit }),
+      },
+    });
+  }
+
   async getEvaluatedProjects(supervisorId: string) {
     return this.prisma.project.findMany({
       where: {

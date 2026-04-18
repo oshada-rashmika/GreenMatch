@@ -81,4 +81,43 @@ class SupervisorService {
       };
     }
   }
+
+  Future<Map<String, dynamic>> updateSupervisorProfile({
+    required String supervisorId,
+    String? fullName,
+    String? staffId,
+  }) async {
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final String baseUrl = await _authService.getBaseUrl();
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/api/supervisors/$supervisorId'),
+        headers: headers,
+        body: jsonEncode({
+          if (fullName != null) 'fullName': fullName,
+          if (staffId != null) 'staffId': staffId,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Profile updated successfully',
+        };
+      } else {
+        final error = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': error['message'] ?? 'Failed to update profile',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An error occurred updating profile: $e',
+      };
+    }
+  }
 }
+

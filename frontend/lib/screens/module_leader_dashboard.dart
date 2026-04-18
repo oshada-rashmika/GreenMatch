@@ -1134,7 +1134,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
             return Container(
               height: MediaQuery.of(sheetContext).size.height * 0.72,
               decoration: BoxDecoration(
-                color: LoginColors.surface,
+                color: AppTheme.premiumBlack,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
@@ -1975,7 +1975,7 @@ class _AcademicModulesGrid extends StatelessWidget {
                         ),
                         onPressed: () => onAssignSupervisors(module, availableSupervisors),
                         icon: const Icon(Icons.group_add_rounded, size: 16),
-                        label: const Text('Manage Faculty Allocation'),
+                        label: const Text('Assign Supervisors'),
                       ),
                     ),
                   ],

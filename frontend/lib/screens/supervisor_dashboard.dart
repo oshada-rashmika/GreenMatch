@@ -372,14 +372,54 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             const SizedBox(width: 8),
             _buildFocusToggle(),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const BookmarksScreen(),
-                ),
-              ),
-              child: _buildAppBarIcon(Icons.bookmark_border_rounded),
+            Consumer<ShortlistProvider>(
+              builder: (context, shortlistProvider, child) {
+                final count = shortlistProvider.shortlistedIds.length;
+                return Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BookmarksScreen(),
+                      ),
+                    ),
+                    child: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text(
+                        count.toString(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 10, 
+                          color: Color(0xFF0F1F14), // Dark background text for contrast
+                        ),
+                      ),
+                      backgroundColor: const Color(0xFFFBBF24), // Premium Amber/Gold color
+                      offset: const Offset(-4, 0),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.bookmark_border_rounded, 
+                          size: 22, 
+                          color: Colors.white.withValues(alpha: 0.9)
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
@@ -1730,10 +1770,6 @@ class _ProjectCardState extends State<ProjectCard> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SESSION WARNING OVERLAY
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _SessionWarningOverlay extends StatefulWidget {
   final String countdownText;
   final VoidCallback onExtend;
@@ -1789,7 +1825,6 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fadeAnim,
-      // Semi-transparent frosted full-screen backdrop
       child: Container(
         color: Colors.black.withValues(alpha: 0.55),
         child: SafeArea(
@@ -1838,7 +1873,6 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Warning icon
               Container(
                 width: 60,
                 height: 60,
@@ -1865,8 +1899,6 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
                   ),
 
               const SizedBox(height: 20),
-
-              // Title
               Text(
                 'Session Expiring Soon',
                 textAlign: TextAlign.center,
@@ -1893,7 +1925,6 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
 
               const SizedBox(height: 24),
 
-              // Countdown display
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 28,
@@ -1920,7 +1951,6 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
 
               const SizedBox(height: 28),
 
-              // Extend Session button
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -1956,8 +1986,7 @@ class _SessionWarningOverlayState extends State<_SessionWarningOverlay>
               ),
 
               const SizedBox(height: 12),
-
-              // Logout Now link
+              
               GestureDetector(
                 onTap: _logoutInProgress
                     ? null

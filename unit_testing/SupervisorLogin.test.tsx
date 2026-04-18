@@ -1,4 +1,7 @@
-import React, { FormEvent, useState } from 'react';
+/// <reference types="react" />
+/// <reference types="react-dom" />
+
+import { ChangeEvent, FormEvent, useState } from 'react';
 import {
   cleanup,
   fireEvent,
@@ -59,7 +62,9 @@ function SupervisorLogin({
         id="supervisor-email"
         type="email"
         value={email}
-        onChange={(event) => setEmail(event.target.value)}
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          setEmail(event.target.value)
+        }
       />
 
       <label htmlFor="supervisor-password">Password</label>
@@ -67,13 +72,19 @@ function SupervisorLogin({
         id="supervisor-password"
         type="password"
         value={password}
-        onChange={(event) => setPassword(event.target.value)}
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          setPassword(event.target.value)
+        }
       />
 
       <button type="submit">Log In</button>
 
       {status === 'success' ? (
         <p role="status">Supervisor login successful</p>
+      ) : null}
+
+      {status === 'error' ? (
+        <p role="alert">Invalid credentials</p>
       ) : null}
     </form>
   );
@@ -83,6 +94,16 @@ describe('SupervisorLogin - Verify successful Supervisor login with valid creden
   const validCredentials: Credentials = {
     email: 'supervisor@test.com',
     password: 'TestPass123!',
+  };
+  const invalidCredentials: Credentials = {
+    email: 'supervisor@test.com',
+    password: 'WrongPass123!',
+  };
+  const supervisorSuccessResponse: SupervisorAuthResponse = {
+    token: 'mock-supervisor-token',
+    role: 'SUPERVISOR',
+    userId: 'supervisor-1',
+    redirectTo: '/supervisor/dashboard',
   };
 
   let mockAuthenticateSupervisor: jest.MockedFunction<
@@ -96,12 +117,7 @@ describe('SupervisorLogin - Verify successful Supervisor login with valid creden
         credentials.email === validCredentials.email &&
         credentials.password === validCredentials.password
       ) {
-        return {
-          token: 'mock-supervisor-token',
-          role: 'SUPERVISOR',
-          userId: 'supervisor-1',
-          redirectTo: '/supervisor/dashboard',
-        };
+        return supervisorSuccessResponse;
       }
 
       throw new Error('Invalid credentials');
@@ -157,6 +173,52 @@ describe('SupervisorLogin - Verify successful Supervisor login with valid creden
 
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Supervisor login successful',
+    );
+  });
+
+  test('Verify Supervisor login fails and rejects access when an invalid password is provided', async () => {
+    mockAuthenticateSupervisor.mockImplementation(async (credentials: Credentials) => {
+      if (
+        credentials.email === invalidCredentials.email &&
+        credentials.password === invalidCredentials.password
+      ) {
+        throw new Error('Invalid credentials');
+      }
+
+      return supervisorSuccessResponse;
+    });
+
+    render(
+      <SupervisorLogin
+        authenticateSupervisor={mockAuthenticateSupervisor}
+        onRouteToDashboard={mockOnRouteToDashboard}
+      />,
+    );
+
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement;
+    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement;
+    const submitButton = screen.getByRole('button', { name: /log in/i });
+
+    fireEvent.change(emailInput, { target: { value: invalidCredentials.email } });
+    fireEvent.change(passwordInput, {
+      target: { value: invalidCredentials.password },
+    });
+
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockAuthenticateSupervisor).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockAuthenticateSupervisor).toHaveBeenCalledWith({
+      email: 'supervisor@test.com',
+      password: 'WrongPass123!',
+    });
+
+    expect(mockOnRouteToDashboard).not.toHaveBeenCalled();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Invalid credentials',
     );
   });
 });

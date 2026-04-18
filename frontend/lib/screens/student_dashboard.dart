@@ -9,6 +9,7 @@ import '../widgets/glass_container.dart';
 import 'profile_screen.dart';
 import 'my_proposals_screen.dart';
 import 'login_screen.dart';
+import 'student_chat.dart';
 
 enum ProposalStatus { pending, underReview, matched }
 
@@ -377,6 +378,29 @@ class _StudentDashboardState extends State<StudentDashboard> {
             onTap: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening University Guidelines...')));
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.chat_bubble_outline, color: mutedTextColor),
+            title: Text('Messages', style: TextStyle(color: mutedTextColor)),
+            onTap: () {
+              Navigator.pop(context);
+              if (_proposal != null && _proposal!.status == ProposalStatus.matched && _proposal!.supervisorName != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StudentChatScreen(
+                      projectId: _proposal!.id,
+                      projectTitle: _proposal!.title,
+                      supervisorName: _proposal!.supervisorName!,
+                    ),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Messages are only available for matched proposals.')),
+                );
+              }
             },
           ),
           const Divider(color: Color(0xFF2B364E), thickness: 1, indent: 16, endIndent: 16, height: 32),

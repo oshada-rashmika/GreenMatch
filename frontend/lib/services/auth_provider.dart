@@ -7,15 +7,17 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   String? _accessToken;
+  String? _userId;
   bool _isAuthenticated = false;
+  bool _isFirstLogin = false;
 
-  // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String? get accessToken => _accessToken;
+  String? get userId => _userId;
   bool get isAuthenticated => _isAuthenticated;
+  bool get isFirstLogin => _isFirstLogin;
 
-  /// Student login
   Future<bool> studentLogin(String email, String password) async {
     _setLoading(true);
     _clearError();
@@ -46,7 +48,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Supervisor login
   Future<bool> supervisorLogin(String email, String password) async {
     _setLoading(true);
     _clearError();
@@ -59,6 +60,8 @@ class AuthProvider extends ChangeNotifier {
 
       if (result['success']) {
         _accessToken = result['accessToken'];
+        _userId = result['userId'];
+        _isFirstLogin = result['isFirstLogin'] ?? false;
         _isAuthenticated = true;
         _setLoading(false);
         notifyListeners();
@@ -77,7 +80,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Module Leader login
   Future<bool> moduleLeaderLogin(String email, String password) async {
     _setLoading(true);
     _clearError();
@@ -108,7 +110,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Student registration
   Future<bool> registerStudent({
     required String email,
     required String password,
@@ -146,7 +147,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Logout
   Future<void> logout() async {
     await _authService.logout();
     _accessToken = null;
@@ -155,7 +155,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Check authentication status
   Future<void> checkAuthStatus() async {
     _isAuthenticated = await _authService.isAuthenticated();
     if (_isAuthenticated) {
@@ -163,8 +162,6 @@ class AuthProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-  // ==================== Private Helpers ====================
 
   void _setLoading(bool value) {
     _isLoading = value;

@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
-  // Optional override: flutter run --dart-define=API_BASE_URL=http://<your-ip>:3000
   static const String _configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
   );
@@ -22,7 +21,6 @@ class AuthService {
       return 'http://localhost:3000';
     }
 
-    // Android emulator cannot access host via localhost; use 10.0.2.2.
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return 'http://10.0.2.2:3000';
@@ -35,6 +33,10 @@ class AuthService {
     }
   }
 
+  Future<String> getBaseUrl() async {
+    return _baseUrl;
+  }
+
   String _mapNetworkError(Object error) {
     if (error is SocketException) {
       return 'Cannot reach backend at $_baseUrl. '
@@ -45,10 +47,6 @@ class AuthService {
     return 'Network error: ${error.toString()}';
   }
 
-  // ==================== Authentication Endpoints ====================
-
-  /// Student login endpoint
-  /// Returns access_token on success (HTTP 200)
   Future<Map<String, dynamic>> studentLogin({
     required String email,
     required String password,
@@ -80,8 +78,6 @@ class AuthService {
     }
   }
 
-  /// Supervisor login endpoint
-  /// Returns access_token on success (HTTP 200)
   Future<Map<String, dynamic>> supervisorLogin({
     required String email,
     required String password,
@@ -96,9 +92,16 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await _storeToken(data['access_token']);
+        
+        final user = data['user'] as Map<String, dynamic>?;
+        final String userId = user?['id'] ?? '';
+        final bool isFirstLogin = user?['isFirstLogin'] ?? false;
+
         return {
           'success': true,
           'accessToken': data['access_token'],
+          'userId': userId,
+          'isFirstLogin': isFirstLogin,
           'message': 'Supervisor login successful',
         };
       } else {
@@ -113,8 +116,6 @@ class AuthService {
     }
   }
 
-  /// Module Leader login endpoint
-  /// Returns access_token on success (HTTP 200)
   Future<Map<String, dynamic>> moduleLeaderLogin({
     required String email,
     required String password,
@@ -146,8 +147,6 @@ class AuthService {
     }
   }
 
-  /// Student registration endpoint
-  /// Returns user profile on success (HTTP 201)
   Future<Map<String, dynamic>> registerStudent({
     required String email,
     required String password,
@@ -187,32 +186,21 @@ class AuthService {
     }
   }
 
-  // ==================== Token Management ====================
-
-  /// Store JWT token securely
   Future<void> _storeToken(String token) async {
     await _secureStorage.write(key: _tokenKey, value: token);
   }
-
-  /// Retrieve stored JWT token
   Future<String?> getToken() async {
     return await _secureStorage.read(key: _tokenKey);
   }
 
-  /// Check if user is authenticated
   Future<bool> isAuthenticated() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
   }
 
-  /// Clear ALL stored authentication data (logout).
-  /// Uses [deleteAll] to wipe every key in secure storage, leaving
-  /// zero trace of the session regardless of what was written.
   Future<void> logout() async {
     await _secureStorage.deleteAll();
   }
-
-  /// Get Authorization header with bearer token
   Future<Map<String, String>> getAuthHeaders() async {
     final token = await getToken();
     return {

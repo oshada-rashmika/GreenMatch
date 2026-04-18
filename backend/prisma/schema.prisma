@@ -42,11 +42,14 @@ model Student {
 }
 
 model Supervisor {
-  id           String @id @default(uuid())
-  staffId      String @unique
-  email        String @unique
-  passwordHash String
-  fullName     String
+  id             String   @id @default(uuid())
+  staffId        String   @unique
+  email          String   @unique
+  passwordHash   String
+  fullName       String
+  specifications String[]
+  capacityLimit  Int?
+  isFirstLogin   Boolean  @default(true)
 
   // Relationships
   moduleSupervisions ModuleSupervisor[]

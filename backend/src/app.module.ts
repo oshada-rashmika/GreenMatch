@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { ModulesModule } from './modules/modules.module';
 import { TagsModule } from './tags/tags.module';
 import { ModuleLeaderModule } from './module-leader/module-leader.module';
+import { SupervisorsModule } from './supervisors/supervisors.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ModuleLeaderModule } from './module-leader/module-leader.module';
     ModulesModule,
     TagsModule,
     ModuleLeaderModule,
+    SupervisorsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

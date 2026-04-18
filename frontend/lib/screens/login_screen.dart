@@ -8,6 +8,7 @@ import '../services/auth_provider.dart';
 import 'supervisor_dashboard.dart';
 import 'student_dashboard.dart';
 import 'module_leader_dashboard.dart';
+import 'supervisor_onboarding_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool adminOnly;
@@ -227,9 +228,15 @@ class _LoginScreenState extends State<LoginScreen>
 
       navigator.pushReplacement(
         MaterialPageRoute(
-          builder: (context) => _staffRole == 'supervisor'
-              ? const SupervisorDashboard()
-              : const ModuleLeaderDashboard(),
+          builder: (context) {
+            if (_staffRole == 'supervisor') {
+              return authProvider.isFirstLogin
+                  ? const SupervisorOnboardingScreen()
+                  : const SupervisorDashboard();
+            } else {
+              return const ModuleLeaderDashboard();
+            }
+          },
         ),
       );
     }

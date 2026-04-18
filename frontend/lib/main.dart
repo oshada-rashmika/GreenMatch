@@ -27,9 +27,15 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.monochromeTheme,
         initialRoute: '/',
-        routes: {
-          '/': (context) => const LoginScreen(),
-          '/admin': (context) => const LoginScreen(adminOnly: true),
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/':
+              return MaterialPageRoute(builder: (_) => const LoginScreen());
+            case '/admin':
+              return MaterialPageRoute(builder: (_) => const LoginScreen(adminOnly: true));
+            default:
+              return MaterialPageRoute(builder: (_) => const NotFoundScreen());
+          }
         },
         onUnknownRoute: (settings) => MaterialPageRoute(
           builder: (context) => const NotFoundScreen(),

@@ -4,7 +4,8 @@ import 'dart:convert';
 import '../models/chat_message.dart';
 
 class ChatService {
-  static const String _baseUrl = 'http://10.0.2.3:3000/api';
+  // Use Android emulator loopback for local backend
+  static const String _baseUrl = 'http://10.0.2.2:3000/api';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   // Get all messages for a project

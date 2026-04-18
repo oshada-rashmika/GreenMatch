@@ -280,6 +280,34 @@ class ProjectService {
     }
   }
 
+  /// Fetch projects matched/assigned to a student (includes supervisor info)
+  Future<List<Map<String, dynamic>>> getStudentProjects(String studentId) async {
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/projects/student/$studentId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> raw = jsonDecode(response.body) as List<dynamic>;
+        return raw.map((e) => e as Map<String, dynamic>).toList();
+      }
+
+      if (response.statusCode == 401) {
+        throw ProjectServiceException('Session expired. Please log in again.', statusCode: 401);
+      }
+
+      final body = _tryDecodeBody(response.body);
+      final serverMessage = body?['message'] as String? ?? 'Unexpected error from server.';
+      throw ProjectServiceException(serverMessage, statusCode: response.statusCode);
+    } on ProjectServiceException {
+      rethrow;
+    } catch (e) {
+      throw ProjectServiceException(_mapNetworkError(e));
+    }
+  }
+
   Future<void> scheduleMeeting(String groupId, DateTime scheduledDate, DateTime windowExpiry) async {
     try {
       final headers = await _authService.getAuthHeaders();

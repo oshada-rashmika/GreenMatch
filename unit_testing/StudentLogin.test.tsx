@@ -14,6 +14,7 @@ type StudentLoginState = {
   email: string;
   password: string;
   status: StudentLoginStatus;
+  errorMessage: string | null;
 };
 
 function createStudentLoginController({
@@ -24,6 +25,7 @@ function createStudentLoginController({
     email: '',
     password: '',
     status: 'idle',
+    errorMessage: null,
   };
 
   return (
@@ -35,12 +37,19 @@ function createStudentLoginController({
         state.password = password;
       },
       submit: async () => {
-        await authenticateStudent({
-          email: state.email,
-          password: state.password,
-        });
-        state.status = 'success';
-        onLoginSuccess();
+        try {
+          await authenticateStudent({
+            email: state.email,
+            password: state.password,
+          });
+          state.status = 'success';
+          state.errorMessage = null;
+          onLoginSuccess();
+        } catch (error) {
+          state.status = 'idle';
+          state.errorMessage =
+            error instanceof Error ? error.message : 'Invalid credentials';
+        }
       },
       getState: (): StudentLoginState => ({ ...state }),
     }
@@ -51,6 +60,10 @@ describe('StudentLogin - Verify successful Student login with valid credentials'
   const validCredentials: Credentials = {
     email: 'student@test.com',
     password: 'TestPass123!',
+  };
+  const invalidCredentials: Credentials = {
+    email: 'student@test.com',
+    password: 'WrongPassword123!',
   };
 
   let mockAuthenticateStudent: jest.MockedFunction<
@@ -101,5 +114,40 @@ describe('StudentLogin - Verify successful Student login with valid credentials'
 
     expect(mockOnLoginSuccess).toHaveBeenCalledTimes(1);
     expect(studentLogin.getState().status).toBe('success');
+    expect(studentLogin.getState().errorMessage).toBeNull();
+  });
+
+  test('rejects access when invalid password is provided and exposes error UI state', async () => {
+    mockAuthenticateStudent.mockImplementation(async (credentials: Credentials) => {
+      if (
+        credentials.email === invalidCredentials.email &&
+        credentials.password === invalidCredentials.password
+      ) {
+        throw new Error('Invalid credentials');
+      }
+
+      return { token: 'mock-token' };
+    });
+
+    const studentLogin = createStudentLoginController({
+      authenticateStudent: mockAuthenticateStudent,
+      onLoginSuccess: mockOnLoginSuccess,
+    });
+
+    studentLogin.setEmail(invalidCredentials.email);
+    studentLogin.setPassword(invalidCredentials.password);
+
+    await studentLogin.submit();
+
+    expect(mockAuthenticateStudent).toHaveBeenCalledTimes(1);
+    expect(mockAuthenticateStudent).toHaveBeenCalledWith({
+      email: 'student@test.com',
+      password: 'WrongPassword123!',
+    });
+
+    expect(mockOnLoginSuccess).not.toHaveBeenCalled();
+
+    expect(studentLogin.getState().status).toBe('idle');
+    expect(studentLogin.getState().errorMessage).toBe('Invalid credentials');
   });
 });

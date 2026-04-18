@@ -429,12 +429,15 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const EvaluationHubScreen(),
-                ),
-              ),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EvaluationHubScreen(),
+                  ),
+                );
+                _fetchProjects(); 
+              },
               child: _buildAppBarIcon(Icons.assessment_outlined),
             ),
             const SizedBox(width: 8),
@@ -966,17 +969,22 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({
+    IconData icon = Icons.manage_search_rounded,
+    String title = "The Archive is Empty",
+    String subtitle = "NO PROJECTS MATCH YOUR CURRENT SELECTION",
+    bool showReset = true,
+  }) {
     return SizedBox.expand(
       child: Container(
-        key: const ValueKey('empty'),
+        key: ValueKey('empty_$title'),
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
-                  Icons.manage_search_rounded,
+                  icon,
                   size: 100,
                   color: Colors.white.withValues(alpha: 0.05),
                 )
@@ -985,7 +993,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                 .scale(begin: const Offset(0.8, 0.8)),
             const SizedBox(height: 24),
             Text(
-              "The Archive is Empty",
+              title,
               textAlign: TextAlign.center,
               style: GoogleFonts.montserrat(
                 fontSize: 24,
@@ -995,47 +1003,49 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
             const SizedBox(height: 12),
             Text(
-              "NO PROJECTS MATCH YOUR CURRENT SELECTION",
+              subtitle.toUpperCase(),
               textAlign: TextAlign.center,
               style: GoogleFonts.montserrat(
                 fontSize: 12,
-                letterSpacing: 3,
+                letterSpacing: 2.5,
                 fontWeight: FontWeight.w300,
                 color: Colors.white.withValues(alpha: 0.4),
               ),
             ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
-            const SizedBox(height: 48),
-            InkWell(
-              onTap: () => setState(() => _selectedFilter = "All"),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.forestEmerald.withValues(alpha: 0.3),
+            if (showReset) ...[
+              const SizedBox(height: 48),
+              InkWell(
+                onTap: () => setState(() => _selectedFilter = "All"),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      spreadRadius: 2,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.3),
                     ),
-                  ],
-                ),
-                child: Text(
-                  "Reset Filters",
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: AppTheme.forestEmerald,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    "Reset Filters",
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppTheme.forestEmerald,
+                    ),
                   ),
                 ),
-              ),
-            ).animate().fadeIn(delay: 600.ms).scale(),
+              ).animate().fadeIn(delay: 600.ms).scale(),
+            ],
           ],
         ),
       ),
@@ -1077,7 +1087,12 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   Widget _buildSupervisedContent() {
     final pending = supervisedProjects.where((p) => !p.isEvaluated).toList();
     if (pending.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(
+        icon: Icons.assignment_outlined,
+        title: "No projects to supervise",
+        subtitle: "Active matches waiting for evaluation will appear here.",
+        showReset: false,
+      );
     }
     return LayoutBuilder(
       key: const ValueKey('supervised_projects_tab'),
@@ -1104,7 +1119,12 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   Widget _buildEvaluatedContent() {
     final evaluated = supervisedProjects.where((p) => p.isEvaluated).toList();
     if (evaluated.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(
+        icon: Icons.verified_rounded,
+        title: "No evaluated projects",
+        subtitle: "You haven't evaluated any projects yet.",
+        showReset: false,
+      );
     }
     return LayoutBuilder(
       key: const ValueKey('evaluated_projects_tab'),

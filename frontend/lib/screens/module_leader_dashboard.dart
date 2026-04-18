@@ -651,12 +651,18 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
         const SizedBox(height: 20),
         _SectionPanel(
           title: 'Tag Catalog',
-          child: Column(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: List.generate(
               5,
-              (index) => Padding(
-                padding: EdgeInsets.only(bottom: index == 4 ? 0 : 10),
-                child: const _TagTableSkeletonRow(),
+              (index) => Container(
+                width: 80 + (index * 15.0),
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -719,7 +725,6 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                   ),
                 ],
               ),
-            ),
             const SizedBox(height: 20),
             _SectionPanel(
               title: 'Allocation Queue',
@@ -1710,9 +1715,15 @@ class _ModuleCardSkeleton extends StatelessWidget {
           const SizedBox(height: 24),
           Row(
             children: [
-              Container(width: 80, height: 32, borderRadius: BorderRadius.circular(8), color: Colors.white.withValues(alpha: 0.05)),
+              Container(
+                 width: 80, height: 32, 
+                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white.withValues(alpha: 0.05)),
+              ),
               const SizedBox(width: 12),
-              Container(width: 80, height: 32, borderRadius: BorderRadius.circular(8), color: Colors.white.withValues(alpha: 0.05)),
+              Container(
+                 width: 80, height: 32, 
+                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.white.withValues(alpha: 0.05)),
+              ),
             ],
           ),
         ],

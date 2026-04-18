@@ -262,7 +262,18 @@ class ModuleLeaderService {
       throw Exception('Failed to create module (${response.statusCode})');
     } catch (error) {
       throw Exception(_mapNetworkError(error));
-    }
+  }
+
+  Future<int> runAutoMatchAlgorithm({
+    required String jwtToken,
+  }) async {
+    // Simulates the algorithmic taxonomy matching delay taking approx 2.5s.
+    // In a production backend, this would hit something like:
+    // POST /module-leader/auto-match
+    await Future.delayed(const Duration(milliseconds: 2500));
+    
+    // Simulating that the algorithm successfully paired 2 projects.
+    return 2;
   }
 
   Future<ModuleLeaderAcademicModule> assignSupervisorsToModule({

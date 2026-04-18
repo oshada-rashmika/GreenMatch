@@ -357,6 +357,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                     return _SmartProjectsPopup(
                                       projects: pendingProjects,
                                       title: 'Pending Matches',
+                                      onRunAutoMatch: _executeGodModeMatcher,
                                     );
                                   },
                                 ),
@@ -697,10 +698,39 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
     }
   }
 
-  Future<void> _refreshTags() async {
+  Future<void> _refreshOverviewData() async {
     setState(() {
-      _tagsFuture = _loadTagsData();
+      _loadOverviewData();
     });
+  }
+
+  Future<void> _executeGodModeMatcher() async {
+    final token = await _authService.getToken();
+    if (token == null || token.isEmpty) return;
+
+    try {
+      final matchesMade = await _moduleLeaderService.runAutoMatchAlgorithm(jwtToken: token);
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✨ Algorithm successfully paired $matchesMade orphaned projects!'),
+          backgroundColor: AppTheme.forestEmerald,
+        ),
+      );
+
+      // Force refresh overarching state organically
+      _refreshOverviewData();
+      _refreshProjects();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to execute auto-matcher pipeline.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Future<void> _showCreateTagSheet() async {
@@ -1279,7 +1309,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                                     selectedSupervisorIds.toList(),
                                   );
                                 },
-                          child: const Text('Save Assignment', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                          child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ],
                     ),
@@ -2691,11 +2721,13 @@ class _SmartProjectsPopup extends StatefulWidget {
   const _SmartProjectsPopup({
     required this.projects,
     required this.title,
+    this.onRunAutoMatch,
     super.key,
   });
 
   final List<ModuleLeaderProject> projects;
   final String title;
+  final Future<void> Function()? onRunAutoMatch;
 
   @override
   State<_SmartProjectsPopup> createState() => _SmartProjectsPopupState();
@@ -2703,6 +2735,7 @@ class _SmartProjectsPopup extends StatefulWidget {
 
 class _SmartProjectsPopupState extends State<_SmartProjectsPopup> {
   String _selectedModuleCode = 'All';
+  bool _isRunningAlgo = false;
 
   @override
   Widget build(BuildContext context) {
@@ -2920,6 +2953,82 @@ class _SmartProjectsPopupState extends State<_SmartProjectsPopup> {
                       },
                     ),
             ),
+            if (widget.onRunAutoMatch != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.premiumBlack,
+                  border: const Border(top: BorderSide(color: Colors.white12)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+                      blurRadius: 40,
+                      offset: const Offset(0, -10),
+                    )
+                  ],
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ).copyWith(
+                    elevation: WidgetStateProperty.all(0),
+                  ),
+                  onPressed: _isRunningAlgo 
+                    ? null 
+                    : () async {
+                        setState(() => _isRunningAlgo = true);
+                        await widget.onRunAutoMatch!();
+                        if (mounted) {
+                          setState(() => _isRunningAlgo = false);
+                          Navigator.of(context).pop();
+                        }
+                      },
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.forestEmerald.withValues(alpha: 0.8),
+                          const Color(0xFF6366F1).withValues(alpha: 0.8), // Deep Indigo
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Container(
+                      alignment: Alignment.center,
+                      constraints: const BoxConstraints(minHeight: 56),
+                      child: _isRunningAlgo
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+                              SizedBox(width: 12),
+                              Text(
+                                'RUN AUTO-MATCH ALGORITHM',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

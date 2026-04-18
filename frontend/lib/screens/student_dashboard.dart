@@ -92,6 +92,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   List<TagData> _tags = [];
   String? _selectedModuleId;
   String? _selectedTagId;
+  Map<String, dynamic>? _userProfile;
 
   @override
   void initState() {
@@ -106,12 +107,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final fetchedTags = await service.fetchTags();
       final myProposalsList = await service.fetchMyProposals();
       final fetchedMeetings = await service.fetchMyMeetings();
+      final userProfileResult = await service.fetchUserProfile();
 
       if (mounted) {
         setState(() {
           _modules = fetchedModules;
           _tags = fetchedTags;
           _meetings = fetchedMeetings;
+          _userProfile = userProfileResult;
 
           if (_modules.isNotEmpty) _selectedModuleId = _modules.first.id;
           if (_tags.isNotEmpty) _selectedTagId = _tags.first.id;
@@ -358,8 +361,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
               color: cardColor,
               border: const Border(bottom: BorderSide(color: Color(0xFF2B364E), width: 1)),
             ),
-            accountName: const Text('Elena Fisher', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-            accountEmail: Text('ST-2026-9482', style: TextStyle(color: mutedTextColor)),
+            accountName: Text(_userProfile?['fullName'] ?? 'Loading...', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+            accountEmail: Text(_userProfile?['studentId'] ?? '', style: TextStyle(color: mutedTextColor)),
             currentAccountPicture: CircleAvatar(
               backgroundColor: accentColor,
               child: const Icon(Icons.person, color: Colors.black, size: 36),
@@ -568,9 +571,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
           children: [
             const SizedBox(height: 16),
             _buildDeadlineBanner(),
-            const Text(
-              'Welcome back, Elena\nFisher',
-              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, height: 1.2),
+            Text(
+              'Welcome back, ${_userProfile?['fullName']?.split(' ').first ?? ''}',
+              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, height: 1.2),
             ),
             const SizedBox(height: 8),
             Text(

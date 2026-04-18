@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_provider.dart';
+import '../services/student_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
 
@@ -27,6 +28,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isMatched = true;
   bool _supervisorRevealed = false;
   bool _isPersonalInfoExpanded = false;
+  Map<String, dynamic>? _userProfile;
+  bool _isLoadingProfile = true;
 
   late ScrollController _scrollController;
   late AnimationController _revealController;
@@ -35,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
+    _fetchProfile();
     _scrollController = ScrollController();
     _revealController = AnimationController(
       vsync: this,
@@ -44,6 +48,26 @@ class _ProfileScreenState extends State<ProfileScreen>
       parent: _revealController,
       curve: Curves.easeOutCubic,
     );
+  }
+
+  Future<void> _fetchProfile() async {
+    try {
+      final service = StudentService();
+      final profile = await service.fetchUserProfile();
+      if (mounted) {
+        setState(() {
+          _userProfile = profile;
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load profile: $e')));
+      }
+    }
   }
 
   @override
@@ -141,7 +165,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                     // ── Name & ID ──
                     Text(
-                      'Elena Fisher',
+                      _userProfile?['fullName'] ?? 'Loading...',
                       style: GoogleFonts.montserrat(
                         color: Colors.white,
                         fontSize: 26,
@@ -158,7 +182,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         border: Border.all(color: Colors.white.withOpacity(0.05)),
                       ),
                       child: Text(
-                        'Student ID: ST-2026-9482',
+                        'Student ID: ${_userProfile?['studentId'] ?? ''}',
                         style: GoogleFonts.montserrat(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.w500),
                       ),
                     ),
@@ -758,17 +782,17 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildFormInput('FULL NAME', 'Elena Fisher'),
+                _buildFormInput('FULL NAME', _userProfile?['fullName'] ?? ''),
                 const SizedBox(height: 16),
-                _buildFormInput('STUDENT ID', 'ST-2026-9482'),
+                _buildFormInput('STUDENT ID', _userProfile?['studentId'] ?? ''),
                 const SizedBox(height: 16),
-                _buildFormInput('EMAIL ADDRESS', 'elena.fisher@student.university.edu'),
+                _buildFormInput('EMAIL ADDRESS', _userProfile?['email'] ?? ''),
                 const SizedBox(height: 16),
                 _buildFormInput('PHONE NUMBER', '+1 (555) 019-2834'),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _buildFormInput('DEGREE LEVEL', 'Undergraduate')),
+                    Expanded(child: _buildFormInput('DEGREE LEVEL', _userProfile?['degree'] ?? '')),
                     const SizedBox(width: 16),
                     Expanded(child: _buildFormInput('MAJOR', 'Computer Science')),
                   ],

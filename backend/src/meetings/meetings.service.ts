@@ -105,4 +105,97 @@ export class MeetingsService {
       this.logger.log(`Auto-marked ${result.count} expired meetings as MISSED.`);
     }
   }
+
+  // ───────────────────────────────────────────────
+  // MARK-MEETINGS FEATURE (Meeting Days 1-21)
+  // ───────────────────────────────────────────────
+
+  async getProjectMeetingMarks(groupId: string, supervisorId: string) {
+    return this.prisma.meeting.findMany({
+      where: {
+        groupId,
+        supervisorId,
+        meetingNumber: { not: null },
+      },
+      select: {
+        id: true,
+        meetingNumber: true,
+        scheduledDate: true,
+        status: true,
+        supervisorNotes: true,
+        createdAt: true,
+      },
+      orderBy: { meetingNumber: 'asc' },
+    });
+  }
+
+  async markMeetingDay(
+    supervisorId: string,
+    groupId: string,
+    meetingNumber: number,
+    meetingDate: Date,
+    notes?: string,
+  ) {
+    // Validate meeting number range
+    if (meetingNumber < 1 || meetingNumber > 21) {
+      throw new BadRequestException('Meeting number must be between 1 and 21');
+    }
+
+    // Check if this meeting number is already marked for this group
+    const existing = await this.prisma.meeting.findFirst({
+      where: {
+        groupId,
+        supervisorId,
+        meetingNumber,
+      },
+    });
+
+    if (existing) {
+      // Update existing mark
+      return this.prisma.meeting.update({
+        where: { id: existing.id },
+        data: {
+          scheduledDate: new Date(meetingDate),
+          windowExpiry: new Date(meetingDate), // Same as scheduled for marks
+          supervisorNotes: notes,
+          status: 'ATTENDED',
+        },
+      });
+    }
+
+    // Create new meeting mark
+    return this.prisma.meeting.create({
+      data: {
+        meetingNumber,
+        scheduledDate: new Date(meetingDate),
+        windowExpiry: new Date(meetingDate),
+        supervisorNotes: notes,
+        groupId,
+        supervisorId,
+        status: 'ATTENDED',
+      },
+    });
+  }
+
+  async unmarkMeetingDay(
+    supervisorId: string,
+    groupId: string,
+    meetingNumber: number,
+  ) {
+    const existing = await this.prisma.meeting.findFirst({
+      where: {
+        groupId,
+        supervisorId,
+        meetingNumber,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Meeting mark not found');
+    }
+
+    return this.prisma.meeting.delete({
+      where: { id: existing.id },
+    });
+  }
 }

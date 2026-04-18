@@ -201,6 +201,7 @@ model SupervisorTag {
 
 model Meeting {
   id              String        @id @default(uuid())
+  meetingNumber   Int?          // Meeting slot number (1-21) for mark-meetings feature
   scheduledDate   DateTime
   windowExpiry    DateTime // The Anti-Ghosting cutoff
   status          MeetingStatus @default(SCHEDULED)

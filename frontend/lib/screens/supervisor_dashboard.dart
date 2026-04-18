@@ -21,6 +21,7 @@ import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import '../services/supervisor_service.dart';
 import '../models/supervisor_profile.dart' as supervisor_model;
 import './project_selection_screen.dart';
+import './mark_meetings.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -1610,6 +1611,20 @@ class _DashboardDrawer extends StatelessWidget {
                     );
                   },
                 ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.meeting_room_outlined,
+                  title: 'Mark Meetings',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MarkMeetingsProjectListScreen(),
+                      ),
+                    );
+                  },
+                ),
+
                 _buildDrawerItem(
                   context,
                   icon: Icons.person_outline_rounded,

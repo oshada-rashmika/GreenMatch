@@ -1,8 +1,8 @@
 import {
-  ArrayNotEmpty,
-  IsArray,
   IsISO8601,
   IsNotEmpty,
+  IsNotEmptyObject,
+  IsObject,
   IsString,
 } from 'class-validator';
 
@@ -15,10 +15,9 @@ export class CreateGuidelineDto {
   @IsNotEmpty()
   instructions: string;
 
-  @IsArray()
-  @ArrayNotEmpty()
-  @IsString({ each: true })
-  deliverables: string[];
+  @IsObject()
+  @IsNotEmptyObject()
+  deliverables: Record<string, string>;
 
   @IsISO8601()
   deadline: string;

@@ -23,7 +23,8 @@ class _CreateGuidelineSheetState extends State<CreateGuidelineSheet> {
   
   String? _selectedModuleId;
   DateTime? _selectedDeadline;
-  final Set<String> _selectedDeliverables = {};
+  final Map<String, String> _selectedDeliverables = {};
+  final Map<String, TextEditingController> _deliverableControllers = {};
   
   bool _isLoadingModules = true;
   bool _isSubmitting = false;
@@ -42,6 +43,16 @@ class _CreateGuidelineSheetState extends State<CreateGuidelineSheet> {
   void initState() {
     super.initState();
     _fetchModules();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _instructionsController.dispose();
+    for (final controller in _deliverableControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _fetchModules() async {
@@ -102,17 +113,39 @@ class _CreateGuidelineSheetState extends State<CreateGuidelineSheet> {
       _showError('Please select a deadline');
       return;
     }
+    if (_selectedDeliverables.isEmpty) {
+      _showError('Please select at least one deliverable');
+      return;
+    }
+
+    final emptyStructures = _selectedDeliverables.entries
+        .where((entry) => entry.value.trim().isEmpty)
+        .map((entry) => entry.key)
+        .toList();
+
+    if (emptyStructures.isNotEmpty) {
+      _showError(
+        'Please provide the expected structure for ${emptyStructures.first}.',
+      );
+      return;
+    }
 
     setState(() => _isSubmitting = true);
 
     try {
       final guidelineService = GuidelineService();
+
+      final deliverablesPayload = Map<String, String>.fromEntries(
+        _selectedDeliverables.entries.map(
+          (entry) => MapEntry(entry.key, entry.value.trim()),
+        ),
+      );
       
       final data = {
         'moduleId': _selectedModuleId,
         'title': _titleController.text.trim(),
         'instructions': _instructionsController.text.trim(),
-        'deliverables': _selectedDeliverables.toList(),
+        'deliverables': deliverablesPayload,
         'deadline': _selectedDeadline!.toIso8601String(),
       };
 
@@ -224,6 +257,8 @@ class _CreateGuidelineSheetState extends State<CreateGuidelineSheet> {
                           _buildSectionTitle('Required Deliverables'),
                           const SizedBox(height: 12),
                           _buildDeliverablesWrap(),
+                          const SizedBox(height: 12),
+                          _buildDeliverableStructureFields(),
                           const SizedBox(height: 32),
                           _buildSectionTitle('Timeline'),
                           const SizedBox(height: 12),
@@ -328,14 +363,16 @@ class _CreateGuidelineSheetState extends State<CreateGuidelineSheet> {
       spacing: 10,
       runSpacing: 10,
       children: _availableDeliverables.map((label) {
-        final isSelected = _selectedDeliverables.contains(label);
+        final isSelected = _selectedDeliverables.containsKey(label);
         return GestureDetector(
           onTap: () {
             setState(() {
               if (isSelected) {
                 _selectedDeliverables.remove(label);
+                _deliverableControllers.remove(label)?.dispose();
               } else {
-                _selectedDeliverables.add(label);
+                _selectedDeliverables[label] = '';
+                _deliverableControllers[label] = TextEditingController();
               }
             });
           },
@@ -367,6 +404,74 @@ class _CreateGuidelineSheetState extends State<CreateGuidelineSheet> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildDeliverableStructureFields() {
+    return Column(
+      children: _availableDeliverables.map((label) {
+        final isSelected = _selectedDeliverables.containsKey(label);
+        return AnimatedSize(
+          duration: 280.ms,
+          curve: Curves.easeInOutCubic,
+          alignment: Alignment.topCenter,
+          child: isSelected
+              ? _buildDeliverableStructureField(label)
+              : const SizedBox.shrink(),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDeliverableStructureField(String deliverableName) {
+    final controller =
+        _deliverableControllers[deliverableName] ?? TextEditingController();
+    _deliverableControllers.putIfAbsent(deliverableName, () => controller);
+
+    final currentValue = _selectedDeliverables[deliverableName] ?? '';
+    if (controller.text != currentValue) {
+      controller.value = controller.value.copyWith(
+        text: currentValue,
+        selection: TextSelection.collapsed(offset: currentValue.length),
+        composing: TextRange.empty,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Expected Structure for $deliverableName',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GlassContainer(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            borderRadius: 16,
+            opacity: 0.04,
+            borderColor: AppTheme.forestEmerald.withValues(alpha: 0.35),
+            child: TextField(
+              controller: controller,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              onChanged: (value) {
+                _selectedDeliverables[deliverableName] = value;
+              },
+              decoration: InputDecoration(
+                hintText: 'Describe structure, sections, and rubric for $deliverableName...',
+                hintStyle: const TextStyle(color: Colors.white24),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

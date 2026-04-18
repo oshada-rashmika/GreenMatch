@@ -26,7 +26,7 @@ class Guideline {
   final String id;
   final String title;
   final String instructions;
-  final List<String> deliverables;
+  final Map<String, String> deliverables;
   final DateTime deadline;
   final DateTime createdAt;
   final String moduleId;
@@ -44,17 +44,33 @@ class Guideline {
   });
 
   factory Guideline.fromJson(Map<String, dynamic> json) {
-    final rawDeliverables = json['deliverables'] as List<dynamic>? ?? const [];
+    final dynamic rawDeliverables = json['deliverables'];
+    final Map<String, String> parsedDeliverables = {};
+
+    if (rawDeliverables is Map<String, dynamic>) {
+      for (final entry in rawDeliverables.entries) {
+        final key = entry.key.trim();
+        final value = entry.value.toString().trim();
+        if (key.isNotEmpty && value.isNotEmpty) {
+          parsedDeliverables[key] = value;
+        }
+      }
+    } else if (rawDeliverables is List) {
+      // Backward compatibility for older records that stored only names.
+      for (final item in rawDeliverables) {
+        final key = item.toString().trim();
+        if (key.isNotEmpty) {
+          parsedDeliverables[key] = '';
+        }
+      }
+    }
 
     final moduleJson = json['module'];
     return Guideline(
       id: (json['id'] ?? '').toString(),
       title: (json['title'] ?? '').toString(),
       instructions: (json['instructions'] ?? '').toString(),
-      deliverables: rawDeliverables
-          .map((entry) => entry.toString())
-          .where((entry) => entry.isNotEmpty)
-          .toList(),
+      deliverables: parsedDeliverables,
       deadline: DateTime.tryParse((json['deadline'] ?? '').toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()) ??
@@ -71,7 +87,7 @@ class Guideline {
       'id': id,
       'title': title,
       'instructions': instructions,
-      'deliverables': deliverables,
+      'deliverables': Map<String, String>.from(deliverables),
       'deadline': deadline.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'moduleId': moduleId,

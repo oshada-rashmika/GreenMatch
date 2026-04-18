@@ -12,6 +12,7 @@ import { TagsModule } from './tags/tags.module';
 import { ModuleLeaderModule } from './module-leader/module-leader.module';
 import { SupervisorsModule } from './supervisors/supervisors.module';
 import { EvaluationsModule } from './evaluations/evaluations.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { EvaluationsModule } from './evaluations/evaluations.module';
     ModuleLeaderModule,
     SupervisorsModule,
     EvaluationsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

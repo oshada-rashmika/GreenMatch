@@ -1120,11 +1120,45 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                     dateStr: sDateStr,
                     timeStr: sTimeStr,
                     onDatePick: () async {
-                      final val = await showDatePicker(context: bCtx, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                      final val = await showDatePicker(
+                        context: bCtx,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14), // Muted dark background
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
                       if (val != null) setModalState(() => selectedDate = val);
                     },
                     onTimePick: () async {
-                      final val = await showTimePicker(context: bCtx, initialTime: TimeOfDay.now());
+                      final val = await showTimePicker(
+                        context: bCtx,
+                        initialTime: TimeOfDay.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14),
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
                       if (val != null) setModalState(() => selectedTime = val);
                     },
                   ),
@@ -1134,11 +1168,45 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                     dateStr: eDateStr,
                     timeStr: eTimeStr,
                     onDatePick: () async {
-                      final val = await showDatePicker(context: bCtx, initialDate: selectedDate ?? DateTime.now(), firstDate: selectedDate ?? DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                      final val = await showDatePicker(
+                        context: bCtx,
+                        initialDate: selectedDate ?? DateTime.now(),
+                        firstDate: selectedDate ?? DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14),
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
                       if (val != null) setModalState(() => expiryDate = val);
                     },
                     onTimePick: () async {
-                      final val = await showTimePicker(context: bCtx, initialTime: TimeOfDay.now());
+                      final val = await showTimePicker(
+                        context: bCtx,
+                        initialTime: TimeOfDay.now(),
+                        builder: (context, child) {
+                          return Theme(
+                            data: ThemeData.dark().copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: AppTheme.forestEmerald,
+                                surface: Color(0xFF0F1F14),
+                                onSurface: Colors.white,
+                              ),
+                              dialogBackgroundColor: const Color(0xFF0F1F14),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
                       if (val != null) setModalState(() => expiryTime = val);
                     },
                   ),

@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../services/auth_provider.dart';
 import '../services/project_service.dart';
 import '../widgets/glass_container.dart';
+import 'bookmarks_screen.dart';
 import 'login_screen.dart';
 import 'matches_screen.dart';
 import 'profile_screen.dart';
@@ -150,7 +151,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
       setState(() {
         projects = fetchedProjects;
         supervisedProjects = mySupervised;
-        _filters = ["All", "My Shortlist", ...uniqueTags];
+        _filters = ["All", ...uniqueTags];
         isLoading = false;
       });
     } on ProjectServiceException catch (e) {
@@ -370,6 +371,16 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
             if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
             const SizedBox(width: 8),
             _buildFocusToggle(),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BookmarksScreen(),
+                ),
+              ),
+              child: _buildAppBarIcon(Icons.bookmark_border_rounded),
+            ),
             _buildAppBarIcon(Icons.notifications_none_rounded),
             const SizedBox(width: 8),
             GestureDetector(
@@ -598,16 +609,11 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     
     if (_selectedFilter == "All") {
       filtered = projects;
-    } else if (_selectedFilter == "My Shortlist") {
-      filtered = projects.where((p) => shortlistProvider.isShortlisted(p.id)).toList();
     } else {
       filtered = projects.where((p) => p.tags.contains(_selectedFilter)).toList();
     }
 
     if (filtered.isEmpty) {
-      if (_selectedFilter == "My Shortlist") {
-        return _buildEmptyShortlistState();
-      }
       return _buildEmptyState();
     }
     
@@ -883,50 +889,6 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
     );
   }
 
-  Widget _buildEmptyShortlistState() {
-    return SizedBox.expand(
-      child: Container(
-        key: const ValueKey('empty_shortlist'),
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(
-                  Icons.bookmark_outline_rounded,
-                  size: 100,
-                  color: const Color(0xFFFBBF24).withValues(alpha: 0.15),
-                )
-                .animate()
-                .fadeIn(duration: 1.seconds)
-                .scale(begin: const Offset(0.8, 0.8)),
-            const SizedBox(height: 24),
-            Text(
-              "Your Shortlist is Empty",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
-                color: Colors.white.withValues(alpha: 0.8),
-              ),
-            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
-            const SizedBox(height: 12),
-            Text(
-              "BOOKMARK PROJECTS TO REVIEW THEM LATER",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2.0,
-                color: AppTheme.forestEmerald,
-              ),
-            ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return SizedBox.expand(
       child: Container(
@@ -1028,7 +990,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
   }
 
   Widget _buildBentoCard(AnonymousProject project, int index) {
-    return _ProjectCardHolder(
+    return ProjectCard(
       project: project,
       index: index,
       activeSpecifications: activeSpecifications,
@@ -1410,14 +1372,15 @@ class _SupervisedProjectCardHolderState extends State<_SupervisedProjectCardHold
   }
 }
 
-class _ProjectCardHolder extends StatefulWidget {
+class ProjectCard extends StatefulWidget {
   final AnonymousProject project;
   final int index;
   final bool isMatched;
   final List<String> activeSpecifications;
   final Future<void> Function() onMatch;
 
-  const _ProjectCardHolder({
+  const ProjectCard({
+    super.key,
     required this.project,
     required this.index,
     required this.isMatched,
@@ -1426,10 +1389,10 @@ class _ProjectCardHolder extends StatefulWidget {
   });
 
   @override
-  State<_ProjectCardHolder> createState() => _ProjectCardHolderState();
+  State<ProjectCard> createState() => _ProjectCardState();
 }
 
-class _ProjectCardHolderState extends State<_ProjectCardHolder> {
+class _ProjectCardState extends State<ProjectCard> {
   bool _isHovered = false;
   bool _isMatching = false;
 

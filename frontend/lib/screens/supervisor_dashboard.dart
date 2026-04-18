@@ -20,6 +20,7 @@ import '../services/shortlist_provider.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import '../services/supervisor_service.dart';
 import '../models/supervisor_profile.dart' as supervisor_model;
+import './project_selection_screen.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -384,9 +385,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
               const SizedBox(width: 8),
               _buildActionsRow(),
             ] else if (matchedProjectIds.isNotEmpty) ...[
-               _buildMatchesButton(),
-               const SizedBox(width: 16),
-            ]
+              _buildMatchesButton(),
+              const SizedBox(width: 16),
+            ],
           ],
         ),
       ),
@@ -1593,6 +1594,33 @@ class _DashboardDrawer extends StatelessWidget {
                     ),
                   ),
                 ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  title: 'Chat',
+                  onTap: () {
+                    final authProvider = context.read<AuthProvider>();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProjectSelectionScreen(
+                          supervisorId: authProvider.userId ?? '',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.person_outline_rounded,
+                  title: 'Profile',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SupervisorProfileScreen(),
+                    ),
+                  ),
+                ),
                 const Spacer(),
                 _buildProfileFooter(context),
               ],
@@ -1668,7 +1696,7 @@ class _DashboardDrawer extends StatelessWidget {
     final authProvider = context.read<AuthProvider>();
     final supervisorId = authProvider.userId;
 
-    return FutureBuilder<Map<String, dynamic>>(
+    return FutureBuilder<supervisor_model.SupervisorProfile>(
       future: supervisorId != null
           ? SupervisorService().getSupervisorProfile(supervisorId)
           : Future.error('No ID'),
@@ -1677,14 +1705,9 @@ class _DashboardDrawer extends StatelessWidget {
         String email = "...";
 
         if (snapshot.hasData) {
-          try {
-            final data = snapshot.data!;
-            final profile = supervisor_model.SupervisorProfile.fromJson(
-              data['success'] ? data['data'] : data,
-            );
-            name = profile.fullName;
-            email = profile.email;
-          } catch (_) {}
+          final profile = snapshot.data!;
+          name = profile.fullName;
+          email = profile.email;
         }
 
         return Container(

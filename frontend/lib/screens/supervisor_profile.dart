@@ -16,7 +16,7 @@ class SupervisorProfileScreen extends StatefulWidget {
 
 class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
   late final SupervisorService _supervisorService;
-  late Future<Map<String, dynamic>> _profileFuture;
+  late Future<SupervisorProfile> _profileFuture;
 
   // Text controllers for editable fields
   late TextEditingController _nameController;
@@ -73,7 +73,7 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: FutureBuilder<SupervisorProfile>(
         future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -88,29 +88,8 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
             return _buildErrorState('No data received from server');
           }
 
-          final responseData = snapshot.data!;
-          if (!responseData.containsKey('success')) {
-            // Backend returned data directly without wrapper
-            try {
-              final profile = SupervisorProfile.fromJson(responseData);
-              return _buildProfileContent(profile);
-            } catch (e) {
-              return _buildErrorState('Failed to parse profile data: $e');
-            }
-          }
-
-          if (!responseData['success']) {
-            return _buildErrorState(
-              responseData['message'] ?? 'Failed to load profile',
-            );
-          }
-
-          try {
-            final profile = SupervisorProfile.fromJson(responseData['data']);
-            return _buildProfileContent(profile);
-          } catch (e) {
-            return _buildErrorState('Failed to parse profile data: $e');
-          }
+          final profile = snapshot.data!;
+          return _buildProfileContent(profile);
         },
       ),
     );

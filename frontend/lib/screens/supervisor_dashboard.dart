@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -18,6 +19,8 @@ import 'evaluation_hub_screen.dart';
 import './supervisor_profile.dart';
 import '../services/shortlist_provider.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import '../services/supervisor_service.dart';
+import '../models/supervisor_profile.dart';
 
 class SupervisorDashboard extends StatefulWidget {
   const SupervisorDashboard({super.key});
@@ -263,6 +266,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         onPointerMove: _handlePointerEvent,
         child: Scaffold(
           extendBodyBehindAppBar: true,
+          drawer: const _DashboardDrawer(),
           appBar: _buildAppBar(),
           body: Stack(
             children: [
@@ -353,107 +357,94 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
         borderColor: Colors.transparent,
         child: AppBar(
           centerTitle: false,
-          title: Text(
-            "Blind Review",
-            style: GoogleFonts.montserrat(
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              fontSize: 22,
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              "Blind Review",
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                fontSize: _isMobile(context) ? 18 : 22,
+              ),
             ),
           ),
-          actions: [
-            if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
-            const SizedBox(width: 8),
-            _buildFocusToggle(),
-            const SizedBox(width: 8),
-            Consumer<ShortlistProvider>(
-              builder: (context, shortlistProvider, child) {
-                final count = shortlistProvider.shortlistedIds.length;
-                return Center(
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const BookmarksScreen(),
-                      ),
-                    ),
-                    child: Badge(
-                      isLabelVisible: count > 0,
-                      label: Text(
-                        count.toString(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                          color: Color(
-                            0xFF0F1F14,
-                          ), // Dark background text for contrast
-                        ),
-                      ),
-                      backgroundColor: const Color(
-                        0xFFFBBF24,
-                      ), // Premium Amber/Gold color
-                      offset: const Offset(-4, 0),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.forestEmerald.withValues(
-                                alpha: 0.1,
-                              ),
-                              blurRadius: 10,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.bookmark_border_rounded,
-                          size: 22,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            _buildAppBarIcon(Icons.notifications_none_rounded),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const EvaluationHubScreen(),
-                  ),
-                );
-                _fetchProjects();
-              },
-              child: _buildAppBarIcon(Icons.assessment_outlined),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const SupervisorProfileScreen(),
+          leading: _isMobile(context) 
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: _buildAppBarIcon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
-              ),
-              child: _buildAppBarIcon(Icons.person),
-            ),
-            const SizedBox(width: 16),
+              )
+            : null,
+          actions: [
+            if (!_isMobile(context)) ...[
+              if (matchedProjectIds.isNotEmpty) _buildMatchesButton(),
+              const SizedBox(width: 8),
+              _buildFocusToggle(),
+              const SizedBox(width: 8),
+              _buildActionsRow(),
+            ] else if (matchedProjectIds.isNotEmpty) ...[
+               _buildMatchesButton(),
+               const SizedBox(width: 16),
+            ]
           ],
         ),
       ),
+    );
+  }
+
+  bool _isMobile(BuildContext context) => MediaQuery.of(context).size.width < 800;
+
+  Widget _buildActionsRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Consumer<ShortlistProvider>(
+          builder: (context, shortlistProvider, child) {
+            final count = shortlistProvider.shortlistedIds.length;
+            return Center(
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BookmarksScreen()),
+                ),
+                child: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text(
+                    count.toString(),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Color(0xFF0F1F14)),
+                  ),
+                  backgroundColor: const Color(0xFFFBBF24),
+                  offset: const Offset(-4, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  child: _buildAppBarIcon(Icons.bookmark_border_rounded),
+                ),
+              ),
+            );
+          },
+        ),
+        _buildAppBarIcon(Icons.notifications_none_rounded),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EvaluationHubScreen()),
+            );
+            _fetchProjects(); 
+          },
+          child: _buildAppBarIcon(Icons.assessment_outlined),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SupervisorProfileScreen()),
+          ),
+          child: _buildAppBarIcon(Icons.person),
+        ),
+        const SizedBox(width: 16),
+      ],
     );
   }
 
@@ -1532,6 +1523,261 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _DashboardDrawer extends StatelessWidget {
+  const _DashboardDrawer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Colors.transparent,
+      width: MediaQuery.of(context).size.width * 0.8,
+      child: Stack(
+        children: [
+          ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  border: Border(
+                    right: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDrawerHeader(context),
+                const SizedBox(height: 30),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.bookmark_border_rounded,
+                  title: 'Bookmarks',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BookmarksScreen()),
+                  ),
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.notifications_none_rounded,
+                  title: 'Notifications',
+                  onTap: () {}, 
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.assessment_outlined,
+                  title: 'Evaluations',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EvaluationHubScreen(),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                _buildProfileFooter(context),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.forestEmerald.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.eco_rounded,
+              color: AppTheme.forestEmerald,
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'GreenMatch',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: ListTile(
+        onTap: () {
+          Navigator.pop(context);
+          onTap();
+        },
+        leading: Icon(icon, color: Colors.white70, size: 22),
+        title: Text(
+          title,
+          style: GoogleFonts.montserrat(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        hoverColor: Colors.white10,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+      ),
+    );
+  }
+
+  Widget _buildProfileFooter(BuildContext context) {
+    final authProvider = context.read<AuthProvider>();
+    final supervisorId = authProvider.userId;
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: supervisorId != null
+          ? SupervisorService().getSupervisorProfile(supervisorId)
+          : Future.error('No ID'),
+      builder: (context, snapshot) {
+        String name = "Loading...";
+        String email = "...";
+
+        if (snapshot.hasData) {
+          try {
+            final data = snapshot.data!;
+            final profile = SupervisorProfile.fromJson(
+              data['success'] ? data['data'] : data,
+            );
+            name = profile.fullName;
+            email = profile.email;
+          } catch (_) {}
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.03),
+            border: Border(
+              top: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppTheme.forestEmerald.withValues(
+                      alpha: 0.2,
+                    ),
+                    child: Text(
+                      name.isNotEmpty ? name[0] : "?",
+                      style: const TextStyle(
+                        color: AppTheme.forestEmerald,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.montserrat(
+                            color: Colors.white38,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildLogoutButton(context),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    return InkWell(
+      onTap: () async {
+        await context.read<AuthProvider>().logout();
+        if (context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.redAccent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 18),
+            const SizedBox(width: 10),
+            Text(
+              'Sign Out',
+              style: GoogleFonts.montserrat(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -283,123 +283,264 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
   }
 
   Widget _buildOverviewContent() {
-    return FutureBuilder<_OverviewViewModel>(
-      future: _overviewFuture,
-      builder: (context, snapshot) {
-        final viewModel = snapshot.data;
-
-        if (snapshot.connectionState == ConnectionState.waiting ||
-            viewModel == null) {
-          return _buildOverviewSkeleton();
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 900
-                    ? 3
-                    : constraints.maxWidth >= 620
-                    ? 2
-                    : 1;
-                return Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder<_OverviewViewModel>(
+            future: _overviewFuture,
+            builder: (context, snapshot) {
+              final viewModel = snapshot.data;
+              if (snapshot.connectionState == ConnectionState.waiting || viewModel == null) {
+                return _buildOverviewSkeleton();
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 900 ? 3 : constraints.maxWidth >= 620 ? 2 : 1;
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          _MetricCard(
+                            title: 'TOTAL PROJECTS',
+                            value: viewModel.statistics.totalProjects.toString(),
+                            detail: 'All active and pending records',
+                            width: _metricWidth(constraints.maxWidth, columns),
+                            accentColor: const Color(0xFF6366F1), // Indigo
+                            iconData: Icons.folder_open_rounded,
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                                  future: _projectsFuture,
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return SizedBox(
+                                        height: MediaQuery.of(context).size.height * 0.85,
+                                        child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                      );
+                                    }
+                                    return _SmartProjectsPopup(
+                                      projects: snapshot.data!,
+                                      title: 'Total Projects',
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                          _MetricCard(
+                            title: 'PENDING BLIND MATCHES',
+                            value: viewModel.statistics.pendingBlindMatches.toString(),
+                            detail: 'Waiting for blind review assignment',
+                            width: _metricWidth(constraints.maxWidth, columns),
+                            accentColor: AppTheme.forestEmerald,
+                            iconData: Icons.shield_outlined,
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                                  future: _projectsFuture,
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return SizedBox(
+                                        height: MediaQuery.of(context).size.height * 0.85,
+                                        child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                      );
+                                    }
+                                    final pendingProjects = snapshot.data!.where((p) => p.status.toUpperCase() == 'PENDING').toList();
+                                    return _SmartProjectsPopup(
+                                      projects: pendingProjects,
+                                      title: 'Pending Matches',
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                          _MetricCard(
+                            title: 'GHOSTED MEETINGS',
+                            value: viewModel.statistics.ghostedMissedMeetings.toString(),
+                            detail: 'Requires immediate follow-up',
+                            accentColor: const Color(0xFFEF4444), // Red
+                            width: _metricWidth(constraints.maxWidth, columns),
+                            iconData: Icons.warning_amber_rounded,
+                            onTap: () {},
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionPanel(
+                    title: 'Action Required',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Project groups directly escalating MISSED meeting statuses.',
+                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                        ),
+                        const SizedBox(height: 16),
+                        _ActionRequiredTable(items: viewModel.actionRequiredGroups),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          FutureBuilder<ModuleLeaderAcademicModulesPayload>(
+             future: _academicModulesFuture,
+             builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
+                   return _buildAcademicModulesSkeleton();
+                }
+                final payload = snapshot.data!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _MetricCard(
-                      title: 'TOTAL PROJECTS',
-                      value: viewModel.statistics.totalProjects.toString(),
-                      detail: 'All active and pending records',
-                      width: _metricWidth(constraints.maxWidth, columns),
-                      accentColor: const Color(0xFF6366F1), // Indigo
-                      iconData: Icons.folder_open_rounded,
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
-                            future: _projectsFuture,
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return SizedBox(
-                                  height: MediaQuery.of(context).size.height * 0.85,
-                                  child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
-                                );
-                              }
-                              return _SmartProjectsPopup(
-                                projects: snapshot.data!,
-                                title: 'Total Projects',
-                              );
-                            },
+                    _SectionPanel(
+                       title: 'ACADEMIC MODULES',
+                       child: SizedBox(
+                          height: 180,
+                          child: ListView.separated(
+                             scrollDirection: Axis.horizontal,
+                             itemCount: payload.modules.length,
+                             separatorBuilder: (_, __) => const SizedBox(width: 16),
+                             itemBuilder: (context, index) {
+                               final module = payload.modules[index];
+                               return GestureDetector(
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
+                                        future: _projectsFuture,
+                                        builder: (context, projSnap) {
+                                          if (!projSnap.hasData) {
+                                            return SizedBox(
+                                              height: MediaQuery.of(context).size.height * 0.85,
+                                              child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
+                                            );
+                                          }
+                                          final filtered = projSnap.data!.where((p) => p.moduleCode == module.code).toList();
+                                          return _SmartProjectsPopup(
+                                            projects: filtered,
+                                            title: module.name,
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 300,
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.03),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.forestEmerald.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(module.code, style: const TextStyle(color: AppTheme.forestEmerald, fontWeight: FontWeight.bold, fontSize: 11)),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(module.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                        const Spacer(),
+                                        Text('${module.batch} • ${module.academicYear}', style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                                      ],
+                                    ),
+                                  ),
+                               );
+                             },
                           ),
-                        );
-                      },
+                       ),
                     ),
-                    _MetricCard(
-                      title: 'PENDING BLIND MATCHES',
-                      value: viewModel.statistics.pendingBlindMatches.toString(),
-                      detail: 'Waiting for blind review assignment',
-                      width: _metricWidth(constraints.maxWidth, columns),
-                      accentColor: AppTheme.forestEmerald,
-                      iconData: Icons.shield_outlined,
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          builder: (_) => FutureBuilder<List<ModuleLeaderProject>>(
-                            future: _projectsFuture,
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return SizedBox(
-                                  height: MediaQuery.of(context).size.height * 0.85,
-                                  child: const Center(child: CircularProgressIndicator(color: AppTheme.forestEmerald)),
-                                );
-                              }
-                              final pendingProjects = snapshot.data!.where((p) => p.status.toUpperCase() == 'PENDING').toList();
-                              return _SmartProjectsPopup(
-                                projects: pendingProjects,
-                                title: 'Pending Matches',
-                              );
-                            },
+                    const SizedBox(height: 32),
+                    _SectionPanel(
+                       title: 'SUPERVISOR POOL',
+                       child: SizedBox(
+                          height: 110,
+                          child: ListView.separated(
+                             scrollDirection: Axis.horizontal,
+                             itemCount: payload.availableSupervisors.length,
+                             separatorBuilder: (_, __) => const SizedBox(width: 16),
+                             itemBuilder: (context, index) {
+                               final supervisor = payload.availableSupervisors[index];
+                               return Container(
+                                 width: 250,
+                                 padding: const EdgeInsets.all(16),
+                                 decoration: BoxDecoration(
+                                   color: Colors.white.withValues(alpha: 0.03),
+                                   borderRadius: BorderRadius.circular(16),
+                                   border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                                 ),
+                                 child: Row(
+                                   children: [
+                                     CircleAvatar(
+                                       radius: 20,
+                                       backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                                       child: Text(
+                                         supervisor.name.substring(0, 1).toUpperCase(),
+                                         style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 16),
+                                     Expanded(
+                                       child: Column(
+                                         crossAxisAlignment: CrossAxisAlignment.start,
+                                         mainAxisAlignment: MainAxisAlignment.center,
+                                         children: [
+                                           Text(supervisor.name, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                           const SizedBox(height: 6),
+                                           Text(supervisor.email, style: const TextStyle(color: Colors.white54, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                         ],
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               );
+                             },
                           ),
-                        );
-                      },
-                    ),
-                    _MetricCard(
-                      title: 'GHOSTED MEETINGS',
-                      value: viewModel.statistics.ghostedMissedMeetings.toString(),
-                      detail: 'Requires immediate follow-up',
-                      accentColor: const Color(0xFFEF4444), // Red
-                      width: _metricWidth(constraints.maxWidth, columns),
-                      iconData: Icons.warning_amber_rounded,
-                      onTap: () {
-                        // Ghosted meetings are in the Action Required table right below this card.
-                        // Can simply trigger a small UI snap or do nothing since it's already in view on the Overview tab.
-                      },
+                       ),
                     ),
                   ],
                 );
-              },
-            ),
-            const SizedBox(height: 24),
-            _SectionPanel(
-              title: 'Action Required',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Project groups directly escalating MISSED meeting statuses.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  _ActionRequiredTable(items: viewModel.actionRequiredGroups),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+             }
+          ),
+
+          const SizedBox(height: 32),
+          
+          FutureBuilder<List<ModuleLeaderTag>>(
+            future: _tagsFuture,
+            builder: (context, snapshot) {
+               if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox();
+               return _SectionPanel(
+                 title: 'AVAILABLE RESEARCH TOPICS',
+                 child: _TagsMasonryGrid(tags: snapshot.data!),
+               );
+            }
+          ),
+          
+          const SizedBox(height: 48), // Padding bottom
+        ]
+      )
     );
   }
 

@@ -130,6 +130,17 @@ class _SupervisorChatScreenState extends State<SupervisorChatScreen> {
         ),
         backgroundColor: AppTheme.forestEmerald,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _loadMessages();
+              });
+            },
+            tooltip: 'Refresh messages',
+          ),
+        ],
       ),
       body: Column(
         children: [

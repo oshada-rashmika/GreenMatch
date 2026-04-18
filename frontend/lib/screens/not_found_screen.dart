@@ -11,13 +11,6 @@ class NotFoundScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const String binary404 = '''
-111 000 111
-1 1 0 0 1 1
-111 0 0 111
-  1 0 0   1
-  1 000   1''';
-
     return Scaffold(
       backgroundColor: AppTheme.premiumBlack,
       body: Stack(
@@ -53,34 +46,25 @@ class NotFoundScreen extends StatelessWidget {
                   children: [
                     FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(
-                        binary404,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.spaceMono(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          height: 1.1,
-                          letterSpacing: 2.0,
-                          color: AppTheme.forestEmerald,
-                          shadows: [
-                            Shadow(
-                              color: AppTheme.forestEmerald.withValues(alpha: 0.8),
-                              blurRadius: 10,
-                            ),
-                            Shadow(
-                              color: AppTheme.forestEmerald.withValues(alpha: 0.6),
-                              blurRadius: 20,
-                            ),
-                            Shadow(
-                              color: AppTheme.forestEmerald.withValues(alpha: 0.4),
-                              blurRadius: 30,
-                            ),
-                          ],
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildMassiveNumber('4'),
+                          const SizedBox(width: 24),
+                          Image.asset(
+                            'public/robot.png',
+                            height: 220,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(width: 24),
+                          _buildMassiveNumber('4'),
+                        ],
                       ),
                     ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.9, 0.9)),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 60),
+
                     Text(
                       "We only got Three Dashboards and Two Login Screen.",
                       textAlign: TextAlign.center,
@@ -105,75 +89,120 @@ class NotFoundScreen extends StatelessWidget {
                       ),
                     ).animate().fadeIn(delay: 600.ms, duration: 800.ms),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 60),
 
-                    Image.asset(
-                      'public/robot.png',
-                      height: 250,
-                      fit: BoxFit.contain,
-                    ).animate().fadeIn(delay: 800.ms).scale(begin: const Offset(0.8, 0.8)),
-
-                    const SizedBox(height: 40),
-
-                    InkWell(
-                      onTap: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                          (route) => false,
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        decoration: BoxDecoration(
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.forestEmerald.withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              spreadRadius: -5,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                          gradient: LinearGradient(
-                            colors: [
-                              AppTheme.forestEmerald,
-                              AppTheme.forestEmerald.withBlue(100),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 16),
-                            Text(
-                              'Return to Base',
-                              style: GoogleFonts.montserrat(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 16,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2),
+                    const Center(child: _HoverReturnButton()),
                   ],
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMassiveNumber(String number) {
+    return Text(
+      number,
+      style: GoogleFonts.montserrat(
+        fontSize: 180,
+        fontWeight: FontWeight.w900,
+        height: 1.0,
+        color: AppTheme.forestEmerald,
+        shadows: [
+          Shadow(
+            color: AppTheme.forestEmerald.withValues(alpha: 0.8),
+            blurRadius: 10,
+          ),
+          Shadow(
+            color: AppTheme.forestEmerald.withValues(alpha: 0.6),
+            blurRadius: 20,
+          ),
+          Shadow(
+            color: AppTheme.forestEmerald.withValues(alpha: 0.4),
+            blurRadius: 30,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HoverReturnButton extends StatefulWidget {
+  const _HoverReturnButton();
+
+  @override
+  State<_HoverReturnButton> createState() => _HoverReturnButtonState();
+}
+
+class _HoverReturnButtonState extends State<_HoverReturnButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
+        },
+        child: AnimatedScale(
+          scale: _isHovered ? 1.05 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutQuart,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+            decoration: BoxDecoration(
+              color: _isHovered
+                  ? AppTheme.forestEmerald.withValues(alpha: 0.25)
+                  : AppTheme.forestEmerald.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: _isHovered
+                    ? AppTheme.forestEmerald
+                    : AppTheme.forestEmerald.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color: AppTheme.forestEmerald.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: _isHovered ? Colors.white : AppTheme.forestEmerald,
+                  size: 16,
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Return to Base',
+                  style: GoogleFonts.montserrat(
+                    color: _isHovered ? Colors.white : AppTheme.forestEmerald,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

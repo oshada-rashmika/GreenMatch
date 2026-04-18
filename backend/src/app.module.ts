@@ -11,6 +11,7 @@ import { ModulesModule } from './modules/modules.module';
 import { TagsModule } from './tags/tags.module';
 import { ModuleLeaderModule } from './module-leader/module-leader.module';
 import { SupervisorsModule } from './supervisors/supervisors.module';
+import { EvaluationsModule } from './evaluations/evaluations.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { SupervisorsModule } from './supervisors/supervisors.module';
     TagsModule,
     ModuleLeaderModule,
     SupervisorsModule,
+    EvaluationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

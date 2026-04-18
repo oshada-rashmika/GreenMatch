@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_provider.dart';
+import '../theme/app_theme.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -13,12 +15,13 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
   // --- Theme Colors ---
-  final Color bgColor = const Color(0xFF12151C);
-  final Color cardColor = const Color(0xFF1E222D);
-  final Color accentColor = const Color(0xFFFACC15);
-  final Color mutedTextColor = const Color(0xFF6B7B8F);
-  final Color dividerColor = const Color(0xFF282E3A);
-  final Color iconBgColor = const Color(0xFF262C3A);
+  final Color bgColor = AppTheme.premiumBlack;
+  final Color cardColor = const Color(0xFF161618);
+  final Color greenAccent = const Color(0xFF2D5A27);
+  final Color accentColor = AppTheme.forestEmerald;
+  final Color mutedTextColor = const Color(0xFF6B7280);
+  final Color dividerColor = const Color(0xFF2A2A2A);
+  final Color iconBgColor = const Color(0xFF2D5A27).withOpacity(0.1);
 
   // --- Mock State ---
   bool _isMatched = true;
@@ -60,98 +63,135 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        backgroundColor: bgColor,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            onPressed: () => Navigator.pop(context),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
+              onPressed: () {},
+            ),
+          ],
+          title: Text(
+            'Profile',
+            style: GoogleFonts.montserrat(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        body: Stack(
           children: [
-            const SizedBox(height: 12),
-
-            // ── Profile Avatar ──
-            _buildProfileAvatar(),
-            const SizedBox(height: 22),
-
-            // ── Name & ID ──
-            const Text(
-              'Elena Fisher',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Student ID: ST-2026-9482',
-                style: TextStyle(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            // ── Project Status Card ──
-            _buildProjectStatusCard(),
-            const SizedBox(height: 16),
-
-            // ── Supervisor Reveal Card ──
-            if (_isMatched) ...[
-              _buildSupervisorRevealCard(),
-              const SizedBox(height: 16),
-            ],
-
-            // ── Personal Information (Editable Form) ──
-            _buildPersonalInfoForm(),
-            const SizedBox(height: 16),
-
-            // ── Settings ──
-            _buildSectionCard(
-              title: 'Settings',
-              children: [
-                _buildActionTile(
-                  icon: Icons.lock_outline,
-                  iconColor: const Color(0xFFFBBF24),
-                  label: 'Change Password',
+            // Top Green Gradient
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 350,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF1A381A), // Deep dark green
+                      bgColor,
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
                 ),
-                _buildDivider(),
-                _buildActionTile(
-                  icon: Icons.notifications_active_outlined,
-                  iconColor: const Color(0xFFF472B6),
-                  label: 'Notification Preferences',
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 28),
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 12),
 
-            // ── Log Out ──
-            _buildLogOutButton(),
-            const SizedBox(height: 36),
+                    // ── Profile Avatar ──
+                    _buildProfileAvatar(),
+                    const SizedBox(height: 22),
+
+                    // ── Name & ID ──
+                    Text(
+                      'Elena Fisher',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                      ),
+                      child: Text(
+                        'Student ID: ST-2026-9482',
+                        style: GoogleFonts.montserrat(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // ── Project Status Card ──
+                    _buildProjectStatusCard(),
+                    const SizedBox(height: 16),
+
+                    // ── Supervisor Reveal Card ──
+                    if (_isMatched) ...[
+                      _buildSupervisorRevealCard(),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // ── Personal Information (Editable Form) ──
+                    _buildPersonalInfoForm(),
+                    const SizedBox(height: 16),
+
+                    // ── Settings ──
+                    _buildSectionCard(
+                      title: 'Settings',
+                      children: [
+                        _buildActionTile(
+                          icon: Icons.lock_outline,
+                          iconColor: const Color(0xFFFBBF24),
+                          label: 'Change Password',
+                        ),
+                        _buildDivider(),
+                        _buildActionTile(
+                          icon: Icons.notifications_active_outlined,
+                          iconColor: const Color(0xFFF472B6),
+                          label: 'Notification Preferences',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+
+                    // ── Log Out ──
+                    _buildLogOutButton(),
+                    const SizedBox(height: 36),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -164,67 +204,40 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileAvatar() {
     return Center(
-      child: SizedBox(
-        width: 130,
-        height: 130,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Glow ring
-            Container(
-              width: 124,
-              height: 124,
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Container(
+             width: 115,
+             height: 115,
+             decoration: BoxDecoration(
+               shape: BoxShape.circle,
+               color: const Color(0xFF1E1E1E),
+               border: Border.all(color: greenAccent.withOpacity(0.6), width: 3),
+               boxShadow: [
+                 BoxShadow(
+                   color: greenAccent.withOpacity(0.2),
+                   blurRadius: 20,
+                   spreadRadius: 5,
+                 ),
+               ],
+             ),
+             child: const Icon(Icons.person, size: 60, color: Color(0xFF6B7280)),
+          ),
+          Positioned(
+            bottom: 2,
+            right: 2,
+            child: Container(
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
+                color: const Color(0xFF2E4F2E),
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    accentColor.withOpacity(0.5),
-                    accentColor.withOpacity(0.15),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                border: Border.all(color: const Color(0xFF1B361B), width: 2),
               ),
+              child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 14),
             ),
-            // Inner circle
-            Container(
-              width: 116,
-              height: 116,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: cardColor,
-                border: Border.all(color: accentColor, width: 2.5),
-              ),
-              child: const Icon(
-                Icons.person,
-                size: 52,
-                color: Color(0xFF5A6577),
-              ),
-            ),
-            // Edit badge
-            Positioned(
-              bottom: 4,
-              right: 4,
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF12151C), width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accentColor.withOpacity(0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.edit, color: Color(0xFF1A1A1A), size: 16),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -241,8 +254,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: dividerColor, width: 0.5),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,7 +265,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               Text(
                 'PROJECT STATUS',
-                style: TextStyle(
+                style: GoogleFonts.montserrat(
                   color: mutedTextColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -263,30 +276,18 @@ class _ProfileScreenState extends State<ProfileScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor.withOpacity(0.25)),
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: statusColor.withOpacity(0.8)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: statusColor.withOpacity(0.5), blurRadius: 4),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
                     Text(
                       statusLabel,
-                      style: TextStyle(
+                      style: GoogleFonts.montserrat(
                         color: statusColor,
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.8,
                       ),
@@ -297,9 +298,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Urban Climate Modeling Using AI',
-            style: TextStyle(
+            style: GoogleFonts.montserrat(
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -334,7 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               icon: Icon(Icons.swap_horiz, size: 14, color: mutedTextColor),
               label: Text(
                 _isMatched ? 'Demo: Set Pending' : 'Demo: Set Matched',
-                style: TextStyle(fontSize: 11, color: mutedTextColor),
+                style: GoogleFonts.montserrat(fontSize: 11, color: mutedTextColor),
               ),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -357,7 +358,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+        style: GoogleFonts.montserrat(color: color, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -378,7 +379,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
           ),
           child: Column(
@@ -394,8 +395,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                   const SizedBox(width: 8),
                   Text(
                     _supervisorRevealed ? 'SUPERVISOR DETAILS' : 'SUPERVISOR HIDDEN',
-                    style: const TextStyle(
-                      color: Color(0xFF34D399),
+                    style: GoogleFonts.montserrat(
+                      color: const Color(0xFF34D399),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,
                       fontSize: 11,
@@ -422,7 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         const SizedBox(height: 10),
                         Text(
                           'Tap below to reveal supervisor identity',
-                          style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 13),
+                          style: GoogleFonts.montserrat(color: Colors.white.withOpacity(0.35), fontSize: 13),
                         ),
                       ],
                     ),
@@ -434,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: ElevatedButton.icon(
                     onPressed: _toggleReveal,
                     icon: const Icon(Icons.lock_open, size: 16),
-                    label: const Text('Reveal Identity', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    label: Text('Reveal Identity', style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 14)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981).withOpacity(0.15),
                       foregroundColor: const Color(0xFF34D399),
@@ -457,9 +458,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Dr. Alan Turing',
-                          style: TextStyle(
+                          style: GoogleFonts.montserrat(
                             color: Colors.white,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -476,7 +477,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               child: ElevatedButton.icon(
                                 onPressed: () {},
                                 icon: const Icon(Icons.note_add_outlined, size: 16),
-                                label: const Text('Send Note', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                                label: Text('Send Note', style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 13)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF10B981).withOpacity(0.15),
                                   foregroundColor: const Color(0xFF34D399),
@@ -522,7 +523,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         Flexible(
           child: Text(
             text,
-            style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.3),
+            style: GoogleFonts.montserrat(color: Colors.white70, fontSize: 14, height: 1.3),
           ),
         ),
       ],
@@ -541,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
             title,
-            style: const TextStyle(
+            style: GoogleFonts.montserrat(
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -554,8 +555,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: dividerColor, width: 0.5),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Column(children: children),
         ),
@@ -598,7 +599,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: GoogleFonts.montserrat(
                     color: mutedTextColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -608,7 +609,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 const SizedBox(height: 3),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -645,7 +646,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: GoogleFonts.montserrat(
                 color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -681,9 +682,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           }
         },
         icon: const Icon(Icons.logout, size: 20),
-        label: const Text(
+        label: Text(
           'Log Out',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFEF4444).withOpacity(0.08),
@@ -714,9 +715,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Personal Information',
-                  style: TextStyle(
+                  style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -739,8 +740,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: cardColor,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: dividerColor, width: 0.5),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -773,13 +774,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF34D399).withOpacity(0.9),
-                      foregroundColor: const Color(0xFF0F1522),
+                      backgroundColor: const Color(0xFF2D5A27),
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       elevation: 0,
                     ),
-                    child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    child: Text('Save Changes', style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, fontSize: 14)),
                   ),
                 ),
               ],
@@ -798,7 +799,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.montserrat(
             color: mutedTextColor,
             fontSize: 10,
             fontWeight: FontWeight.w800,
@@ -808,7 +809,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         const SizedBox(height: 6),
         TextFormField(
           initialValue: value,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          style: GoogleFonts.montserrat(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -824,7 +825,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: accentColor.withOpacity(0.5)),
+              borderSide: BorderSide(color: greenAccent.withOpacity(0.5)),
             ),
           ),
         ),

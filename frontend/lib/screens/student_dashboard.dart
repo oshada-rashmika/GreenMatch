@@ -407,6 +407,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
               }
             },
           ),
+          ListTile(
+            leading: Icon(Icons.people_outline, color: mutedTextColor),
+            title: Text('View Members', style: TextStyle(color: mutedTextColor)),
+            onTap: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('View Members section coming soon!')),
+              );
+            },
+          ),
           const Divider(color: Color(0xFF2B364E), thickness: 1, indent: 16, endIndent: 16, height: 32),
           ListTile(
             leading: Icon(Icons.settings_outlined, color: mutedTextColor),

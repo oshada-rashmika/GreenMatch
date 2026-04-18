@@ -18,9 +18,7 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
   late final SupervisorService _supervisorService;
   late Future<SupervisorProfile> _profileFuture;
 
-  // Text controllers for editable fields
   late TextEditingController _nameController;
-  late TextEditingController _emailController;
   late TextEditingController _staffIdController;
 
   @override
@@ -28,7 +26,6 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
     super.initState();
     _supervisorService = SupervisorService();
     _nameController = TextEditingController();
-    _emailController = TextEditingController();
     _staffIdController = TextEditingController();
     _initializeProfile();
   }
@@ -36,7 +33,6 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     _staffIdController.dispose();
     super.dispose();
   }
@@ -114,7 +110,6 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
   Widget _buildProfileContent(SupervisorProfile profile) {
     // Initialize text controllers with profile data
     _nameController.text = profile.fullName;
-    _emailController.text = profile.email;
     _staffIdController.text = profile.staffId;
 
     return SingleChildScrollView(
@@ -450,10 +445,10 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
             _nameController,
           ),
           const Divider(color: AppTheme.glassBorder, height: 35),
-          _buildEditableTextField(
+          _buildEditableInfoRow(
             Icons.alternate_email_rounded,
-            'Email',
-            _emailController,
+            profile.email,
+            showEditIcon: false,
           ),
           const Divider(color: AppTheme.glassBorder, height: 35),
           _buildEditableTextField(
@@ -473,18 +468,41 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
-              onPressed: () {
-                // Show a snackbar confirmation
+              onPressed: () async {
+                final authProvider = context.read<AuthProvider>();
+                final supervisorId = authProvider.userId;
+                
+                if (supervisorId == null) return;
+                
+                // Show loading indicator
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Changes saved successfully!',
-                      style: GoogleFonts.montserrat(color: Colors.white),
-                    ),
-                    backgroundColor: AppTheme.forestEmerald,
-                    duration: const Duration(seconds: 2),
-                  ),
+                  const SnackBar(content: Text('Saving changes...')),
                 );
+                
+                final result = await _supervisorService.updateSupervisorProfile(
+                  supervisorId: supervisorId,
+                  fullName: _nameController.text.trim(),
+                  staffId: _staffIdController.text.trim(),
+                );
+                
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result['message'],
+                        style: GoogleFonts.montserrat(color: Colors.white),
+                      ),
+                      backgroundColor: result['success'] ? AppTheme.forestEmerald : Colors.red,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                  if (result['success']) {
+                    setState(() {
+                       _initializeProfile();
+                    });
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.forestEmerald,
@@ -549,7 +567,7 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
     );
   }
 
-  Widget _buildEditableInfoRow(IconData icon, String data) {
+  Widget _buildEditableInfoRow(IconData icon, String data, {bool showEditIcon = true}) {
     return Row(
       children: [
         Icon(icon, color: AppTheme.forestEmerald, size: 20),
@@ -560,11 +578,12 @@ class _SupervisorProfileScreenState extends State<SupervisorProfileScreen> {
             style: GoogleFonts.montserrat(color: Colors.white, fontSize: 15),
           ),
         ),
-        Icon(
-          Icons.edit_outlined,
-          color: Colors.white.withOpacity(0.2),
-          size: 18,
-        ),
+        if (showEditIcon)
+          Icon(
+            Icons.edit_outlined,
+            color: Colors.white.withOpacity(0.2),
+            size: 18,
+          ),
       ],
     );
   }

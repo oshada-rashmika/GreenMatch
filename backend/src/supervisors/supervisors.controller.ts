@@ -23,4 +23,12 @@ export class SupervisorsController {
   ) {
     return this.supervisorsService.updateOnboarding(id, updateOnboardingDto);
   }
+
+  @Patch(':id')
+  async updateSupervisorProfile(
+    @Param('id') id: string,
+    @Body() updateData: { fullName?: string; staffId?: string; capacityLimit?: number },
+  ) {
+    return this.supervisorsService.updateSupervisorProfile(id, updateData);
+  }
 }

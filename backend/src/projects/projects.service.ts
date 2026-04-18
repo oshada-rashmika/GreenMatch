@@ -68,6 +68,23 @@ export class ProjectsService {
         tags: {
           select: { tag: { select: { name: true } } },
         },
+        group: {
+          select: {
+            groupName: true,
+            members: {
+              select: {
+                isLeader: true,
+                student: {
+                  select: {
+                    studentId: true,
+                    fullName: true,
+                    degree: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         module: { 
           select: { 
             moduleName: true,

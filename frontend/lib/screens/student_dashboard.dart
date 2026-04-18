@@ -11,6 +11,7 @@ import 'my_proposals_screen.dart';
 import 'login_screen.dart';
 import 'student_chat.dart';
 import 'guidelines_screen.dart';
+import 'view_members_screen.dart';
 
 enum ProposalStatus { pending, underReview, matched }
 
@@ -42,6 +43,9 @@ class _ProposalData {
   DateTime? milestoneFinalDate;
   DateTime? milestoneVivaDate;
 
+  String moduleName;
+  List<MemberData> members;
+
   _ProposalData({
     required this.id,
     required this.title,
@@ -60,6 +64,8 @@ class _ProposalData {
     this.milestoneMidtermDate,
     this.milestoneFinalDate,
     this.milestoneVivaDate,
+    required this.moduleName,
+    required this.members,
   });
 }
 
@@ -136,6 +142,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 milestoneMidtermDate: myP.milestoneMidtermDate,
                 milestoneFinalDate: myP.milestoneFinalDate,
                 milestoneVivaDate: myP.milestoneVivaDate,
+                moduleName: myP.moduleName,
+                members: myP.members,
               );
             }).toList();
             _activeProjectIndex = 0; // Default to most recently submitted
@@ -412,8 +420,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
             title: Text('View Members', style: TextStyle(color: mutedTextColor)),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('View Members section coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ViewMembersScreen()),
               );
             },
           ),

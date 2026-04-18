@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Query, Request, UseGuards } from '@nestjs/common';
 import { ModuleLeaderService } from './module-leader.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -10,6 +10,16 @@ import { Role } from '../auth/enums/role.enum';
 @Roles(Role.MODULE_LEADER)
 export class ModuleLeaderController {
   constructor(private readonly moduleLeaderService: ModuleLeaderService) {}
+
+  @Get('profile')
+  async getProfile(@Request() req) {
+    return this.moduleLeaderService.getProfile(req.user.id);
+  }
+
+  @Patch('profile')
+  async updateProfile(@Request() req, @Body() updateData: { fullName?: string; staffId?: string }) {
+    return this.moduleLeaderService.updateProfile(req.user.id, updateData);
+  }
 
   @Get('overview/statistics')
   async getOverviewStatistics(@Request() req) {

@@ -303,6 +303,95 @@ class ModuleLeaderService {
       throw Exception(_mapNetworkError(error));
     }
   }
+
+  Future<ModuleLeaderProfile> fetchProfile({
+    required String jwtToken,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/module-leader/profile'),
+        headers: _headers(jwtToken),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        return ModuleLeaderProfile.fromJson(decoded);
+      }
+
+      throw Exception('Failed to fetch profile (${response.statusCode})');
+    } catch (error) {
+      throw Exception(_mapNetworkError(error));
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String jwtToken,
+    String? fullName,
+    String? staffId,
+  }) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/module-leader/profile'),
+        headers: _headers(jwtToken),
+        body: jsonEncode({
+          if (fullName != null) 'fullName': fullName,
+          if (staffId != null) 'staffId': staffId,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Profile updated successfully',
+        };
+      } else {
+        final error = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': error['message'] ?? 'Failed to update profile',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': _mapNetworkError(e),
+      };
+    }
+  }
+}
+
+class ModuleLeaderProfile {
+  const ModuleLeaderProfile({
+    required this.id,
+    required this.staffId,
+    required this.email,
+    required this.fullName,
+    required this.ledModules,
+  });
+
+  factory ModuleLeaderProfile.fromJson(Map<String, dynamic> json) {
+    final rawModules = json['ledModules'];
+    final ledModules = rawModules is List<dynamic>
+        ? rawModules
+            .whereType<Map<String, dynamic>>()
+            .map(ModuleLeaderAcademicModule.fromJson)
+            .toList()
+        : <ModuleLeaderAcademicModule>[];
+
+    return ModuleLeaderProfile(
+      id: (json['id'] ?? '').toString(),
+      staffId: (json['staffId'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      fullName: (json['fullName'] ?? '').toString(),
+      ledModules: ledModules,
+    );
+  }
+
+  final String id;
+  final String staffId;
+  final String email;
+  final String fullName;
+  final List<ModuleLeaderAcademicModule> ledModules;
 }
 
 class ModuleLeaderOverviewStatistics {

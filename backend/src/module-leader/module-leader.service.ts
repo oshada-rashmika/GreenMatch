@@ -1,9 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ModuleLeaderService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getProfile(moduleLeaderId: string) {
+    const profile = await this.prisma.moduleLeader.findUnique({
+      where: { id: moduleLeaderId },
+      include: {
+        ledModules: true,
+      }
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Module Leader not found');
+    }
+    return profile;
+  }
+
+  async updateProfile(id: string, updateData: { fullName?: string; staffId?: string }) {
+    return this.prisma.moduleLeader.update({
+      where: { id },
+      data: {
+        ...(updateData.fullName && { fullName: updateData.fullName }),
+        ...(updateData.staffId && { staffId: updateData.staffId }),
+      },
+    });
+  }
 
   async getOverviewStatistics(moduleLeaderId: string) {
     // --- TEMPORARY INJECTION FOR TESTING "GHOSTED MEETINGS" ---

@@ -8,6 +8,7 @@ import '../services/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../services/module_leader_service.dart';
 import '../widgets/glass_container.dart';
+import 'module_leader_profile.dart';
 
 enum _ModuleLeaderSection {
   overview,
@@ -77,7 +78,7 @@ class _ModuleLeaderDashboardState extends State<ModuleLeaderDashboard> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      MaterialPageRoute(builder: (context) => const ModuleLeaderProfileScreen()),
                     );
                   },
                   child: CircleAvatar(

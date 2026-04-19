@@ -74,32 +74,36 @@ function AcademicGuidelinesPage({ fetchGuidelines }: AcademicGuidelinesProps) {
       </header>
 
       <main style={{ padding: '16px' }}>
-        {guidelines.map((guideline) => (
-          <article
-            key={guideline.id}
-            data-testid="guideline-card"
-            style={{
-              background: '#111827',
-              border: '1px solid #374151',
-              borderRadius: '12px',
-              padding: '16px',
-            }}
-          >
-            <h2>{guideline.title}</h2>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-              <span className="module-chip bg-slate-700 px-2 py-1 rounded">
-                {guideline.moduleCode}
-              </span>
-              <time>{guideline.publishedDate}</time>
-            </div>
+        {guidelines.length === 0 ? (
+          <p role="note">No guidelines available</p>
+        ) : (
+          guidelines.map((guideline) => (
+            <article
+              key={guideline.id}
+              data-testid="guideline-card"
+              style={{
+                background: '#111827',
+                border: '1px solid #374151',
+                borderRadius: '12px',
+                padding: '16px',
+              }}
+            >
+              <h2>{guideline.title}</h2>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                <span className="module-chip bg-slate-700 px-2 py-1 rounded">
+                  {guideline.moduleCode}
+                </span>
+                <time>{guideline.publishedDate}</time>
+              </div>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button type="button">PDF Report</button>
-              <button type="button">Video Demo</button>
-              <button type="button">GitHub Repo</button>
-            </div>
-          </article>
-        ))}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button type="button">PDF Report</button>
+                <button type="button">Video Demo</button>
+                <button type="button">GitHub Repo</button>
+              </div>
+            </article>
+          ))
+        )}
       </main>
     </section>
   );
@@ -184,5 +188,31 @@ describe('AcademicGuidelines - Verify the Academic Guidelines page renders the h
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith(-1);
+  });
+
+  test('Verify empty state renders when guideline list is empty', async () => {
+    mockFetchGuidelines.mockImplementation(async () => []);
+
+    render(<AcademicGuidelinesPage fetchGuidelines={mockFetchGuidelines} />);
+
+    await waitFor(() => {
+      expect(mockFetchGuidelines).toHaveBeenCalledTimes(1);
+    });
+
+    expect(
+      screen.getByRole('heading', { name: /academic guidelines/i }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('note')).toHaveTextContent('No guidelines available');
+
+    expect(screen.queryByTestId('guideline-card')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /pdf report/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /video demo/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /github repo/i }),
+    ).not.toBeInTheDocument();
   });
 });

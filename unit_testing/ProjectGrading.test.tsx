@@ -6,11 +6,16 @@ import '@testing-library/jest-dom';
 import { useMemo, useState } from 'react';
 
 const mockToastSuccess = jest.fn();
+const mockNavigate = jest.fn();
 
 jest.mock('react-hot-toast', () => ({
   toast: {
     success: (message: string) => mockToastSuccess(message),
   },
+}), { virtual: true });
+
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
 }), { virtual: true });
 
 type Project = {
@@ -59,6 +64,10 @@ function ProjectGradingPage({
       success: (message: string) => void;
     };
   };
+  const { useNavigate } = require('react-router-dom') as {
+    useNavigate: () => (to: string | number) => void;
+  };
+  const navigate = useNavigate();
 
   const [scores, setScores] = useState<ScoreState>({
     technicalFeasibility: 0,
@@ -95,6 +104,7 @@ function ProjectGradingPage({
       });
 
       toast.success('Final grade submitted successfully');
+      navigate('/evaluations');
     } finally {
       setIsSubmitting(false);
     }
@@ -213,6 +223,7 @@ describe('ProjectGrading - Final Mark calculation logic', () => {
   beforeEach(() => {
     mockSubmitProjectGrade = jest.fn(async () => {});
     mockToastSuccess.mockReset();
+    mockNavigate.mockReset();
   });
 
   afterEach(() => {
@@ -345,6 +356,45 @@ describe('ProjectGrading - Final Mark calculation logic', () => {
       projectScopeExecution: 90,
       finalMark: 80,
       feedbackNotes: 'Strong backend, needs UI polish.',
+    });
+  });
+
+  test('Verify post-submission success toast and redirect to evaluations list', async () => {
+    mockSubmitProjectGrade.mockResolvedValueOnce(undefined);
+
+    render(
+      <ProjectGradingPage
+        project={{
+          id: 'project-1',
+          title: 'Mock Project for Grading',
+        }}
+        submitProjectGrade={mockSubmitProjectGrade}
+      />,
+    );
+
+    const technicalSlider = screen.getByLabelText('Technical Feasibility') as HTMLInputElement;
+    const innovationSlider = screen.getByLabelText('Innovation & Research') as HTMLInputElement;
+    const scopeSlider = screen.getByLabelText('Project Scope & Execution') as HTMLInputElement;
+    const feedbackTextarea = screen.getByLabelText('Feedback Notes') as HTMLTextAreaElement;
+    const submitButton = screen.getByRole('button', {
+      name: /submit final grade/i,
+    });
+
+    fireEvent.change(technicalSlider, { target: { value: '70' } });
+    fireEvent.change(innovationSlider, { target: { value: '80' } });
+    fireEvent.change(scopeSlider, { target: { value: '90' } });
+    fireEvent.change(feedbackTextarea, {
+      target: { value: 'Strong backend, needs UI polish.' },
+    });
+
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockToastSuccess).toHaveBeenCalledWith('Final grade submitted successfully');
+    });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/evaluations');
     });
   });
 });

@@ -2,7 +2,7 @@
 /// <reference types="react-dom" />
 
 import { useEffect, useState } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 const mockNavigate = jest.fn();
@@ -28,15 +28,22 @@ function AcademicGuidelinesPage({ fetchGuidelines }: AcademicGuidelinesProps) {
   };
   const navigate = useNavigate();
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadGuidelines = async () => {
-      const response = await fetchGuidelines();
+      try {
+        const response = await fetchGuidelines();
 
-      if (isMounted) {
-        setGuidelines(response);
+        if (isMounted) {
+          setGuidelines(response);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -74,7 +81,15 @@ function AcademicGuidelinesPage({ fetchGuidelines }: AcademicGuidelinesProps) {
       </header>
 
       <main style={{ padding: '16px' }}>
-        {guidelines.length === 0 ? (
+        {isLoading ? (
+          <div
+            data-testid="guidelines-loading-spinner"
+            role="status"
+            aria-label="Loading guidelines"
+          >
+            Loading guidelines...
+          </div>
+        ) : guidelines.length === 0 ? (
           <p role="note">No guidelines available</p>
         ) : (
           guidelines.map((guideline) => (
@@ -178,6 +193,9 @@ describe('AcademicGuidelines - Verify the Academic Guidelines page renders the h
     await waitFor(() => {
       expect(mockFetchGuidelines).toHaveBeenCalledTimes(1);
     });
+    await waitFor(() => {
+      expect(screen.queryByTestId('guidelines-loading-spinner')).not.toBeInTheDocument();
+    });
 
     const headerContainer = screen.getByLabelText('guidelines-header');
     const backButton = within(headerContainer).getByRole('button', {
@@ -214,5 +232,34 @@ describe('AcademicGuidelines - Verify the Academic Guidelines page renders the h
     expect(
       screen.queryByRole('button', { name: /github repo/i }),
     ).not.toBeInTheDocument();
+  });
+
+  test('Verify loading state is shown while guidelines request is pending', async () => {
+    let resolveGuidelines: (value: Guideline[]) => void = () => {};
+
+    const pendingGuidelinesPromise = new Promise<Guideline[]>((resolve) => {
+      resolveGuidelines = resolve;
+    });
+
+    mockFetchGuidelines.mockImplementation(() => pendingGuidelinesPromise);
+
+    render(<AcademicGuidelinesPage fetchGuidelines={mockFetchGuidelines} />);
+
+    expect(screen.getByTestId('guidelines-loading-spinner')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Final Year Project Guidelines'),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveGuidelines(mockedGuidelines);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('guidelines-loading-spinner')).not.toBeInTheDocument();
+    });
+    expect(
+      await screen.findByText('Final Year Project Guidelines'),
+    ).toBeInTheDocument();
   });
 });

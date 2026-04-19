@@ -1,7 +1,7 @@
 /// <reference types="react" />
 /// <reference types="react-dom" />
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { useMemo, useState } from 'react';
 
@@ -115,53 +115,62 @@ function ProjectGradingPage({
       <h1>Project Grading</h1>
       <p>{project.title}</p>
 
-      <label htmlFor="technical-feasibility">Technical Feasibility</label>
-      <input
-        id="technical-feasibility"
-        aria-label="Technical Feasibility"
-        type="range"
-        min={0}
-        max={100}
-        value={scores.technicalFeasibility}
-        onChange={(event) =>
-          setScores((prev) => ({
-            ...prev,
-            technicalFeasibility: Number(event.target.value),
-          }))
-        }
-      />
+      <div data-testid="technical-feasibility-container">
+        <label htmlFor="technical-feasibility">Technical Feasibility</label>
+        <p data-testid="technical-feasibility-score">{scores.technicalFeasibility}/100</p>
+        <input
+          id="technical-feasibility"
+          aria-label="Technical Feasibility"
+          type="range"
+          min={0}
+          max={100}
+          value={scores.technicalFeasibility}
+          onChange={(event) =>
+            setScores((prev) => ({
+              ...prev,
+              technicalFeasibility: Number(event.target.value),
+            }))
+          }
+        />
+      </div>
 
-      <label htmlFor="innovation-research">Innovation &amp; Research</label>
-      <input
-        id="innovation-research"
-        aria-label="Innovation & Research"
-        type="range"
-        min={0}
-        max={100}
-        value={scores.innovationResearch}
-        onChange={(event) =>
-          setScores((prev) => ({
-            ...prev,
-            innovationResearch: Number(event.target.value),
-          }))
-        }
-      />
+      <div data-testid="innovation-research-container">
+        <label htmlFor="innovation-research">Innovation &amp; Research</label>
+        <p data-testid="innovation-research-score">{scores.innovationResearch}/100</p>
+        <input
+          id="innovation-research"
+          aria-label="Innovation & Research"
+          type="range"
+          min={0}
+          max={100}
+          value={scores.innovationResearch}
+          onChange={(event) =>
+            setScores((prev) => ({
+              ...prev,
+              innovationResearch: Number(event.target.value),
+            }))
+          }
+        />
+      </div>
 
-      <label htmlFor="project-scope-execution">Project Scope &amp; Execution</label>
-      <input
-        id="project-scope-execution"
-        aria-label="Project Scope & Execution"
-        type="range"
-        min={0}
-        max={100}
-        value={scores.projectScopeExecution}
-        onChange={(event) =>
-          setScores((prev) => ({
-            ...prev,
-            projectScopeExecution: Number(event.target.value),
-          }))
-        }
-      />
+      <div data-testid="project-scope-execution-container">
+        <label htmlFor="project-scope-execution">Project Scope &amp; Execution</label>
+        <p data-testid="project-scope-execution-score">{scores.projectScopeExecution}/100</p>
+        <input
+          id="project-scope-execution"
+          aria-label="Project Scope & Execution"
+          type="range"
+          min={0}
+          max={100}
+          value={scores.projectScopeExecution}
+          onChange={(event) =>
+            setScores((prev) => ({
+              ...prev,
+              projectScopeExecution: Number(event.target.value),
+            }))
+          }
+        />
+      </div>
 
       <label htmlFor="feedback-notes">Feedback Notes</label>
       <textarea
@@ -396,5 +405,39 @@ describe('ProjectGrading - Final Mark calculation logic', () => {
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/evaluations');
     });
+  });
+
+  test('Verify individual slider score displays update within their own containers', () => {
+    render(
+      <ProjectGradingPage
+        project={{
+          id: 'project-1',
+          title: 'Mock Project for Grading',
+        }}
+        submitProjectGrade={mockSubmitProjectGrade}
+      />,
+    );
+
+    const technicalContainer = screen.getByTestId('technical-feasibility-container');
+    const innovationContainer = screen.getByTestId('innovation-research-container');
+    const scopeContainer = screen.getByTestId('project-scope-execution-container');
+
+    const technicalSlider = within(technicalContainer).getByLabelText(
+      'Technical Feasibility',
+    ) as HTMLInputElement;
+    const innovationSlider = within(innovationContainer).getByLabelText(
+      'Innovation & Research',
+    ) as HTMLInputElement;
+    const scopeSlider = within(scopeContainer).getByLabelText(
+      'Project Scope & Execution',
+    ) as HTMLInputElement;
+
+    fireEvent.change(technicalSlider, { target: { value: '45' } });
+    fireEvent.change(innovationSlider, { target: { value: '65' } });
+    fireEvent.change(scopeSlider, { target: { value: '85' } });
+
+    expect(within(technicalContainer).getByText('45/100')).toBeInTheDocument();
+    expect(within(innovationContainer).getByText('65/100')).toBeInTheDocument();
+    expect(within(scopeContainer).getByText('85/100')).toBeInTheDocument();
   });
 });

@@ -116,7 +116,9 @@ function ProjectEvaluationsPage({ projects = [] }: { projects?: EvaluationProjec
           >
             <h2>{project.title}</h2>
             <p>{project.group}</p>
-            <p>{project.tags}</p>
+            <p data-testid="project-tags" className="truncate line-clamp-1 overflow-hidden">
+              {project.tags}
+            </p>
             <p>{project.members} Members</p>
             <span className={getStatusBadgeClassName(project.status)}>{project.status}</span>
           </article>
@@ -210,5 +212,35 @@ describe("ProjectEvaluations - Verify the page header 'Project Evaluations' and 
     expect(pendingBadge).toBeInTheDocument();
     expect(pendingBadge).toHaveClass('bg-yellow-500');
     expect(pendingBadge).toHaveClass('text-amber-500');
+  });
+
+  test('Verify long tags text uses overflow truncation classes in project card', () => {
+    const longTagsProject: EvaluationProject[] = [
+      {
+        id: 'project_long_tags',
+        title: 'Project With Long Tags',
+        group: 'Overflow Test Group',
+        tags: 'AI, ML, Flutter, React, Node.js, NestJS, Prisma, PostgreSQL, Firebase, Docker, Kubernetes, TensorFlow, OpenCV, GraphQL, Redis, AWS',
+        members: 3,
+        status: 'Pending',
+      },
+    ];
+
+    renderWithProviders(longTagsProject);
+
+    const projectTitle = screen.getByRole('heading', { name: 'Project With Long Tags' });
+    const projectCard = projectTitle.closest('[data-testid="project-evaluation-card"]');
+
+    expect(projectCard).not.toBeNull();
+
+    const tagsElement = within(projectCard as HTMLElement).getByTestId('project-tags');
+
+    expect(tagsElement).toBeInTheDocument();
+    expect(tagsElement).toHaveTextContent(
+      'AI, ML, Flutter, React, Node.js, NestJS, Prisma, PostgreSQL, Firebase, Docker, Kubernetes, TensorFlow, OpenCV, GraphQL, Redis, AWS',
+    );
+    expect(tagsElement).toHaveClass('truncate');
+    expect(tagsElement).toHaveClass('line-clamp-1');
+    expect(tagsElement).toHaveClass('overflow-hidden');
   });
 });

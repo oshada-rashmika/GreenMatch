@@ -37,6 +37,7 @@ function ProjectGradingPage({ project }: { project: Project }) {
     innovationResearch: 0,
     projectScopeExecution: 0,
   });
+  const [feedbackNotes, setFeedbackNotes] = useState('');
 
   const finalMark = useMemo(() => computeFinalMark(scores), [scores]);
 
@@ -97,6 +98,16 @@ function ProjectGradingPage({ project }: { project: Project }) {
           }))
         }
       />
+
+      <label htmlFor="feedback-notes">Feedback Notes</label>
+      <textarea
+        id="feedback-notes"
+        aria-label="Feedback Notes"
+        placeholder="Provide detailed qualitative feedback..."
+        value={feedbackNotes}
+        onChange={(event) => setFeedbackNotes(event.target.value)}
+      />
+      <p data-testid="feedback-notes-preview">{feedbackNotes}</p>
 
       <div aria-label="final-mark-gauge-wrapper" data-testid="final-mark-gauge">
         <p>FINAL MARK</p>
@@ -171,5 +182,31 @@ describe('ProjectGrading - Final Mark calculation logic', () => {
 
     expect(updatedDashOffset).toBeLessThan(initialDashOffset);
     expect(updatedDashOffset).toBeCloseTo(expectedDashOffset, 4);
+  });
+
+  test('Verify feedback notes input updates textarea value and internal state', () => {
+    render(
+      <ProjectGradingPage
+        project={{
+          id: 'project-1',
+          title: 'Mock Project for Grading',
+        }}
+      />,
+    );
+
+    const feedbackTextarea = screen.getByPlaceholderText(
+      'Provide detailed qualitative feedback...',
+    ) as HTMLTextAreaElement;
+
+    const feedbackInput =
+      'The group demonstrated a strong understanding of ML concepts,\nthough the UI needs refinement.';
+
+    fireEvent.change(feedbackTextarea, { target: { value: feedbackInput } });
+
+    expect(feedbackTextarea.value).toBe(feedbackInput);
+    const normalizedFeedback = feedbackInput.replace(/\n/g, ' ');
+    expect(screen.getByTestId('feedback-notes-preview')).toHaveTextContent(
+      normalizedFeedback,
+    );
   });
 });

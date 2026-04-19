@@ -1,9 +1,9 @@
 /// <reference types="react" />
 /// <reference types="react-dom" />
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const mockToastSuccess = jest.fn();
 const mockNavigate = jest.fn();
@@ -76,6 +76,19 @@ function ProjectGradingPage({
   });
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobileLayout, setIsMobileLayout] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileLayout(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const finalMark = useMemo(() => computeFinalMark(scores), [scores]);
 
@@ -114,6 +127,18 @@ function ProjectGradingPage({
     <section aria-label="project-grading-page">
       <h1>Project Grading</h1>
       <p>{project.title}</p>
+
+      <div
+        data-testid="grading-layout-wrapper"
+        className={`grading-layout flex ${isMobileLayout ? 'flex-col' : 'flex-row'} md:flex-row`}
+      >
+        {isMobileLayout ? (
+          <p data-testid="mobile-layout-indicator">Mobile Layout Active</p>
+        ) : (
+          <p data-testid="desktop-layout-indicator">Desktop Layout Active</p>
+        )}
+
+        <div>
 
       <div data-testid="technical-feasibility-container">
         <label htmlFor="technical-feasibility">Technical Feasibility</label>
@@ -172,53 +197,55 @@ function ProjectGradingPage({
         />
       </div>
 
-      <label htmlFor="feedback-notes">Feedback Notes</label>
-      <textarea
-        id="feedback-notes"
-        aria-label="Feedback Notes"
-        placeholder="Provide detailed qualitative feedback..."
-        value={feedbackNotes}
-        onChange={(event) => setFeedbackNotes(event.target.value)}
-      />
-      <p data-testid="feedback-notes-preview">{feedbackNotes}</p>
-
-      <button
-        type="button"
-        onClick={() => {
-          void handleSubmit();
-        }}
-        disabled={!isSubmitEnabled}
-      >
-        Submit Final Grade
-      </button>
-
-      <div aria-label="final-mark-gauge-wrapper" data-testid="final-mark-gauge">
-        <p>FINAL MARK</p>
-        <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Final Mark Gauge">
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke="#334155"
-            strokeWidth="10"
+          <label htmlFor="feedback-notes">Feedback Notes</label>
+          <textarea
+            id="feedback-notes"
+            aria-label="Feedback Notes"
+            placeholder="Provide detailed qualitative feedback..."
+            value={feedbackNotes}
+            onChange={(event) => setFeedbackNotes(event.target.value)}
           />
-          <circle
-            data-testid="final-mark-progress-ring"
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke="#22c55e"
-            strokeWidth="10"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            transform="rotate(-90 60 60)"
-          />
-        </svg>
-        <p data-testid="final-mark-value" style={{ fontSize: '32px', fontWeight: 700 }}>
-          {finalMark}
-        </p>
+          <p data-testid="feedback-notes-preview">{feedbackNotes}</p>
+
+          <button
+            type="button"
+            onClick={() => {
+              void handleSubmit();
+            }}
+            disabled={!isSubmitEnabled}
+          >
+            Submit Final Grade
+          </button>
+        </div>
+
+        <div aria-label="final-mark-gauge-wrapper" data-testid="final-mark-gauge">
+          <p>FINAL MARK</p>
+          <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Final Mark Gauge">
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="#334155"
+              strokeWidth="10"
+            />
+            <circle
+              data-testid="final-mark-progress-ring"
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="#22c55e"
+              strokeWidth="10"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              transform="rotate(-90 60 60)"
+            />
+          </svg>
+          <p data-testid="final-mark-value" style={{ fontSize: '32px', fontWeight: 700 }}>
+            {finalMark}
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -237,6 +264,13 @@ describe('ProjectGrading - Final Mark calculation logic', () => {
 
   afterEach(() => {
     cleanup();
+
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 1024,
+    });
+
     jest.clearAllMocks();
     jest.resetAllMocks();
   });
@@ -439,5 +473,36 @@ describe('ProjectGrading - Final Mark calculation logic', () => {
     expect(within(technicalContainer).getByText('45/100')).toBeInTheDocument();
     expect(within(innovationContainer).getByText('65/100')).toBeInTheDocument();
     expect(within(scopeContainer).getByText('85/100')).toBeInTheDocument();
+  });
+
+  test('Verify responsive layout switches to mobile classes on resize', async () => {
+    render(
+      <ProjectGradingPage
+        project={{
+          id: 'project-1',
+          title: 'Mock Project for Grading',
+        }}
+        submitProjectGrade={mockSubmitProjectGrade}
+      />,
+    );
+
+    const layoutWrapper = screen.getByTestId('grading-layout-wrapper');
+
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 375,
+    });
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    await waitFor(() => {
+      expect(layoutWrapper).toHaveClass('flex-col');
+    });
+
+    expect(layoutWrapper).toHaveClass('md:flex-row');
+    expect(screen.getByTestId('mobile-layout-indicator')).toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-layout-indicator')).not.toBeInTheDocument();
   });
 });

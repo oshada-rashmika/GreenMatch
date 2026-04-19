@@ -1,7 +1,7 @@
 /// <reference types="react" />
 /// <reference types="react-dom" />
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 const mockNavigate = jest.fn();
@@ -71,5 +71,16 @@ describe('SupervisorProfile - Verify the top navigation bar renders the back but
 
     expect(backButton).toBeInTheDocument();
     expect(settingsButton).toBeInTheDocument();
+  });
+
+  test('Verify clicking the back button triggers navigation', () => {
+    render(<SupervisorProfilePage />);
+
+    const backButton = screen.getByTestId('profile-back-button');
+
+    fireEvent.click(backButton);
+
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith(-1);
   });
 });

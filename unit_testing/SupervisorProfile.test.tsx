@@ -10,7 +10,18 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }), { virtual: true });
 
-function SupervisorProfilePage() {
+type SupervisorProfileData = {
+  name: string;
+  staffId: string;
+  specializations: string;
+  avatarUrl?: string;
+};
+
+function SupervisorProfilePage({
+  profile,
+}: {
+  profile?: SupervisorProfileData;
+}) {
   const { useNavigate } = require('react-router-dom') as {
     useNavigate: () => (to: string | number) => void;
   };
@@ -48,6 +59,21 @@ function SupervisorProfilePage() {
           <span aria-hidden="true">gear</span>
         </button>
       </nav>
+
+      {profile ? (
+        <section aria-label="supervisor-identity-section" style={{ padding: '16px' }}>
+          {profile.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="Supervisor avatar" />
+          ) : (
+            <div data-testid="profile-avatar-fallback" aria-label="Profile avatar fallback">
+              avatar-fallback
+            </div>
+          )}
+          <h2>{profile.name}</h2>
+          <p>Staff ID: {profile.staffId}</p>
+          <p>Specializations: {profile.specializations}</p>
+        </section>
+      ) : null}
     </section>
   );
 }
@@ -82,5 +108,24 @@ describe('SupervisorProfile - Verify the top navigation bar renders the back but
 
     expect(mockNavigate).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith(-1);
+  });
+
+  test('Verify supervisor identity section renders avatar and profile details', () => {
+    const mockProfile: SupervisorProfileData = {
+      name: 'Anton Jayakody_',
+      staffId: 'SUP-999',
+      specializations: 'Cybersecurity, Web Development',
+    };
+
+    render(<SupervisorProfilePage profile={mockProfile} />);
+
+    const avatarElement = screen.getByTestId('profile-avatar-fallback');
+
+    expect(avatarElement).toBeInTheDocument();
+    expect(screen.getByText('Anton Jayakody_')).toBeInTheDocument();
+    expect(screen.getByText('Staff ID: SUP-999')).toBeInTheDocument();
+    expect(
+      screen.getByText('Specializations: Cybersecurity, Web Development'),
+    ).toBeInTheDocument();
   });
 });

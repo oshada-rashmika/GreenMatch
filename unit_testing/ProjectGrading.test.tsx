@@ -505,4 +505,34 @@ describe('ProjectGrading - Final Mark calculation logic', () => {
     expect(screen.getByTestId('mobile-layout-indicator')).toBeInTheDocument();
     expect(screen.queryByTestId('desktop-layout-indicator')).not.toBeInTheDocument();
   });
+
+  test('Verify dynamic gauge color changes from red (failing) to green (passing) based on score', () => {
+    render(
+      <ProjectGradingPage
+        project={{
+          id: 'project-1',
+          title: 'Mock Project for Grading',
+        }}
+        submitProjectGrade={mockSubmitProjectGrade}
+      />,
+    );
+
+    const technicalSlider = screen.getByLabelText('Technical Feasibility') as HTMLInputElement;
+    const innovationSlider = screen.getByLabelText('Innovation & Research') as HTMLInputElement;
+    const scopeSlider = screen.getByLabelText('Project Scope & Execution') as HTMLInputElement;
+    const gaugeRing = screen.getByTestId('final-mark-progress-ring');
+
+    fireEvent.change(technicalSlider, { target: { value: '30' } });
+    fireEvent.change(innovationSlider, { target: { value: '30' } });
+    fireEvent.change(scopeSlider, { target: { value: '30' } });
+
+    expect(gaugeRing).toHaveClass('stroke-red-500');
+
+    fireEvent.change(technicalSlider, { target: { value: '85' } });
+    fireEvent.change(innovationSlider, { target: { value: '85' } });
+    fireEvent.change(scopeSlider, { target: { value: '85' } });
+
+    expect(gaugeRing).not.toHaveClass('stroke-red-500');
+    expect(gaugeRing).toHaveClass('stroke-green-500');
+  });
 });

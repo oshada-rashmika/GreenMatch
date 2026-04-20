@@ -7,7 +7,6 @@ import '../theme/app_theme.dart';
 import '../services/auth_provider.dart';
 import '../services/evaluation_service.dart';
 import '../services/project_service.dart';
-import '../widgets/glass_container.dart';
 import 'evaluation_canvas_screen.dart';
 
 class EvaluationHubScreen extends StatefulWidget {

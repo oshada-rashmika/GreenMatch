@@ -9,8 +9,7 @@ import 'supervisor_chat.dart';
 class ProjectSelectionScreen extends StatefulWidget {
   final String supervisorId;
 
-  const ProjectSelectionScreen({Key? key, required this.supervisorId})
-    : super(key: key);
+  const ProjectSelectionScreen({super.key, required this.supervisorId});
 
   @override
   State<ProjectSelectionScreen> createState() => _ProjectSelectionScreenState();

@@ -1288,15 +1288,15 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                                     0xFF0F1F14,
                                   ), // Muted dark background
                                   onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
+                                ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF0F1F14)),
                               ),
                               child: child!,
                             );
                           },
                         );
-                        if (val != null)
+                        if (val != null) {
                           setModalState(() => selectedDate = val);
+                        }
                       },
                       onTimePick: () async {
                         final val = await showTimePicker(
@@ -1309,15 +1309,15 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                                   primary: AppTheme.forestEmerald,
                                   surface: Color(0xFF0F1F14),
                                   onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
+                                ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF0F1F14)),
                               ),
                               child: child!,
                             );
                           },
                         );
-                        if (val != null)
+                        if (val != null) {
                           setModalState(() => selectedTime = val);
+                        }
                       },
                     ),
                     const SizedBox(height: 16),
@@ -1340,8 +1340,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                                   primary: AppTheme.forestEmerald,
                                   surface: Color(0xFF0F1F14),
                                   onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
+                                ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF0F1F14)),
                               ),
                               child: child!,
                             );
@@ -1360,8 +1359,7 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                                   primary: AppTheme.forestEmerald,
                                   surface: Color(0xFF0F1F14),
                                   onSurface: Colors.white,
-                                ),
-                                dialogBackgroundColor: const Color(0xFF0F1F14),
+                                ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF0F1F14)),
                               ),
                               child: child!,
                             );
@@ -1451,8 +1449,9 @@ class _SupervisorDashboardState extends State<SupervisorDashboard> {
                                     SnackBar(content: Text(e.toString())),
                                   );
                                 } finally {
-                                  if (mounted)
+                                  if (mounted) {
                                     setModalState(() => isSubmitting = false);
+                                  }
                                 }
                               },
                         child: isSubmitting
@@ -1992,7 +1991,7 @@ class _SupervisedProjectCardHolderState
                       ),
                     ),
                   )
-                  .toList(),
+                  ,
               const SizedBox(height: 24),
               InkWell(
                 onTap: widget.onSchedule,

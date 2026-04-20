@@ -458,10 +458,12 @@ class _LoginScreenState extends State<LoginScreen>
                 keyboardType: TextInputType.emailAddress,
                 icon: Icons.alternate_email_rounded,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Email is required';
-                  if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$').hasMatch(value))
+                  }
+                  if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$').hasMatch(value)) {
                     return 'Enter a valid email address';
+                  }
                   return null;
                 },
               ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),
@@ -482,10 +484,12 @@ class _LoginScreenState extends State<LoginScreen>
                   onPressed: _togglePasswordVisibility,
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Password is required';
-                  if (value.length < 6)
+                  }
+                  if (value.length < 6) {
                     return 'Password must be at least 6 characters';
+                  }
                   return null;
                 },
               ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
@@ -611,10 +615,12 @@ class _LoginScreenState extends State<LoginScreen>
                 keyboardType: TextInputType.emailAddress,
                 icon: Icons.alternate_email_rounded,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Email is required';
-                  if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$').hasMatch(value))
+                  }
+                  if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$').hasMatch(value)) {
                     return 'Enter a valid email address';
+                  }
                   return null;
                 },
               ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1),
@@ -635,10 +641,12 @@ class _LoginScreenState extends State<LoginScreen>
                   onPressed: _togglePasswordVisibility,
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Password is required';
-                  if (value.length < 8)
+                  }
+                  if (value.length < 8) {
                     return 'Password must be at least 8 characters';
+                  }
                   return null;
                 },
               ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1),
@@ -791,10 +799,12 @@ class _LoginScreenState extends State<LoginScreen>
                 keyboardType: TextInputType.emailAddress,
                 icon: Icons.alternate_email_rounded,
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Email is required';
-                  if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$').hasMatch(value))
+                  }
+                  if (!RegExp(r'^[\w-\.]+@[\w-\.]+\.\w+$').hasMatch(value)) {
                     return 'Enter a valid email address';
+                  }
                   return null;
                 },
               ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1),

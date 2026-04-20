@@ -93,8 +93,8 @@ class EvaluationService {
           'projectId': projectId,
           'supervisorId': supervisorId,
           'finalMark': finalMark,
-          if (feedbackText != null) 'feedbackText': feedbackText,
-          if (criteriaScores != null) 'criteriaScores': criteriaScores,
+          'feedbackText': ?feedbackText,
+          'criteriaScores': ?criteriaScores,
         }),
       );
 

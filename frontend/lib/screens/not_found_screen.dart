@@ -1,9 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
-import '../widgets/glass_container.dart';
 import 'login_screen.dart';
 
 class NotFoundScreen extends StatelessWidget {

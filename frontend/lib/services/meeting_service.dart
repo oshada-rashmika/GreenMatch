@@ -103,7 +103,7 @@ class MeetingService {
       final bodyData = jsonEncode({
         'meetingNumber': meetingNumber,
         'meetingDate': meetingDate.toIso8601String(),
-        if (notes != null) 'notes': notes,
+        'notes': ?notes,
       });
 
       print('✏️ [MeetingService] POST $url body=$bodyData');

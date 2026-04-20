@@ -11,11 +11,11 @@ class SupervisorChatScreen extends StatefulWidget {
   final String supervisorId;
 
   const SupervisorChatScreen({
-    Key? key,
+    super.key,
     required this.projectId,
     required this.projectTitle,
     required this.supervisorId,
-  }) : super(key: key);
+  });
 
   @override
   State<SupervisorChatScreen> createState() => _SupervisorChatScreenState();

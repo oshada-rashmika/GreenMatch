@@ -212,7 +212,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         const Text("No Modules Available. Please wait or referesh.", style: TextStyle(color: Colors.redAccent))
                       else
                         DropdownButtonFormField<String>(
-                          value: _modules.any((m) => m.id == _selectedModuleId) ? _selectedModuleId : _modules.first.id,
+                          initialValue: _modules.any((m) => m.id == _selectedModuleId) ? _selectedModuleId : _modules.first.id,
                           dropdownColor: AppTheme.premiumBlack,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
@@ -234,7 +234,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         const Text("No Research Areas Available.", style: TextStyle(color: Colors.redAccent))
                       else
                         DropdownButtonFormField<String>(
-                          value: _tags.any((t) => t.id == _selectedTagId) ? _selectedTagId : _tags.first.id,
+                          initialValue: _tags.any((t) => t.id == _selectedTagId) ? _selectedTagId : _tags.first.id,
                           dropdownColor: AppTheme.premiumBlack,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
@@ -1094,7 +1094,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 ),
               ],
             ),
-          )).toList(),
+          )),
         ],
       ),
     );

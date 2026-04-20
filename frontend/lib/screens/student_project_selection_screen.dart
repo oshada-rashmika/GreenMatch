@@ -6,7 +6,7 @@ import '../theme/app_theme.dart';
 import 'student_chat.dart';
 
 class StudentProjectSelectionScreen extends StatefulWidget {
-  const StudentProjectSelectionScreen({Key? key}) : super(key: key);
+  const StudentProjectSelectionScreen({super.key});
 
   @override
   State<StudentProjectSelectionScreen> createState() =>

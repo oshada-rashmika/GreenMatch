@@ -9,7 +9,6 @@ import '../services/auth_provider.dart';
 import '../services/evaluation_service.dart';
 import '../services/project_service.dart';
 import '../widgets/glass_container.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 class EvaluationCanvasScreen extends StatefulWidget {
   final SupervisedProject project;

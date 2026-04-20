@@ -1765,7 +1765,6 @@ class _MetricCard extends StatefulWidget {
     required this.value,
     required this.detail,
     required this.width,
-    super.key,
     this.accentColor,
     this.iconData = Icons.analytics,
     this.onTap,
@@ -2512,7 +2511,7 @@ class _MetricSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: width < 220 ? double.infinity : width,
       height: 180,
       child: GlassContainer(
@@ -2957,7 +2956,6 @@ class _SmartProjectsPopup extends StatefulWidget {
     required this.projects,
     required this.title,
     this.onRunAutoMatch,
-    super.key,
   });
 
   final List<ModuleLeaderProject> projects;

@@ -95,8 +95,8 @@ class SupervisorService {
         Uri.parse('$baseUrl/api/supervisors/$supervisorId'),
         headers: headers,
         body: jsonEncode({
-          if (fullName != null) 'fullName': fullName,
-          if (staffId != null) 'staffId': staffId,
+          'fullName': ?fullName,
+          'staffId': ?staffId,
         }),
       );
 

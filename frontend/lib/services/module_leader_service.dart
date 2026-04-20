@@ -334,8 +334,8 @@ class ModuleLeaderService {
         Uri.parse('$_baseUrl/module-leader/profile'),
         headers: _headers(jwtToken),
         body: jsonEncode({
-          if (fullName != null) 'fullName': fullName,
-          if (staffId != null) 'staffId': staffId,
+          'fullName': ?fullName,
+          'staffId': ?staffId,
         }),
       );
 

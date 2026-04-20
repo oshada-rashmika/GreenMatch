@@ -6,9 +6,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_provider.dart';
 import '../services/supervisor_service.dart';
-import '../widgets/glass_container.dart';
 import 'supervisor_dashboard.dart';
-import 'login_screen.dart';
 
 class SupervisorOnboardingScreen extends StatefulWidget {
   const SupervisorOnboardingScreen({super.key});
